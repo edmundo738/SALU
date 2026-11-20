@@ -40,6 +40,24 @@ Classificar toda afirmação técnica relevante:
 - Não declarar teste aprovado sem o executar.
 - Não declarar integração funcional sem a testar de verdade.
 
+### Validade da evidência
+
+A regra de economia proíbe **pagar duas vezes pela mesma pergunta no mesmo estado** — três
+agentes a analisar o mesmo ficheiro, ou re-derivar uma decisão já tomada e não contestada.
+**Não** proíbe verificar, e nunca autoriza confiar numa conclusão antiga.
+
+- Toda a evidência tem âmbito e prazo: descreve um commit e um estado concretos. Quando o
+  código relevante muda, a evidência expira.
+- Antes de agir com base num `FACT` antigo, confirmar que o código ainda corresponde
+  (`git log -- <ficheiro>` desde a data da evidência).
+- O que uma decisão ou uma demonstração depende **verifica-se sempre** no artefacto final,
+  independentemente de quantas vezes passou antes.
+- A documentação é uma afirmação a confrontar com o código, não um substituto dele.
+- **Nunca citar o meu próprio relatório anterior como prova de si mesmo.** «Já verifiquei»
+  não é evidência; é uma alegação sobre evidência.
+- Quando um `FACT` se revelar errado, corrigir a documentação e registar o erro em
+  FAILED_EXPERIMENTS, incluindo como passou despercebido.
+
 ## 4. Dois modos
 
 **Research Mode** — só quando uma incerteza concreta bloqueia a implementação. Termina
