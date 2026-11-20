@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Sem fontes externas de propósito: cada pedido a um servidor de fontes custa
+ * dados ao utilizador. A pilha do sistema já inclui uma sans-serif decente em
+ * Android e iOS.
+ */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-sand text-ink antialiased;
+    font-feature-settings: 'ss01' 1;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-sand;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  .campo {
+    @apply w-full rounded-xl border border-line bg-paper px-3 py-2.5 text-base
+           placeholder:text-mute/60 focus:border-brand-500 focus:outline-none;
+  }
+
+  .etiqueta {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+
+  .btn-primario {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-forest-600 px-5 py-3
+           font-semibold text-white transition hover:bg-forest-700
+           disabled:cursor-not-allowed disabled:bg-line disabled:text-mute;
+  }
+
+  .btn-secundario {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line
+           bg-paper px-5 py-3 font-medium text-ink transition hover:border-ink/30;
+  }
+
+  .selo {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}
