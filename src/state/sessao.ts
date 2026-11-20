@@ -52,13 +52,23 @@ export const useSessao = create<EstadoSessao>((set, get) => ({
   sessao: ler(),
 
   entrar: (tipo, nome) => {
+    /*
+     * Entrar inicia sempre uma sessão nova.
+     *
+     * Uma versão anterior tentava ser mais esperta e preservava o perfil e os
+     * pedidos da sessão anterior. O resultado foi um prestador tratado como
+     * autor de pedidos que nunca publicou — e, por isso, sem botão de contacto.
+     * Numa demonstração cada entrada representa uma pessoa; não há forma fiável
+     * de saber que é a mesma, porque não há autenticação.
+     */
     const sessao: Sessao = {
       tipo,
       nome: nome.trim(),
       criadoEm: new Date().toISOString(),
-      perfilId: get().sessao?.perfilId ?? null,
-      pedidoIds: get().sessao?.pedidoIds ?? [],
+      perfilId: null,
+      pedidoIds: [],
     };
+
     gravar(sessao);
     set({ sessao });
   },
