@@ -101,6 +101,33 @@ export type EstadoPedido = 'aberto' | 'acordado' | 'concluido' | 'cancelado';
 
 export type EstadoProposta = 'pendente' | 'aceite' | 'recusada';
 
+export type Urgencia = 'flexivel' | 'esta-semana' | 'urgente';
+
+export const URGENCIAS: { id: Urgencia; rotulo: string; curto: string }[] = [
+  { id: 'flexivel', rotulo: 'Flexível — quando der', curto: 'Flexível' },
+  { id: 'esta-semana', rotulo: 'Esta semana', curto: 'Esta semana' },
+  { id: 'urgente', rotulo: 'Urgente — nas próximas 48 horas', curto: 'Urgente' },
+];
+
+export type TipoEventoPedido =
+  | 'publicado'
+  | 'proposta'
+  | 'aceite'
+  | 'concluido'
+  | 'cancelado'
+  | 'avaliado';
+
+/**
+ * Um acontecimento no ciclo de vida do pedido.
+ * É o que permite mostrar «o que aconteceu e quando» sem adivinhar.
+ */
+export interface EventoPedido {
+  tipo: TipoEventoPedido;
+  autorNome: string;
+  criadoEm: string;
+  detalhe?: string;
+}
+
 export interface Pedido {
   id: string;
   autorNome: string;
@@ -112,7 +139,11 @@ export interface Pedido {
   bairro: string;
   descricao: string;
   fotoUrl: string | null;
+  urgencia: Urgencia;
+  /** Orçamento indicativo em texto («até 20.000 Kz»). Opcional e nunca calculado. */
+  orcamentoTexto: string | null;
   estado: EstadoPedido;
+  historico: EventoPedido[];
   exemplo: boolean;
   criadoEm: string;
 }
@@ -126,6 +157,8 @@ export interface PedidoEntrada {
   bairro: string;
   descricao: string;
   fotoUrl: string | null;
+  urgencia: Urgencia;
+  orcamentoTexto: string;
 }
 
 export interface FiltroPedidos {
@@ -217,6 +250,20 @@ export type TipoAvaliado = 'prestador' | 'cliente';
  * Não há avaliação livre: sem trabalho confirmado, uma nota é apenas uma
  * opinião — e opiniões sem contexto destroem a confiança que o produto promete.
  */
+/**
+ * Três dimensões, não uma estrela.
+ *
+ * Para um prestador: comunicação, pontualidade, qualidade do trabalho.
+ * Para um cliente: comunicação, pontualidade, clareza do pedido.
+ * A «nota» continua a existir como resumo (média arredondada) para que a
+ * reputação se leia num relance — mas as dimensões é que dizem porquê.
+ */
+export interface DimensoesAvaliacao {
+  comunicacao: number;
+  pontualidade: number;
+  qualidade: number;
+}
+
 export interface Avaliacao {
   id: string;
   pedidoId: string;
@@ -224,6 +271,9 @@ export interface Avaliacao {
   alvoNome: string;
   alvoTipo: TipoAvaliado;
   nota: number;
+  dimensoes?: DimensoesAvaliacao;
+  /** «Voltaria a trabalhar com esta pessoa?» — a pergunta que mais informa. */
+  voltaria?: boolean;
   comentario: string;
   criadoEm: string;
 }
@@ -234,6 +284,8 @@ export interface AvaliacaoEntrada {
   alvoNome: string;
   alvoTipo: TipoAvaliado;
   nota: number;
+  dimensoes?: DimensoesAvaliacao;
+  voltaria?: boolean;
   comentario: string;
 }
 

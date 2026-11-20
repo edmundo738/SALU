@@ -39,6 +39,8 @@ function pedidoValido(alteracoes: Partial<PedidoEntrada> = {}): PedidoEntrada {
     bairro: 'Maianga',
     descricao: 'Liga mas não arrefece desde ontem. Já desliguei e voltei a ligar.',
     fotoUrl: null,
+    urgencia: 'flexivel',
+    orcamentoTexto: '',
     ...alteracoes,
   };
 }

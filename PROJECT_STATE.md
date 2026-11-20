@@ -18,9 +18,9 @@ demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
 | Commits | `FACT` | 3 (`d80da2b` + alterações de estabilização por commitar) |
 | Ficheiros versionados | `MEASURED` | 55 antes desta fase |
 | Ecrãs | `MEASURED` | 11 rotas |
-| Testes | `MEASURED` | 77, todos verdes |
+| Testes | `MEASURED` | 97, todos verdes |
 | Build | `MEASURED` | `tsc --noEmit` limpo |
-| Bundle inicial | `MEASURED` | 80,0 kB gzip + 73 kB de fontes woff2 (+ 62 kB Supabase lazy) |
+| Bundle inicial | `MEASURED` | 90,0 kB gzip + 73 kB de fontes woff2 (+ 62 kB Supabase lazy) |
 | Modo de dados | `OBSERVED` | local |
 | URL público | `UNKNOWN` | **não existe ainda** |
 
@@ -152,6 +152,32 @@ Marta → autora, 2 propostas, conversa visível, sem WhatsApp → aceita Ivo �
 `acordado`, `Ivo:aceite`, `António:recusada`. Paulo → «Escolheste Neusa Domingos» →
 conclui → avalia 5 → perfil da Neusa mostra **5,0 · 2 trabalhos avaliados**.
 
+### E11 — Fusão com a arquitectura do protótipo externo (zip) `FACT`
+Analisado um segundo protótipo do SALU (Google AI Studio/Gemini, inglês, sem rotas nem
+persistência nem testes, 3,5 MB de imagens geradas). **Importadas as ideias de
+organização, recusados os materiais:**
+
+| Importado | Recusado |
+|---|---|
+| Troca de papel sem sair (uma pessoa, dois lados) | Inglês; fontes Google; ícones externos |
+| Painel por papel com próximos passos | Imagens IA de «profissionais» |
+| Coluna de navegação + título do ecrã + acção principal | Selos «verificado» sem verificação |
+| Etiqueta de estado, barra de progresso, linha do tempo | Números de prova inventados («10 estados», «48 trabalhos») |
+| Urgência e orçamento indicativo no pedido | Dark mode (fora de âmbito) |
+| Avaliação em 3 dimensões + «voltaria» + bilateral | Estado só em memória |
+| Notificações, profissionais de confiança, segurança | |
+
+Verificado em `localhost:5173` (armazenamento limpo, atalho de personagens): rail com
+percurso por papel; troca para cliente mantém `perfilId`; painel do Ivo com 4,5 · 2 e
+tiles; Marta vê «Tens 2 propostas para decidir», progresso, linha do tempo com 3 eventos,
+urgência e orçamento; Paulo conclui e avalia a Neusa em 3 dimensões (5/4/5, nota 5,
+voltaria) → perfil da Neusa com barras 5,0/5,0/4,5 e «100% voltariam»; Ivo vê «5,0 como
+cliente» da Lúcia; Marta tem 3 notificações → marca tudo visto → 0; guarda o Ivo como de
+confiança → aparece em `/confianca` e no painel; denúncia gravada como «Recebida»;
+landing com «Quem começa aparece» e «Confiança, sem atalhos»; sem transbordo.
+
+**Defeito apanhado:** nenhum novo. 97 testes.
+
 ---
 
 ## FAILED_EXPERIMENTS
@@ -186,6 +212,10 @@ protótipo; inaceitável com utilizadores reais.
   exemplos e o que ele próprio criou. Limitação mais séria da demonstração.
 - **Sem autenticação.** A sessão é um nome e um lado. A posse do que cada pessoa criou é
   guardada **por nome** — duas pessoas com o mesmo nome colidem.
+- **Notificações são calculadas, não enviadas.** Derivadas dos dados ao abrir; sem push
+  nem SMS. O único estado próprio é «até quando viste», por nome.
+- **Denúncias ficam «recebidas».** Não há ninguém do outro lado nesta versão; a
+  interface di-lo.
 - **Personagens são fictícias.** Telefones reservados `2449000000xx`; o WhatsApp abre
   para um número que não existe, salvo se o número da personagem for trocado em
   `src/data/semente.ts` antes do build.

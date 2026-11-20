@@ -34,7 +34,11 @@ A ordem abaixo é uma **cadeia de dependências**, não uma lista de desejos.
 | Propostas, aceitação pelo cliente | Construído em modo local | Ciclo 4 (versão de demonstração) |
 | Conversa dentro do pedido | Construído em modo local | Ciclo 5 (sem tempo real) |
 | Estados `aberto → acordado → concluido` | Construído em modo local | Ciclo 6 (sem `disputa`, sem confirmação dupla) |
-| Avaliação do prestador após conclusão | Construído em modo local | Ciclo 7 (só cliente→prestador; reputação = média + contagem) |
+| Avaliação em 3 dimensões, bilateral, com «voltaria» | Construído em modo local | Ciclo 7 (reputação = média + contagem + dimensões) |
+| Notificações derivadas dos dados | Construído em modo local | Sistema transversal (sem push) |
+| Profissionais de confiança | Construído em modo local | Ciclo 7 |
+| Denúncias (formulário + estados, sem moderação) | Construído em modo local | Ciclo 8 (só o caminho) |
+| Painel por papel, troca de papel, linha do tempo do pedido | Construído | Ciclos 1 e 6 |
 | Base de dados partilhada | **Não existe** | Ciclo 0 |
 | Propostas, acordos, estados, avaliações, denúncias | **Não existem** | Ciclos 4–8 |
 

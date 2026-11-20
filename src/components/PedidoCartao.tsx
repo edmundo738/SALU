@@ -45,6 +45,12 @@ export function PedidoCartao({ pedido }: { pedido: Pedido }) {
       </div>
 
       <div className="mt-3 flex items-center gap-2 border-t border-line/70 pt-3 text-[11px] font-medium uppercase tracking-[0.06em] text-mute">
+        {pedido.urgencia === 'urgente' && (
+          <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-800">Urgente</span>
+        )}
+        {pedido.urgencia === 'esta-semana' && (
+          <span className="rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">Esta semana</span>
+        )}
         <span className="text-brand-700">{categoria.rotulo}</span>
         <span aria-hidden="true" className="text-line">
           /

@@ -105,6 +105,9 @@ export function pedidosDeExemplo(agora: string = new Date().toISOString()): Pedi
     criadoEm: agora,
     autorTelefone: TELEFONE_RESERVADO,
     fotoUrl: null,
+    urgencia: 'flexivel' as const,
+    orcamentoTexto: null,
+    historico: [{ tipo: 'publicado' as const, autorNome: 'Cliente de exemplo', criadoEm: agora }],
   };
 
   return [

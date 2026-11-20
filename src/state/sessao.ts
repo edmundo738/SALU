@@ -57,6 +57,13 @@ function gravarSessao(sessao: Sessao | null): void {
 interface EstadoSessao {
   sessao: Sessao | null;
   entrar: (tipo: TipoSessao, nome: string) => void;
+  /**
+   * Uma pessoa, dois papéis. A mesma Marta pode precisar de um canalizador e
+   * dar explicações de matemática. Trocar de papel não é trocar de pessoa: a
+   * posse (perfil e pedidos) mantém-se, só muda o lado do mercado que a
+   * interface mostra primeiro.
+   */
+  trocarPapel: (tipo: TipoSessao) => void;
   sair: () => void;
   definirPerfil: (perfilId: string) => void;
   adicionarPedido: (pedidoId: string) => void;
@@ -89,6 +96,14 @@ export const useSessao = create<EstadoSessao>((set, get) => ({
       pedidoIds: [...registo.pedidoIds],
     };
 
+    gravarSessao(sessao);
+    set({ sessao });
+  },
+
+  trocarPapel: (tipo) => {
+    const actual = get().sessao;
+    if (!actual || actual.tipo === tipo) return;
+    const sessao = { ...actual, tipo };
     gravarSessao(sessao);
     set({ sessao });
   },

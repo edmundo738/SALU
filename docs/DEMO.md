@@ -12,7 +12,9 @@ Limite do concurso: **2 minutos**. Este roteiro tem 1 min 55 s.
 ## As personagens
 
 Pessoas fictícias **com história já criada**. Entra-se por um toque em `/entrar`, sem
-escrever nome. Cada uma começa no ecrã certo para o seu momento.
+escrever nome. Cada uma começa no ecrã certo para o seu momento. Depois de entrar, o
+botão **Cliente / Prestador** no topo troca de papel sem sair — a mesma pessoa pode
+precisar de um canalizador e dar explicações.
 
 | Personagem | Papel | Estado em que começa |
 |---|---|---|
@@ -58,25 +60,29 @@ mais a vai incomodar.»
 
 ## 0:50–1:15 · O trabalho fecha
 
-**Toque:** sair → **Paulo Sebastião**. Abre o quadro eléctrico, acordado com a Neusa.
+**Toque:** *Entrar* na coluna → **Paulo Sebastião**. Abre o quadro eléctrico, acordado
+com a Neusa. Repara na barra de progresso: *Publicado → Acordado → Concluído*.
 
-**Diz:** «O Paulo já escolheu a Neusa na semana passada — ‹acordado› quer dizer
-combinado, não feito. Hoje ela veio.» **Toque:** *Marcar como concluído*.
+**Diz:** «O Paulo já escolheu a Neusa — ‹acordado› quer dizer combinado, não feito. A
+linha do tempo mostra tudo o que aconteceu. Hoje ela veio.» **Toque:** *Marcar como
+concluído*.
 
-**Diz:** «Agora, e só agora, ele pode avaliar.» **Toque:** *5 · Excelente*, escreve uma
-linha, *Enviar avaliação*.
+**Diz:** «Agora, e só agora, ele pode avaliar — em três dimensões, não numa estrela.»
+**Toques:** Comunicação 5 · Pontualidade 4 · Qualidade 5 · *Voltarias?* Sim ·
+*Enviar avaliação*.
 
 ## 1:15–1:35 · A reputação constrói-se
 
 **Toque:** abre o perfil da **Neusa** (pelo nome na proposta, ou em Profissionais).
 
-**Diz:** «A Neusa passou a 5,0 com dois trabalhos. Não é uma nota solta: cada avaliação
-está presa a um trabalho concluído, confirmado pelo cliente. É isso que a torna
-confiança e não opinião.»
+**Diz:** «A Neusa tem agora duas avaliações, com barras por dimensão e ‹100% voltariam a
+contratar›. Não é uma nota solta: cada avaliação está presa a um trabalho concluído. E
+corre nos dois sentidos — o Ivo também avaliou os clientes dele.»
 
 ## 1:35–1:48 · A saída para o WhatsApp
 
-**Toque:** sair → **Ivo Manuel** → Pedidos → abre um pedido aberto qualquer.
+**Toque:** **Ivo Manuel** → Painel. Mostra as notificações (sino com contagem) e as
+oportunidades na categoria dele. Abre um pedido aberto.
 
 **Diz:** «Quando quiserem, continuam no WhatsApp — a mensagem já vai escrita com o
 pedido. O SALU não prende ninguém nem toca no dinheiro.» *(Mostra o botão; não é preciso

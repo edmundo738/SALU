@@ -49,7 +49,7 @@ export function Entrar() {
     }
 
     entrar(tipo, nome);
-    navegar(tipo === 'prestador' ? '/perfil/novo' : '/publicar-pedido');
+    navegar('/painel');
   }
 
   return (

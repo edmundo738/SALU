@@ -3,6 +3,7 @@ import type {
   Avaliacao,
   AvaliacaoEntrada,
   EventoContacto,
+  EventoPedido,
   FiltroPedidos,
   FiltroPerfis,
   Mensagem,
@@ -117,7 +118,25 @@ export class RepositorioLocal implements RepositorioSalu {
   // -- pedidos --------------------------------------------------------------
 
   private lerPedidos(): Pedido[] {
-    return ler<Pedido[]>(this.armazenamento, CHAVE_PEDIDOS, []);
+    // Pedidos gravados antes de existirem urgência e histórico ganham valores
+    // neutros em vez de rebentar o ecrã.
+    return ler<Pedido[]>(this.armazenamento, CHAVE_PEDIDOS, []).map((pedido) => ({
+      ...pedido,
+      urgencia: pedido.urgencia ?? 'flexivel',
+      orcamentoTexto: pedido.orcamentoTexto ?? null,
+      historico: pedido.historico ?? [
+        { tipo: 'publicado', autorNome: pedido.autorNome, criadoEm: pedido.criadoEm },
+      ],
+    }));
+  }
+
+  /** Acrescenta um acontecimento ao histórico de um pedido. */
+  private registarEvento(pedidoId: string, evento: EventoPedido): void {
+    this.gravarPedidos(
+      this.lerPedidos().map((pedido) =>
+        pedido.id === pedidoId ? { ...pedido, historico: [...pedido.historico, evento] } : pedido,
+      ),
+    );
   }
 
   private gravarPedidos(pedidos: Pedido[]): void {
@@ -143,12 +162,15 @@ export class RepositorioLocal implements RepositorioSalu {
 
     const limpa = limparPedido(validacao.valor);
 
+    const agora = this.agora();
     const pedido: Pedido = {
       id: this.gerarId(),
       ...limpa,
+      orcamentoTexto: limpa.orcamentoTexto === '' ? null : limpa.orcamentoTexto,
       estado: 'aberto',
+      historico: [{ tipo: 'publicado', autorNome: limpa.autorNome, criadoEm: agora }],
       exemplo: false,
-      criadoEm: this.agora(),
+      criadoEm: agora,
     };
 
     this.gravarPedidos([pedido, ...this.lerPedidos()]);
@@ -181,6 +203,12 @@ export class RepositorioLocal implements RepositorioSalu {
 
     const existentes = ler<Proposta[]>(this.armazenamento, CHAVE_PROPOSTAS, []);
     this.armazenamento.setItem(CHAVE_PROPOSTAS, JSON.stringify([proposta, ...existentes]));
+
+    this.registarEvento(proposta.pedidoId, {
+      tipo: 'proposta',
+      autorNome: proposta.autorNome,
+      criadoEm: proposta.criadoEm,
+    });
 
     return proposta;
   }
@@ -248,6 +276,12 @@ export class RepositorioLocal implements RepositorioSalu {
     this.gravarPedidos(
       pedidos.map((item) => (item.id === pedidoId ? { ...item, estado: 'acordado' } : item)),
     );
+    this.registarEvento(pedidoId, {
+      tipo: 'aceite',
+      autorNome: escolhida.autorNome,
+      criadoEm: this.agora(),
+      detalhe: `Escolhido por ${pedido.autorNome}`,
+    });
   }
 
   async concluirPedido(pedidoId: string): Promise<void> {
@@ -262,6 +296,11 @@ export class RepositorioLocal implements RepositorioSalu {
     this.gravarPedidos(
       pedidos.map((item) => (item.id === pedidoId ? { ...item, estado: 'concluido' } : item)),
     );
+    this.registarEvento(pedidoId, {
+      tipo: 'concluido',
+      autorNome: pedido.autorNome,
+      criadoEm: this.agora(),
+    });
   }
 
   // -- avaliações -----------------------------------------------------------
@@ -300,6 +339,13 @@ export class RepositorioLocal implements RepositorioSalu {
       CHAVE_AVALIACOES,
       JSON.stringify([avaliacao, ...existentes]),
     );
+
+    this.registarEvento(avaliacao.pedidoId, {
+      tipo: 'avaliado',
+      autorNome: avaliacao.autorNome,
+      criadoEm: avaliacao.criadoEm,
+      detalhe: `${avaliacao.nota}/5 para ${avaliacao.alvoNome}`,
+    });
 
     return avaliacao;
   }

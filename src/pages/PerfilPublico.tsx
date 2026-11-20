@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../state/store';
 import { useSessao } from '../state/sessao';
+import { usePreferencias } from '../state/preferencias';
 import { obterCategoria } from '../domain/categorias';
 import { formatarTelefone } from '../domain/telefone';
 import { construirLinkWhatsApp } from '../domain/whatsapp';
 import { iniciais } from '../lib/formato';
 import { calcularReputacao } from '../domain/reputacao';
 import { IconeCategoria } from '../components/IconeCategoria';
+import { Reputacao } from '../components/Reputacao';
 
 export function PerfilPublico() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,8 @@ export function PerfilPublico() {
   const registarContacto = useApp((estado) => estado.registarContacto);
   const avaliacoes = useApp((estado) => estado.avaliacoes);
   const sessao = useSessao((estado) => estado.sessao);
+  const confianca = usePreferencias((estado) => estado.confianca);
+  const alternarConfianca = usePreferencias((estado) => estado.alternarConfianca);
 
   const [contactado, setContactado] = useState(false);
 
@@ -121,6 +125,25 @@ export function PerfilPublico() {
       <p className="mt-6 whitespace-pre-line text-[17px] leading-[1.7] text-ink-soft">
         {perfil.descricao}
       </p>
+
+      <Reputacao resumo={reputacao} tipo="prestador" />
+
+      {sessao && sessao.perfilId !== perfil.id && !perfil.exemplo && (() => {
+        const guardado = (confianca[sessao.nome.trim().toLowerCase()] ?? []).includes(perfil.id);
+        return (
+          <button
+            type="button"
+            aria-pressed={guardado}
+            onClick={() => alternarConfianca(sessao.nome, perfil.id)}
+            className={`mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+              guardado ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-line bg-paper hover:border-ink/30'
+            }`}
+          >
+            <span aria-hidden="true">{guardado ? '★' : '☆'}</span>
+            {guardado ? 'De confiança' : 'Guardar como de confiança'}
+          </button>
+        );
+      })()}
 
       {criticas.length > 0 && (
         <section className="mt-6">

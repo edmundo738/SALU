@@ -42,15 +42,23 @@ describe('semente de demonstração', () => {
     }
   });
 
-  it('toda a avaliação pertence a um pedido concluído e ao prestador aceite nele', () => {
+  it('toda a avaliação pertence a um pedido concluído e liga o cliente ao prestador aceite', () => {
     for (const avaliacao of s.avaliacoes) {
       const pedido = pedidoPorId.get(avaliacao.pedidoId);
       expect(pedido?.estado, avaliacao.id).toBe('concluido');
       const aceite = s.propostas.find(
         (p) => p.pedidoId === avaliacao.pedidoId && p.estado === 'aceite',
       );
-      expect(aceite?.autorNome, avaliacao.id).toBe(avaliacao.alvoNome);
-      expect(pedido?.autorNome, avaliacao.id).toBe(avaliacao.autorNome);
+      if (avaliacao.alvoTipo === 'prestador') {
+        expect(aceite?.autorNome, avaliacao.id).toBe(avaliacao.alvoNome);
+        expect(pedido?.autorNome, avaliacao.id).toBe(avaliacao.autorNome);
+      } else {
+        expect(aceite?.autorNome, avaliacao.id).toBe(avaliacao.autorNome);
+        expect(pedido?.autorNome, avaliacao.id).toBe(avaliacao.alvoNome);
+      }
+      if (avaliacao.dimensoes) {
+        expect(Object.values(avaliacao.dimensoes).every((d) => d >= 1 && d <= 5), avaliacao.id).toBe(true);
+      }
     }
   });
 
@@ -76,6 +84,26 @@ describe('semente de demonstração', () => {
       for (const pedidoId of registo.pedidoIds) {
         const pedido = pedidoPorId.get(pedidoId);
         expect(pedido && chaveNome(pedido.autorNome), pedidoId).toBe(chave);
+      }
+    }
+  });
+
+  it('o histórico de cada pedido começa em «publicado» pelo autor e regista a proposta aceite', () => {
+    for (const pedido of s.pedidos) {
+      const [primeiro] = pedido.historico;
+      expect(primeiro?.tipo, pedido.id).toBe('publicado');
+      expect(primeiro?.autorNome, pedido.id).toBe(pedido.autorNome);
+
+      const aceite = s.propostas.find((p) => p.pedidoId === pedido.id && p.estado === 'aceite');
+      const eventoAceite = pedido.historico.find((e) => e.tipo === 'aceite');
+      if (aceite) {
+        expect(eventoAceite?.autorNome, pedido.id).toBe(aceite.autorNome);
+      } else {
+        expect(eventoAceite, pedido.id).toBeUndefined();
+      }
+
+      if (pedido.estado === 'concluido') {
+        expect(pedido.historico.some((e) => e.tipo === 'concluido'), pedido.id).toBe(true);
       }
     }
   });

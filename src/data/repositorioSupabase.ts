@@ -4,7 +4,9 @@ import type {
   Avaliacao,
   AvaliacaoEntrada,
   CategoriaId,
+  DimensoesAvaliacao,
   EventoContacto,
+  EventoPedido,
   FiltroPedidos,
   FiltroPerfis,
   Mensagem,
@@ -69,6 +71,9 @@ interface LinhaPedido {
   bairro: string;
   descricao: string;
   foto_url: string | null;
+  urgencia: string | null;
+  orcamento_texto: string | null;
+  historico: EventoPedido[] | null;
   estado: string;
   exemplo: boolean;
   criado_em: string;
@@ -111,6 +116,12 @@ function paraPedido(linha: LinhaPedido): Pedido {
     bairro: linha.bairro,
     descricao: linha.descricao,
     fotoUrl: linha.foto_url,
+    urgencia:
+      linha.urgencia === 'urgente' || linha.urgencia === 'esta-semana' ? linha.urgencia : 'flexivel',
+    orcamentoTexto: linha.orcamento_texto,
+    historico: linha.historico ?? [
+      { tipo: 'publicado', autorNome: linha.autor_nome, criadoEm: linha.criado_em },
+    ],
     estado:
       linha.estado === 'acordado' ||
       linha.estado === 'concluido' ||
@@ -174,6 +185,8 @@ interface LinhaAvaliacao {
   alvo_nome: string;
   alvo_tipo: string;
   nota: number;
+  dimensoes: DimensoesAvaliacao | null;
+  voltaria: boolean | null;
   comentario: string | null;
   criado_em: string;
 }
@@ -186,6 +199,8 @@ function paraAvaliacao(linha: LinhaAvaliacao): Avaliacao {
     alvoNome: linha.alvo_nome,
     alvoTipo: linha.alvo_tipo === 'cliente' ? 'cliente' : 'prestador',
     nota: linha.nota,
+    dimensoes: linha.dimensoes ?? undefined,
+    voltaria: linha.voltaria ?? undefined,
     comentario: linha.comentario ?? '',
     criadoEm: linha.criado_em,
   };
@@ -343,6 +358,9 @@ export class RepositorioSupabase implements RepositorioSalu {
         bairro: limpa.bairro,
         descricao: limpa.descricao,
         foto_url: limpa.fotoUrl,
+        urgencia: limpa.urgencia,
+        orcamento_texto: limpa.orcamentoTexto === '' ? null : limpa.orcamentoTexto,
+        historico: [{ tipo: 'publicado', autorNome: limpa.autorNome, criadoEm: new Date().toISOString() }],
       })
       .select('*')
       .single();
@@ -458,6 +476,8 @@ export class RepositorioSupabase implements RepositorioSalu {
         alvo_nome: validacao.valor.alvoNome,
         alvo_tipo: validacao.valor.alvoTipo,
         nota: validacao.valor.nota,
+        dimensoes: validacao.valor.dimensoes ?? null,
+        voltaria: validacao.valor.voltaria ?? null,
         comentario: validacao.valor.comentario || null,
       })
       .select('*')

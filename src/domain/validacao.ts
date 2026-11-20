@@ -1,4 +1,4 @@
-import { CATEGORIA_IDS, MUNICIPIOS } from './types';
+import { CATEGORIA_IDS, MUNICIPIOS, URGENCIAS } from './types';
 import type {
   AvaliacaoEntrada,
   CategoriaId,
@@ -134,6 +134,8 @@ export function limparPedido(entrada: PedidoEntrada): PedidoEntrada {
     bairro: limpar(entrada.bairro),
     descricao: entrada.descricao.trim(),
     fotoUrl: entrada.fotoUrl,
+    urgencia: entrada.urgencia,
+    orcamentoTexto: entrada.orcamentoTexto.trim(),
   };
 }
 
@@ -181,6 +183,14 @@ export function validarPedido(entrada: PedidoEntrada): ResultadoValidacao<Pedido
     erros.descricao = `Descreva o problema com pelo menos ${LIMITES.descricaoPedido.min} caracteres.`;
   } else if (valor.descricao.length > LIMITES.descricaoPedido.max) {
     erros.descricao = `A descrição não pode ter mais de ${LIMITES.descricaoPedido.max} caracteres.`;
+  }
+
+  if (!URGENCIAS.some((urgencia) => urgencia.id === valor.urgencia)) {
+    erros.urgencia = 'Indique para quando precisa.';
+  }
+
+  if (valor.orcamentoTexto.length > 40) {
+    erros.orcamentoTexto = 'O orçamento não pode ter mais de 40 caracteres.';
   }
 
   return { valido: Object.keys(erros).length === 0, erros, valor };
@@ -240,9 +250,18 @@ export function validarAvaliacao(
     alvoNome: limpar(entrada.alvoNome),
     alvoTipo: entrada.alvoTipo,
     nota: entrada.nota,
+    dimensoes: entrada.dimensoes,
+    voltaria: entrada.voltaria,
     comentario: entrada.comentario.trim(),
   };
   const erros: ErrosAvaliacao = {};
+
+  if (valor.dimensoes) {
+    const todas = Object.values(valor.dimensoes);
+    if (!todas.every((d) => Number.isInteger(d) && d >= 1 && d <= 5)) {
+      erros.dimensoes = 'Classifique as três dimensões de 1 a 5.';
+    }
+  }
 
   if (valor.autorNome.length < LIMITES.nome.min) {
     erros.autorNome = 'Indique o seu nome.';
@@ -281,5 +300,7 @@ export function pedidoVazio(): PedidoEntrada {
     bairro: '',
     descricao: '',
     fotoUrl: null,
+    urgencia: 'flexivel',
+    orcamentoTexto: '',
   };
 }

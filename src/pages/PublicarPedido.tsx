@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../state/store';
 import { useSessao } from '../state/sessao';
 import { CATEGORIAS } from '../domain/categorias';
-import { MUNICIPIOS } from '../domain/types';
-import type { CategoriaId, Municipio, PedidoEntrada } from '../domain/types';
+import { MUNICIPIOS, URGENCIAS } from '../domain/types';
+import type { CategoriaId, Municipio, PedidoEntrada, Urgencia } from '../domain/types';
 import { pedidoVazio, validarPedido, type ErrosPedido } from '../domain/validacao';
 import { SeletorFoto } from '../components/SeletorFoto';
 
@@ -148,6 +148,42 @@ export function PublicarPedido() {
           valor={entrada.fotoUrl}
           onChange={(fotoUrl) => actualizar('fotoUrl', fotoUrl)}
         />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="urgencia-pedido" className="etiqueta">
+              Para quando
+            </label>
+            <select
+              id="urgencia-pedido"
+              className="campo"
+              value={entrada.urgencia}
+              onChange={(evento) => actualizar('urgencia', evento.target.value as Urgencia)}
+            >
+              {URGENCIAS.map((urgencia) => (
+                <option key={urgencia.id} value={urgencia.id}>
+                  {urgencia.rotulo}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="orcamento-pedido" className="etiqueta">
+              Orçamento <span className="font-normal text-mute">(opcional)</span>
+            </label>
+            <input
+              id="orcamento-pedido"
+              className="campo"
+              placeholder="Ex.: até 20.000 Kz"
+              value={entrada.orcamentoTexto}
+              onChange={(evento) => actualizar('orcamentoTexto', evento.target.value)}
+              aria-invalid={Boolean(erros.orcamentoTexto)}
+            />
+            <p className="mt-1 text-xs text-mute">Indicativo. O preço combina-se com o profissional.</p>
+            {erros.orcamentoTexto && <p className="mt-1 text-sm text-red-700">{erros.orcamentoTexto}</p>}
+          </div>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

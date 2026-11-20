@@ -82,7 +82,7 @@ export const PERSONAS: readonly Persona[] = [
     nome: 'Lúcia Tavares',
     tipo: 'cliente',
     papel: 'Já teve dois trabalhos concluídos através do SALU.',
-    rota: '/minha-area',
+    rota: '/painel',
   },
 ];
 
@@ -165,7 +165,14 @@ export function construirSemente(agora: Date = new Date()): Semente {
       descricao:
         'Liga, faz barulho, mas não arrefece nada desde ontem à noite. Já desliguei da tomada e voltei a ligar. É um Samsung de duas portas. Preciso de alguém que venha ver esta semana.',
       fotoUrl: null,
+      urgencia: 'esta-semana',
+      orcamentoTexto: 'Até 20.000 Kz',
       estado: 'aberto',
+      historico: [
+        { tipo: 'publicado', autorNome: 'Marta Kilamba', criadoEm: ha(180) },
+        { tipo: 'proposta', autorNome: 'Ivo Manuel', criadoEm: ha(120) },
+        { tipo: 'proposta', autorNome: 'António Kiala', criadoEm: ha(60) },
+      ],
       exemplo: false,
       criadoEm: ha(180),
     },
@@ -180,7 +187,14 @@ export function construirSemente(agora: Date = new Date()): Semente {
       descricao:
         'Quase todas as noites, por volta das 22h, o disjuntor geral dispara. De dia não acontece. Casa com ar condicionado em dois quartos.',
       fotoUrl: null,
+      urgencia: 'urgente',
+      orcamentoTexto: null,
       estado: 'acordado',
+      historico: [
+        { tipo: 'publicado', autorNome: 'Paulo Sebastião', criadoEm: ha(2 * DIA + 120) },
+        { tipo: 'proposta', autorNome: 'Neusa Domingos', criadoEm: ha(2 * DIA + 60) },
+        { tipo: 'aceite', autorNome: 'Neusa Domingos', criadoEm: ha(2 * DIA + 40), detalhe: 'Escolhida por Paulo Sebastião' },
+      ],
       exemplo: false,
       criadoEm: ha(2 * DIA + 120),
     },
@@ -195,7 +209,16 @@ export function construirSemente(agora: Date = new Date()): Semente {
       descricao:
         'Arca horizontal de 300 litros. Liga, mas não passa dos 0 graus. Tenho carne a estragar-se, é urgente.',
       fotoUrl: null,
+      urgencia: 'urgente',
+      orcamentoTexto: null,
       estado: 'concluido',
+      historico: [
+        { tipo: 'publicado', autorNome: 'Paulo Sebastião', criadoEm: ha(12 * DIA) },
+        { tipo: 'proposta', autorNome: 'Ivo Manuel', criadoEm: ha(12 * DIA - 90) },
+        { tipo: 'aceite', autorNome: 'Ivo Manuel', criadoEm: ha(12 * DIA - 120), detalhe: 'Escolhido por Paulo Sebastião' },
+        { tipo: 'concluido', autorNome: 'Paulo Sebastião', criadoEm: ha(11 * DIA + 60) },
+        { tipo: 'avaliado', autorNome: 'Paulo Sebastião', criadoEm: ha(11 * DIA), detalhe: '4/5 para Ivo Manuel' },
+      ],
       exemplo: false,
       criadoEm: ha(12 * DIA),
     },
@@ -210,7 +233,16 @@ export function construirSemente(agora: Date = new Date()): Semente {
       descricao:
         'Lava normalmente mas no fim a roupa sai encharcada. Faz um barulho estranho quando devia centrifugar.',
       fotoUrl: null,
+      urgencia: 'esta-semana',
+      orcamentoTexto: null,
       estado: 'concluido',
+      historico: [
+        { tipo: 'publicado', autorNome: 'Lúcia Tavares', criadoEm: ha(8 * DIA) },
+        { tipo: 'proposta', autorNome: 'Ivo Manuel', criadoEm: ha(8 * DIA - 60) },
+        { tipo: 'aceite', autorNome: 'Ivo Manuel', criadoEm: ha(8 * DIA - 90), detalhe: 'Escolhido por Lúcia Tavares' },
+        { tipo: 'concluido', autorNome: 'Lúcia Tavares', criadoEm: ha(7 * DIA + 30) },
+        { tipo: 'avaliado', autorNome: 'Lúcia Tavares', criadoEm: ha(7 * DIA - 60), detalhe: '5/5 para Ivo Manuel' },
+      ],
       exemplo: false,
       criadoEm: ha(8 * DIA),
     },
@@ -225,7 +257,16 @@ export function construirSemente(agora: Date = new Date()): Semente {
       descricao:
         'Já comprei a ventoinha. Preciso de quem a instale no sítio do candeeiro actual, com interruptor de velocidades.',
       fotoUrl: null,
+      urgencia: 'flexivel',
+      orcamentoTexto: 'Até 10.000 Kz',
       estado: 'concluido',
+      historico: [
+        { tipo: 'publicado', autorNome: 'Lúcia Tavares', criadoEm: ha(20 * DIA) },
+        { tipo: 'proposta', autorNome: 'Neusa Domingos', criadoEm: ha(20 * DIA - 120) },
+        { tipo: 'aceite', autorNome: 'Neusa Domingos', criadoEm: ha(20 * DIA - 150), detalhe: 'Escolhida por Lúcia Tavares' },
+        { tipo: 'concluido', autorNome: 'Lúcia Tavares', criadoEm: ha(19 * DIA + 60) },
+        { tipo: 'avaliado', autorNome: 'Lúcia Tavares', criadoEm: ha(19 * DIA), detalhe: '5/5 para Neusa Domingos' },
+      ],
       exemplo: false,
       criadoEm: ha(20 * DIA),
     },
@@ -349,6 +390,7 @@ export function construirSemente(agora: Date = new Date()): Semente {
   ];
 
   const avaliacoes: Avaliacao[] = [
+    // Clientes avaliam prestadores
     {
       id: 'aval-lucia-ivo',
       pedidoId: 'pedido-lucia-maquina',
@@ -356,6 +398,8 @@ export function construirSemente(agora: Date = new Date()): Semente {
       alvoNome: 'Ivo Manuel',
       alvoTipo: 'prestador',
       nota: 5,
+      dimensoes: { comunicacao: 5, pontualidade: 5, qualidade: 5 },
+      voltaria: true,
       comentario: 'Pontual, explicou o problema antes de mexer e deixou tudo limpo.',
       criadoEm: ha(7 * DIA - 60),
     },
@@ -366,6 +410,8 @@ export function construirSemente(agora: Date = new Date()): Semente {
       alvoNome: 'Ivo Manuel',
       alvoTipo: 'prestador',
       nota: 4,
+      dimensoes: { comunicacao: 5, pontualidade: 3, qualidade: 5 },
+      voltaria: true,
       comentario: 'Resolveu no próprio dia. Chegou com uma hora de atraso, mas avisou.',
       criadoEm: ha(11 * DIA),
     },
@@ -376,8 +422,47 @@ export function construirSemente(agora: Date = new Date()): Semente {
       alvoNome: 'Neusa Domingos',
       alvoTipo: 'prestador',
       nota: 5,
+      dimensoes: { comunicacao: 5, pontualidade: 5, qualidade: 5 },
+      voltaria: true,
       comentario: 'Rápida e cuidadosa. Deixou o regulador bem explicado.',
       criadoEm: ha(19 * DIA),
+    },
+    // Prestadores avaliam clientes — a confiança corre nos dois sentidos
+    {
+      id: 'aval-ivo-lucia',
+      pedidoId: 'pedido-lucia-maquina',
+      autorNome: 'Ivo Manuel',
+      alvoNome: 'Lúcia Tavares',
+      alvoTipo: 'cliente',
+      nota: 5,
+      dimensoes: { comunicacao: 5, pontualidade: 5, qualidade: 5 },
+      voltaria: true,
+      comentario: 'Pedido claro, estava em casa à hora combinada, pagou no fim.',
+      criadoEm: ha(7 * DIA - 90),
+    },
+    {
+      id: 'aval-ivo-paulo',
+      pedidoId: 'pedido-paulo-arca',
+      autorNome: 'Ivo Manuel',
+      alvoNome: 'Paulo Sebastião',
+      alvoTipo: 'cliente',
+      nota: 4,
+      dimensoes: { comunicacao: 4, pontualidade: 4, qualidade: 4 },
+      voltaria: true,
+      comentario: 'Tudo bem. A descrição podia ter dito a marca da arca.',
+      criadoEm: ha(11 * DIA - 30),
+    },
+    {
+      id: 'aval-neusa-lucia',
+      pedidoId: 'pedido-lucia-ventoinha',
+      autorNome: 'Neusa Domingos',
+      alvoNome: 'Lúcia Tavares',
+      alvoTipo: 'cliente',
+      nota: 5,
+      dimensoes: { comunicacao: 5, pontualidade: 5, qualidade: 5 },
+      voltaria: true,
+      comentario: '',
+      criadoEm: ha(19 * DIA - 30),
     },
   ];
 

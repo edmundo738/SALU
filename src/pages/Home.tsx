@@ -131,6 +131,21 @@ export function Home() {
         </Link>
       </section>
 
+      {/* -- O que é diferente (sem números inventados) -------------------- */}
+      <section className="grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-6 lg:grid-cols-4" aria-label="O que distingue o SALU">
+        {[
+          ['Quem começa aparece', 'Um perfil novo entra na pesquisa sem precisar de histórico.'],
+          ['Preço privado', 'O que combinam fica entre os dois, nunca em página pública.'],
+          ['Confiança a duas mãos', 'Clientes avaliam profissionais e profissionais avaliam clientes.'],
+          ['WhatsApp quando quiserem', 'A conversa fica registada; a saída para o WhatsApp é livre.'],
+        ].map(([titulo, texto]) => (
+          <div key={titulo}>
+            <p className="titulo-display text-xl leading-tight">{titulo}</p>
+            <p className="mt-1 text-sm leading-relaxed text-mute">{texto}</p>
+          </div>
+        ))}
+      </section>
+
       {/* -- Faixa de categorias ------------------------------------------ */}
       <section aria-label="Categorias" className="-mx-4 overflow-hidden border-y border-line py-3">
         <div className="marquee flex w-max gap-6 pr-6">
@@ -223,6 +238,23 @@ export function Home() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {pedidosRecentes.map((pedido) => (
             <PedidoCartao key={pedido.id} pedido={pedido} />
+          ))}
+        </div>
+      </section>
+
+      {/* -- Confiança ---------------------------------------------------- */}
+      <section>
+        <h2 className="seccao-titulo">Confiança, sem atalhos</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            ['Entrada sem barreiras', 'Não é preciso dinheiro, contactos nem portefólio para publicar um perfil. A reputação constrói-se trabalho a trabalho.'],
+            ['Responsabilidade dos dois lados', 'A avaliação tem três dimensões e corre nos dois sentidos. Uma nota diz quanto; as dimensões dizem porquê.'],
+            ['Denúncias com análise', 'Há um sítio para denunciar e um processo com direito a resposta. Uma denúncia não é uma condenação.'],
+          ].map(([titulo, texto]) => (
+            <div key={titulo} className="cartao p-5">
+              <p className="font-semibold">{titulo}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-mute">{texto}</p>
+            </div>
           ))}
         </div>
       </section>

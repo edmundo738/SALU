@@ -33,6 +33,8 @@ function pedidoValido(): PedidoEntrada {
     bairro: 'Centralidade do Kilamba',
     descricao: 'Liga mas não arrefece desde ontem.',
     fotoUrl: null,
+    urgencia: 'esta-semana',
+    orcamentoTexto: '',
   };
 }
 
@@ -75,6 +77,59 @@ describe('validarAvaliacao', () => {
 
   it('rejeita comentário acima de 300 caracteres', () => {
     expect(validarAvaliacao({ ...base, comentario: 'a'.repeat(301) }).valido).toBe(false);
+  });
+});
+
+describe('validarAvaliacao — dimensões', () => {
+  const base = {
+    pedidoId: 'd1',
+    autorNome: 'Marta Kilamba',
+    alvoNome: 'Ivo Manuel',
+    alvoTipo: 'prestador' as const,
+    nota: 4,
+    comentario: '',
+  };
+
+  it('aceita dimensões de 1 a 5', () => {
+    expect(
+      validarAvaliacao({ ...base, dimensoes: { comunicacao: 5, pontualidade: 3, qualidade: 4 }, voltaria: true }).valido,
+    ).toBe(true);
+  });
+
+  it('rejeita dimensão fora do intervalo', () => {
+    expect(
+      validarAvaliacao({ ...base, dimensoes: { comunicacao: 0, pontualidade: 3, qualidade: 4 } }).valido,
+    ).toBe(false);
+  });
+});
+
+describe('notaDasDimensoes', () => {
+  it('é a média arredondada, presa entre 1 e 5', async () => {
+    const { notaDasDimensoes } = await import('../src/domain/reputacao');
+    expect(notaDasDimensoes({ comunicacao: 5, pontualidade: 3, qualidade: 5 })).toBe(4);
+    expect(notaDasDimensoes({ comunicacao: 1, pontualidade: 1, qualidade: 1 })).toBe(1);
+  });
+});
+
+describe('calcularReputacao — dimensões e «voltaria»', () => {
+  it('calcula médias por dimensão e percentagem de «voltaria»', () => {
+    const resultado = calcularReputacao(
+      [
+        avaliacao({ dimensoes: { comunicacao: 5, pontualidade: 5, qualidade: 5 }, voltaria: true }),
+        avaliacao({ id: 'a2', dimensoes: { comunicacao: 5, pontualidade: 3, qualidade: 5 }, voltaria: false }),
+      ],
+      'Ivo Manuel',
+      'prestador',
+    );
+    expect(resultado.dimensoes.pontualidade).toBe(4);
+    expect(resultado.dimensoes.comunicacao).toBe(5);
+    expect(resultado.voltariaPct).toBe(50);
+  });
+
+  it('sem dimensões devolve null em vez de zero', () => {
+    const resultado = calcularReputacao([avaliacao()], 'Ivo Manuel', 'prestador');
+    expect(resultado.dimensoes.comunicacao).toBeNull();
+    expect(resultado.voltariaPct).toBeNull();
   });
 });
 
