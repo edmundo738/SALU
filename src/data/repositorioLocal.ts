@@ -1,5 +1,7 @@
 import type {
   AlvoTipo,
+  Avaliacao,
+  AvaliacaoEntrada,
   EventoContacto,
   FiltroPedidos,
   FiltroPerfis,
@@ -17,6 +19,7 @@ import { filtrarPedidos, filtrarPerfis } from '../domain/filtros';
 import {
   limparEntrada,
   limparPedido,
+  validarAvaliacao,
   validarMensagem,
   validarPedido,
   validarPerfil,
@@ -35,6 +38,7 @@ const CHAVE_PEDIDOS = 'salu:v2:pedidos';
 const CHAVE_CONTACTOS = 'salu:v2:contactos';
 const CHAVE_PROPOSTAS = 'salu:v2:propostas';
 const CHAVE_MENSAGENS = 'salu:v2:mensagens';
+const CHAVE_AVALIACOES = 'salu:v2:avaliacoes';
 
 function ler<T>(armazenamento: ArmazenamentoSimples, chave: string, omissao: T): T {
   const bruto = armazenamento.getItem(chave);
@@ -132,7 +136,10 @@ export class RepositorioLocal implements RepositorioSalu {
   }
 
   async listarPedidos(filtro: FiltroPedidos): Promise<Pedido[]> {
-    return ordenarPorRecencia(filtrarPedidos(this.lerPedidos(), filtro));
+    // Devolve todos os estados; o mural aplica «só abertos» por cima.
+    return ordenarPorRecencia(
+      filtrarPedidos(this.lerPedidos(), filtro, { apenasAbertos: false }),
+    );
   }
 
   async obterPedido(id: string): Promise<Pedido | null> {
@@ -163,9 +170,11 @@ export class RepositorioLocal implements RepositorioSalu {
   // -- propostas e conversa -------------------------------------------------
 
   async listarPropostas(): Promise<Proposta[]> {
-    return ordenarPorRecencia(
-      ler<Proposta[]>(this.armazenamento, CHAVE_PROPOSTAS, []),
+    // Propostas gravadas antes de existirem estados contam como pendentes.
+    const propostas = ler<Proposta[]>(this.armazenamento, CHAVE_PROPOSTAS, []).map(
+      (proposta) => ({ ...proposta, estado: proposta.estado ?? 'pendente' }),
     );
+    return ordenarPorRecencia(propostas);
   }
 
   async criarProposta(entrada: PropostaEntrada): Promise<Proposta> {
@@ -177,6 +186,7 @@ export class RepositorioLocal implements RepositorioSalu {
     const proposta: Proposta = {
       id: this.gerarId(),
       ...validacao.valor,
+      estado: 'pendente',
       criadoEm: this.agora(),
     };
 
@@ -209,6 +219,100 @@ export class RepositorioLocal implements RepositorioSalu {
     this.armazenamento.setItem(CHAVE_MENSAGENS, JSON.stringify([...existentes, mensagem]));
 
     return mensagem;
+  }
+
+  // -- decisão do cliente e conclusão ---------------------------------------
+
+  private lerPropostas(): Proposta[] {
+    return ler<Proposta[]>(this.armazenamento, CHAVE_PROPOSTAS, []).map((proposta) => ({
+      ...proposta,
+      estado: proposta.estado ?? 'pendente',
+    }));
+  }
+
+  private gravarPropostas(propostas: Proposta[]): void {
+    this.armazenamento.setItem(CHAVE_PROPOSTAS, JSON.stringify(propostas));
+  }
+
+  async aceitarProposta(pedidoId: string, propostaId: string): Promise<void> {
+    const pedidos = this.lerPedidos();
+    const pedido = pedidos.find((item) => item.id === pedidoId);
+
+    if (!pedido) throw new Error('Pedido não encontrado.');
+    if (pedido.estado !== 'aberto') throw new Error('Este pedido já não aceita propostas.');
+
+    const propostas = this.lerPropostas();
+    const escolhida = propostas.find(
+      (proposta) => proposta.id === propostaId && proposta.pedidoId === pedidoId,
+    );
+
+    if (!escolhida) throw new Error('Proposta não encontrada.');
+
+    this.gravarPropostas(
+      propostas.map((proposta) =>
+        proposta.pedidoId === pedidoId
+          ? { ...proposta, estado: proposta.id === propostaId ? 'aceite' : 'recusada' }
+          : proposta,
+      ),
+    );
+
+    this.gravarPedidos(
+      pedidos.map((item) => (item.id === pedidoId ? { ...item, estado: 'acordado' } : item)),
+    );
+  }
+
+  async concluirPedido(pedidoId: string): Promise<void> {
+    const pedidos = this.lerPedidos();
+    const pedido = pedidos.find((item) => item.id === pedidoId);
+
+    if (!pedido) throw new Error('Pedido não encontrado.');
+    if (pedido.estado !== 'acordado') {
+      throw new Error('Só um trabalho acordado pode ser marcado como concluído.');
+    }
+
+    this.gravarPedidos(
+      pedidos.map((item) => (item.id === pedidoId ? { ...item, estado: 'concluido' } : item)),
+    );
+  }
+
+  // -- avaliações -----------------------------------------------------------
+
+  async listarAvaliacoes(): Promise<Avaliacao[]> {
+    return ordenarPorRecencia(ler<Avaliacao[]>(this.armazenamento, CHAVE_AVALIACOES, []));
+  }
+
+  async criarAvaliacao(entrada: AvaliacaoEntrada): Promise<Avaliacao> {
+    const validacao = validarAvaliacao(entrada);
+    if (!validacao.valido) {
+      throw new Error(Object.values(validacao.erros)[0] ?? 'Avaliação inválida.');
+    }
+
+    const pedido = this.lerPedidos().find((item) => item.id === entrada.pedidoId);
+    if (!pedido) throw new Error('Pedido não encontrado.');
+    if (pedido.estado !== 'concluido') {
+      throw new Error('Só é possível avaliar um trabalho concluído.');
+    }
+
+    const existentes = ler<Avaliacao[]>(this.armazenamento, CHAVE_AVALIACOES, []);
+    const repetida = existentes.some(
+      (avaliacao) =>
+        avaliacao.pedidoId === entrada.pedidoId &&
+        avaliacao.autorNome.trim().toLowerCase() === validacao.valor.autorNome.toLowerCase(),
+    );
+    if (repetida) throw new Error('Já avaliou este trabalho.');
+
+    const avaliacao: Avaliacao = {
+      id: this.gerarId(),
+      ...validacao.valor,
+      criadoEm: this.agora(),
+    };
+
+    this.armazenamento.setItem(
+      CHAVE_AVALIACOES,
+      JSON.stringify([avaliacao, ...existentes]),
+    );
+
+    return avaliacao;
   }
 
   // -- contactos ------------------------------------------------------------

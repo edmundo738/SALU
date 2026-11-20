@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type {
   AlvoTipo,
+  Avaliacao,
+  AvaliacaoEntrada,
   EventoContacto,
   FiltroPedidos,
   FiltroPerfis,
@@ -27,6 +29,7 @@ interface EstadoApp {
   pedidos: Pedido[];
   propostas: Proposta[];
   mensagens: Mensagem[];
+  avaliacoes: Avaliacao[];
   contactos: EventoContacto[];
   filtro: FiltroPerfis;
   filtroPedidos: FiltroPedidos;
@@ -41,6 +44,9 @@ interface EstadoApp {
   publicarPedido: (entrada: PedidoEntrada) => Promise<Pedido>;
   enviarProposta: (entrada: PropostaEntrada) => Promise<Proposta>;
   enviarMensagem: (entrada: MensagemEntrada) => Promise<Mensagem>;
+  aceitarProposta: (pedidoId: string, propostaId: string) => Promise<void>;
+  concluirPedido: (pedidoId: string) => Promise<void>;
+  avaliar: (entrada: AvaliacaoEntrada) => Promise<Avaliacao>;
   registarContacto: (
     alvoTipo: AlvoTipo,
     alvoId: string,
@@ -54,6 +60,7 @@ export const useApp = create<EstadoApp>((set, get) => ({
   pedidos: [],
   propostas: [],
   mensagens: [],
+  avaliacoes: [],
   contactos: [],
   filtro: FILTRO_INICIAL,
   filtroPedidos: FILTRO_PEDIDOS_INICIAL,
@@ -68,13 +75,14 @@ export const useApp = create<EstadoApp>((set, get) => ({
     try {
       const repositorio = await criarRepositorio();
       // Uma única leitura sem filtro; a pesquisa é feita em memória pelo domínio.
-      const [perfis, pedidos, propostas, mensagens] = await Promise.all([
+      const [perfis, pedidos, propostas, mensagens, avaliacoes] = await Promise.all([
         repositorio.listarPerfis(FILTRO_INICIAL),
         repositorio.listarPedidos(FILTRO_PEDIDOS_INICIAL),
         repositorio.listarPropostas(),
         repositorio.listarMensagens(),
+        repositorio.listarAvaliacoes(),
       ]);
-      set({ perfis, pedidos, propostas, mensagens, estado: 'pronto' });
+      set({ perfis, pedidos, propostas, mensagens, avaliacoes, estado: 'pronto' });
     } catch (erro) {
       set({ estado: 'erro', erro: mensagemDeErro(erro) });
     }
@@ -124,6 +132,40 @@ export const useApp = create<EstadoApp>((set, get) => ({
     const mensagem = await repositorio.enviarMensagem(entrada);
     set({ mensagens: [...get().mensagens, mensagem] });
     return mensagem;
+  },
+
+  aceitarProposta: async (pedidoId, propostaId) => {
+    const repositorio = await criarRepositorio();
+    await repositorio.aceitarProposta(pedidoId, propostaId);
+
+    set({
+      pedidos: get().pedidos.map((pedido) =>
+        pedido.id === pedidoId ? { ...pedido, estado: 'acordado' } : pedido,
+      ),
+      propostas: get().propostas.map((proposta) =>
+        proposta.pedidoId !== pedidoId
+          ? proposta
+          : { ...proposta, estado: proposta.id === propostaId ? 'aceite' : 'recusada' },
+      ),
+    });
+  },
+
+  concluirPedido: async (pedidoId) => {
+    const repositorio = await criarRepositorio();
+    await repositorio.concluirPedido(pedidoId);
+
+    set({
+      pedidos: get().pedidos.map((pedido) =>
+        pedido.id === pedidoId ? { ...pedido, estado: 'concluido' } : pedido,
+      ),
+    });
+  },
+
+  avaliar: async (entrada) => {
+    const repositorio = await criarRepositorio();
+    const avaliacao = await repositorio.criarAvaliacao(entrada);
+    set({ avaliacoes: [avaliacao, ...get().avaliacoes] });
+    return avaliacao;
   },
 
   registarContacto: async (alvoTipo, alvoId, origem) => {

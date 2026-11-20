@@ -31,6 +31,10 @@ A ordem abaixo é uma **cadeia de dependências**, não uma lista de desejos.
 | Pedidos com fotografia e mural | Construído e verificado | Ciclo 2 (parcial) |
 | Contacto por WhatsApp com registo de evento | Construído e verificado | Transversal |
 | Sessão de demonstração | Construído — **não é autenticação** | Ciclo 1 (fachada) |
+| Propostas, aceitação pelo cliente | Construído em modo local | Ciclo 4 (versão de demonstração) |
+| Conversa dentro do pedido | Construído em modo local | Ciclo 5 (sem tempo real) |
+| Estados `aberto → acordado → concluido` | Construído em modo local | Ciclo 6 (sem `disputa`, sem confirmação dupla) |
+| Avaliação do prestador após conclusão | Construído em modo local | Ciclo 7 (só cliente→prestador; reputação = média + contagem) |
 | Base de dados partilhada | **Não existe** | Ciclo 0 |
 | Propostas, acordos, estados, avaliações, denúncias | **Não existem** | Ciclos 4–8 |
 

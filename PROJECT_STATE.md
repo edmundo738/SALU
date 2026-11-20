@@ -18,7 +18,7 @@ demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
 | Commits | `FACT` | 3 (`d80da2b` + alterações de estabilização por commitar) |
 | Ficheiros versionados | `MEASURED` | 55 antes desta fase |
 | Ecrãs | `MEASURED` | 11 rotas |
-| Testes | `MEASURED` | 53, todos verdes |
+| Testes | `MEASURED` | 66, todos verdes |
 | Build | `MEASURED` | `tsc --noEmit` limpo |
 | Bundle inicial | `MEASURED` | 72,7 kB gzip + 73 kB de fontes woff2 (+ 61 kB Supabase lazy) |
 | Modo de dados | `OBSERVED` | local |
@@ -109,9 +109,48 @@ Ciclo completo verificado no build de produção, numa só origem:
 cliente nunca via as propostas que recebia. A posse passou a ser guardada por nome
 (`salu:v2:pertence`), fora da sessão activa.
 
+### E8 — Ciclo do trabalho e avaliação `FACT`
+Estados do pedido: `aberto → acordado → concluido` (mais `cancelado`, sem interface
+ainda). Verificado no build de produção, num pedido criado de raiz para o teste:
+
+1. Cliente «Ana Teste» publica; prestador «Bruno Teste» propõe.
+2. Cliente volta, vê a proposta, **aceita** → pedido `acordado`, proposta `aceite`.
+3. Cliente **marca como concluído** → pedido `concluido`; a conversa fecha em leitura.
+4. Aparece o formulário de avaliação; nota 5 e comentário gravados com
+   `alvoNome: "Bruno Teste"`, `pedidoId` correcto.
+
+Regras garantidas no repositório local e nos testes: não se aceita em pedido que não
+esteja aberto; não se conclui sem acordo; não se avalia sem conclusão; uma avaliação por
+autor e por pedido. O mural só mostra pedidos `aberto`.
+
+`OBSERVED` — uma avaliação anterior ficou com nota 2 e alvo «Edmundo Bunga» num pedido em
+que o dono estava a interagir ao vivo durante a verificação automática. Causa não
+atribuível com certeza (interacção concorrente); o teste isolado acima é a evidência.
+
+### E9 — Ciclo completo em origem limpa, com recarga `FACT`
+Repetido em `localhost:5173` com `localStorage` apagado, sem interacção concorrente:
+«Ana Cliente» publica → «Bruno Técnico» propõe → Ana aceita (`acordado`) → conclui
+(`concluido`, conversa fechada) → avalia 5 com comentário, `alvoNome: "Bruno Técnico"`.
+Bruno cria perfil → o perfil mostra **5,0 · 1 trabalho avaliado** e o comentário em
+«O que dizem de Bruno». Depois de **recarregar a página**, uma terceira prestadora vê o
+pedido com selo «Concluído», aviso «já tem profissional», sem botão de WhatsApp e sem
+formulário de proposta. O pedido concluído não aparece no mural.
+
+Também adicionado: botão «Apagar dados e repor exemplos» na Área interna, para limpar o
+dispositivo antes de gravar ou apresentar.
+
 ---
 
 ## FAILED_EXPERIMENTS
+
+**F0 — Pedidos concluídos desapareciam ao recarregar.** `FACT` A leitura inicial da
+camada de dados aplicava o filtro do mural («só abertos»), por isso um pedido acordado ou
+concluído deixava de existir para o cliente e para o prestador escolhido assim que a
+página recarregava. Passou despercebido porque, sem recarregar, o estado em memória era
+actualizado no sítio. **Como foi apanhado:** ao verificar a vista de um terceiro num
+pedido concluído, a página mostrava «não encontrado». **Correcção:** a camada de dados
+devolve todos os estados; o filtro «só abertos» vive apenas no mural
+(`filtrarPedidos` com `apenasAbertos`, por omissão verdadeiro). Coberto por teste.
 
 **F1 — Preservar a sessão ao mudar de lado.** Primeira correcção tentava manter dados
 quando o tipo não mudava; a sessão já estava contaminada e o defeito persistiu. Abandonada

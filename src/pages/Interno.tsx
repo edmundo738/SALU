@@ -81,6 +81,32 @@ export function Interno() {
         houve resposta, trabalho feito ou pagamento — isso só se sabe perguntando às
         pessoas.
       </p>
+
+      {modo === 'local' && (
+        <section className="cartao mt-8 border-brand-600/30 p-5">
+          <h2 className="font-semibold">Repor a demonstração</h2>
+          <p className="mt-1 text-sm leading-relaxed text-mute">
+            Apaga tudo o que foi criado neste dispositivo — perfis, pedidos, propostas,
+            conversas, avaliações e sessão — e volta aos dados de exemplo. Usa antes de
+            gravar ou apresentar.
+          </p>
+          <button
+            type="button"
+            className="btn-secundario mt-4 border-brand-600/40 px-4 py-2 text-sm text-brand-700"
+            onClick={() => {
+              if (!window.confirm('Apagar todos os dados deste dispositivo e repor os exemplos?')) {
+                return;
+              }
+              for (const chave of Object.keys(window.localStorage)) {
+                if (chave.startsWith('salu:')) window.localStorage.removeItem(chave);
+              }
+              window.location.assign('/');
+            }}
+          >
+            Apagar dados e repor exemplos
+          </button>
+        </section>
+      )}
     </div>
   );
 }

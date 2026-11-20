@@ -14,10 +14,13 @@ export function Conversa({
   pedidoId,
   lado,
   autorNome,
+  fechada = false,
 }: {
   pedidoId: string;
   lado: LadoConversa;
   autorNome: string;
+  /** Trabalho concluído ou cancelado: a conversa fica em leitura. */
+  fechada?: boolean;
 }) {
   const mensagens = useApp((estado) => estado.mensagens);
   const enviarMensagem = useApp((estado) => estado.enviarMensagem);
@@ -99,6 +102,11 @@ export function Conversa({
           </ul>
         )}
 
+        {fechada ? (
+          <p className="border-t border-line bg-sand/60 px-4 py-3 text-xs text-mute">
+            Esta conversa está fechada porque o trabalho terminou. O histórico fica visível.
+          </p>
+        ) : (
         <form onSubmit={enviar} className="border-t border-line bg-sand/60 p-3">
           <label htmlFor={`mensagem-${pedidoId}`} className="sr-only">
             Escrever mensagem
@@ -125,6 +133,7 @@ export function Conversa({
           </div>
           {erro && <p className="mt-1.5 text-sm text-red-700">{erro}</p>}
         </form>
+        )}
       </div>
 
       <p className="mt-2 text-[11px] leading-relaxed text-mute">

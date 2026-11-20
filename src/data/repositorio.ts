@@ -1,5 +1,7 @@
 import type {
   AlvoTipo,
+  Avaliacao,
+  AvaliacaoEntrada,
   EventoContacto,
   FiltroPedidos,
   FiltroPerfis,
@@ -37,6 +39,13 @@ export interface RepositorioSalu {
 
   listarPropostas(): Promise<Proposta[]>;
   criarProposta(entrada: PropostaEntrada): Promise<Proposta>;
+  /** Aceita uma proposta, recusa as restantes do mesmo pedido e põe o pedido «acordado». */
+  aceitarProposta(pedidoId: string, propostaId: string): Promise<void>;
+  /** Passa o pedido de «acordado» a «concluído». */
+  concluirPedido(pedidoId: string): Promise<void>;
+
+  listarAvaliacoes(): Promise<Avaliacao[]>;
+  criarAvaliacao(entrada: AvaliacaoEntrada): Promise<Avaliacao>;
 
   listarMensagens(): Promise<Mensagem[]>;
   enviarMensagem(entrada: MensagemEntrada): Promise<Mensagem>;

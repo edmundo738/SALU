@@ -90,7 +90,16 @@ export interface FiltroPerfis {
 // Lado da procura
 // ---------------------------------------------------------------------------
 
-export type EstadoPedido = 'aberto' | 'fechado';
+/**
+ * Estados do pedido.
+ *
+ * `acordado` significa que o cliente escolheu uma proposta e o trabalho vai
+ * acontecer — não que já aconteceu. Essa distinção evita o erro mais comum
+ * destas plataformas: apresentar como concluído aquilo que só foi combinado.
+ */
+export type EstadoPedido = 'aberto' | 'acordado' | 'concluido' | 'cancelado';
+
+export type EstadoProposta = 'pendente' | 'aceite' | 'recusada';
 
 export interface Pedido {
   id: string;
@@ -166,6 +175,7 @@ export interface Proposta {
   mensagem: string;
   precoTexto: string;
   prazoTexto: string;
+  estado: EstadoProposta;
   criadoEm: string;
 }
 
@@ -193,6 +203,38 @@ export interface MensagemEntrada {
   lado: LadoConversa;
   autorNome: string;
   texto: string;
+}
+
+// ---------------------------------------------------------------------------
+// Avaliações
+// ---------------------------------------------------------------------------
+
+export type TipoAvaliado = 'prestador' | 'cliente';
+
+/**
+ * Uma avaliação só existe ligada a um pedido concluído.
+ *
+ * Não há avaliação livre: sem trabalho confirmado, uma nota é apenas uma
+ * opinião — e opiniões sem contexto destroem a confiança que o produto promete.
+ */
+export interface Avaliacao {
+  id: string;
+  pedidoId: string;
+  autorNome: string;
+  alvoNome: string;
+  alvoTipo: TipoAvaliado;
+  nota: number;
+  comentario: string;
+  criadoEm: string;
+}
+
+export interface AvaliacaoEntrada {
+  pedidoId: string;
+  autorNome: string;
+  alvoNome: string;
+  alvoTipo: TipoAvaliado;
+  nota: number;
+  comentario: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type {
   AlvoTipo,
+  Avaliacao,
+  AvaliacaoEntrada,
   CategoriaId,
   EventoContacto,
   FiltroPedidos,
@@ -19,6 +21,7 @@ import type {
 import {
   limparEntrada,
   limparPedido,
+  validarAvaliacao,
   validarMensagem,
   validarPedido,
   validarPerfil,
@@ -108,7 +111,12 @@ function paraPedido(linha: LinhaPedido): Pedido {
     bairro: linha.bairro,
     descricao: linha.descricao,
     fotoUrl: linha.foto_url,
-    estado: linha.estado === 'fechado' ? 'fechado' : 'aberto',
+    estado:
+      linha.estado === 'acordado' ||
+      linha.estado === 'concluido' ||
+      linha.estado === 'cancelado'
+        ? linha.estado
+        : 'aberto',
     exemplo: linha.exemplo,
     criadoEm: linha.criado_em,
   };
@@ -121,6 +129,7 @@ interface LinhaProposta {
   mensagem: string;
   preco_texto: string | null;
   prazo_texto: string | null;
+  estado: string;
   criado_em: string;
 }
 
@@ -141,6 +150,8 @@ function paraProposta(linha: LinhaProposta): Proposta {
     mensagem: linha.mensagem,
     precoTexto: linha.preco_texto ?? '',
     prazoTexto: linha.prazo_texto ?? '',
+    estado:
+      linha.estado === 'aceite' || linha.estado === 'recusada' ? linha.estado : 'pendente',
     criadoEm: linha.criado_em,
   };
 }
@@ -152,6 +163,30 @@ function paraMensagem(linha: LinhaMensagem): Mensagem {
     lado: linha.lado === 'cliente' ? 'cliente' : 'prestador',
     autorNome: linha.autor_nome,
     texto: linha.texto,
+    criadoEm: linha.criado_em,
+  };
+}
+
+interface LinhaAvaliacao {
+  id: string;
+  request_id: string;
+  autor_nome: string;
+  alvo_nome: string;
+  alvo_tipo: string;
+  nota: number;
+  comentario: string | null;
+  criado_em: string;
+}
+
+function paraAvaliacao(linha: LinhaAvaliacao): Avaliacao {
+  return {
+    id: linha.id,
+    pedidoId: linha.request_id,
+    autorNome: linha.autor_nome,
+    alvoNome: linha.alvo_nome,
+    alvoTipo: linha.alvo_tipo === 'cliente' ? 'cliente' : 'prestador',
+    nota: linha.nota,
+    comentario: linha.comentario ?? '',
     criadoEm: linha.criado_em,
   };
 }
@@ -249,7 +284,9 @@ export class RepositorioSupabase implements RepositorioSalu {
   }
 
   async listarPedidos(filtro: FiltroPedidos): Promise<Pedido[]> {
-    let consulta = this.cliente.from('requests').select('*').eq('estado', 'aberto');
+    // Sem filtro de estado: a política RLS já limita a «abertos ou meus», e um
+    // pedido acordado/concluído tem de continuar a abrir para quem lhe pertence.
+    let consulta = this.cliente.from('requests').select('*');
 
     if (filtro.categoria !== 'todas') consulta = consulta.eq('categoria', filtro.categoria);
     if (filtro.municipio !== 'todos') consulta = consulta.eq('municipio', filtro.municipio);
@@ -351,6 +388,83 @@ export class RepositorioSupabase implements RepositorioSalu {
 
     if (error) throw new Error(`Não foi possível enviar a proposta: ${error.message}`);
     return paraProposta(data as LinhaProposta);
+  }
+
+  /**
+   * LIMITAÇÃO CONHECIDA: são três chamadas separadas, portanto não atómicas.
+   * Se a segunda falhar, o pedido fica com a proposta aceite e as outras por
+   * recusar. Corrigir com uma função Postgres (`rpc`) antes de abrir a estranhos.
+   */
+  async aceitarProposta(pedidoId: string, propostaId: string): Promise<void> {
+    const { error: erroAceite } = await this.cliente
+      .from('proposals')
+      .update({ estado: 'aceite' })
+      .eq('id', propostaId)
+      .eq('request_id', pedidoId);
+
+    if (erroAceite) throw new Error(`Não foi possível aceitar: ${erroAceite.message}`);
+
+    await this.cliente
+      .from('proposals')
+      .update({ estado: 'recusada' })
+      .eq('request_id', pedidoId)
+      .neq('id', propostaId);
+
+    const { error: erroPedido } = await this.cliente
+      .from('requests')
+      .update({ estado: 'acordado' })
+      .eq('id', pedidoId)
+      .eq('estado', 'aberto');
+
+    if (erroPedido) throw new Error(`Não foi possível actualizar o pedido: ${erroPedido.message}`);
+  }
+
+  async concluirPedido(pedidoId: string): Promise<void> {
+    const { error } = await this.cliente
+      .from('requests')
+      .update({ estado: 'concluido' })
+      .eq('id', pedidoId)
+      .eq('estado', 'acordado');
+
+    if (error) throw new Error(`Não foi possível concluir: ${error.message}`);
+  }
+
+  async listarAvaliacoes(): Promise<Avaliacao[]> {
+    const { data, error } = await this.cliente
+      .from('reviews')
+      .select('*')
+      .order('criado_em', { ascending: false })
+      .limit(500);
+
+    if (error) throw new Error(`Não foi possível carregar as avaliações: ${error.message}`);
+    return ((data ?? []) as LinhaAvaliacao[]).map(paraAvaliacao);
+  }
+
+  async criarAvaliacao(entrada: AvaliacaoEntrada): Promise<Avaliacao> {
+    const validacao = validarAvaliacao(entrada);
+    if (!validacao.valido) {
+      throw new Error(Object.values(validacao.erros)[0] ?? 'Avaliação inválida.');
+    }
+
+    const { data: sessao } = await this.cliente.auth.getUser();
+    if (!sessao.user) throw new Error('É necessário entrar na conta para avaliar.');
+
+    const { data, error } = await this.cliente
+      .from('reviews')
+      .insert({
+        auth_user_id: sessao.user.id,
+        request_id: entrada.pedidoId,
+        autor_nome: validacao.valor.autorNome,
+        alvo_nome: validacao.valor.alvoNome,
+        alvo_tipo: validacao.valor.alvoTipo,
+        nota: validacao.valor.nota,
+        comentario: validacao.valor.comentario || null,
+      })
+      .select('*')
+      .single();
+
+    if (error) throw new Error(`Não foi possível guardar a avaliação: ${error.message}`);
+    return paraAvaliacao(data as LinhaAvaliacao);
   }
 
   async listarMensagens(): Promise<Mensagem[]> {

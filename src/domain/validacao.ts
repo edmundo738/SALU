@@ -1,5 +1,6 @@
 import { CATEGORIA_IDS, MUNICIPIOS } from './types';
 import type {
+  AvaliacaoEntrada,
   CategoriaId,
   Municipio,
   PedidoEntrada,
@@ -219,6 +220,44 @@ export function validarProposta(
 
   if (valor.prazoTexto.length > 40) {
     erros.prazoTexto = 'O prazo não pode ter mais de 40 caracteres.';
+  }
+
+  return { valido: Object.keys(erros).length === 0, erros, valor };
+}
+
+// ---------------------------------------------------------------------------
+// Avaliação
+// ---------------------------------------------------------------------------
+
+export type ErrosAvaliacao = Partial<Record<keyof AvaliacaoEntrada, string>>;
+
+export function validarAvaliacao(
+  entrada: AvaliacaoEntrada,
+): ResultadoValidacao<AvaliacaoEntrada> {
+  const valor: AvaliacaoEntrada = {
+    pedidoId: entrada.pedidoId,
+    autorNome: limpar(entrada.autorNome),
+    alvoNome: limpar(entrada.alvoNome),
+    alvoTipo: entrada.alvoTipo,
+    nota: entrada.nota,
+    comentario: entrada.comentario.trim(),
+  };
+  const erros: ErrosAvaliacao = {};
+
+  if (valor.autorNome.length < LIMITES.nome.min) {
+    erros.autorNome = 'Indique o seu nome.';
+  }
+
+  if (valor.alvoNome.length < LIMITES.nome.min) {
+    erros.alvoNome = 'Avaliação sem destinatário.';
+  }
+
+  if (!Number.isInteger(valor.nota) || valor.nota < 1 || valor.nota > 5) {
+    erros.nota = 'Escolha uma nota de 1 a 5.';
+  }
+
+  if (valor.comentario.length > 300) {
+    erros.comentario = 'O comentário não pode ter mais de 300 caracteres.';
   }
 
   return { valido: Object.keys(erros).length === 0, erros, valor };

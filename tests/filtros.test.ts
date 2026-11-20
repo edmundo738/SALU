@@ -97,7 +97,8 @@ describe('filtrarPedidos', () => {
     expect(filtrarPedidos(pedidos, { ...FILTRO_VAZIO, municipio: 'Viana' })).toHaveLength(0);
   });
 
-  it('esconde pedidos fechados — o mural só mostra o que está aberto', () => {
-    expect(filtrarPedidos([pedido({ estado: 'fechado' })], FILTRO_VAZIO)).toHaveLength(0);
+  it('esconde pedidos que já não estão abertos — o mural só mostra o que procura profissional', () => {
+    expect(filtrarPedidos([pedido({ estado: 'acordado' })], FILTRO_VAZIO)).toHaveLength(0);
+    expect(filtrarPedidos([pedido({ estado: 'concluido' })], FILTRO_VAZIO)).toHaveLength(0);
   });
 });

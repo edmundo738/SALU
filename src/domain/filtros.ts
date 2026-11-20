@@ -45,8 +45,20 @@ export function filtrarPerfis(perfis: Perfil[], filtro: FiltroPerfis): Perfil[] 
   return perfis.filter((perfil) => perfilCorresponde(perfil, filtro));
 }
 
-export function pedidoCorresponde(pedido: Pedido, filtro: FiltroPedidos): boolean {
-  if (pedido.estado !== 'aberto') return false;
+/**
+ * `apenasAbertos` distingue dois usos:
+ * - o mural (por omissão) só mostra pedidos à procura de profissional;
+ * - a camada de dados carrega **todos**, porque um pedido acordado ou concluído
+ *   continua a ter de abrir para o cliente, para o prestador escolhido e para
+ *   quem o visite — senão desaparece ao recarregar a página.
+ */
+export function pedidoCorresponde(
+  pedido: Pedido,
+  filtro: FiltroPedidos,
+  opcoes: { apenasAbertos?: boolean } = {},
+): boolean {
+  const { apenasAbertos = true } = opcoes;
+  if (apenasAbertos && pedido.estado !== 'aberto') return false;
 
   if (filtro.categoria !== 'todas' && pedido.categoria !== filtro.categoria) {
     return false;
@@ -62,6 +74,10 @@ export function pedidoCorresponde(pedido: Pedido, filtro: FiltroPedidos): boolea
   );
 }
 
-export function filtrarPedidos(pedidos: Pedido[], filtro: FiltroPedidos): Pedido[] {
-  return pedidos.filter((pedido) => pedidoCorresponde(pedido, filtro));
+export function filtrarPedidos(
+  pedidos: Pedido[],
+  filtro: FiltroPedidos,
+  opcoes: { apenasAbertos?: boolean } = {},
+): Pedido[] {
+  return pedidos.filter((pedido) => pedidoCorresponde(pedido, filtro, opcoes));
 }

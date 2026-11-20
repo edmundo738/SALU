@@ -6,6 +6,7 @@ import { obterCategoria } from '../domain/categorias';
 import { formatarTelefone } from '../domain/telefone';
 import { construirLinkWhatsApp } from '../domain/whatsapp';
 import { iniciais } from '../lib/formato';
+import { calcularReputacao } from '../domain/reputacao';
 import { IconeCategoria } from '../components/IconeCategoria';
 
 export function PerfilPublico() {
@@ -14,6 +15,7 @@ export function PerfilPublico() {
   const carregar = useApp((estado) => estado.carregar);
   const estado = useApp((estado) => estado.estado);
   const registarContacto = useApp((estado) => estado.registarContacto);
+  const avaliacoes = useApp((estado) => estado.avaliacoes);
   const sessao = useSessao((estado) => estado.sessao);
 
   const [contactado, setContactado] = useState(false);
@@ -40,6 +42,16 @@ export function PerfilPublico() {
   }
 
   const categoria = obterCategoria(perfil.categoria);
+  const reputacao = calcularReputacao(avaliacoes, perfil.nome, 'prestador');
+  const criticas = avaliacoes
+    .filter(
+      (avaliacao) =>
+        avaliacao.alvoTipo === 'prestador' &&
+        avaliacao.alvoNome.trim().toLowerCase() === perfil.nome.trim().toLowerCase() &&
+        avaliacao.comentario.trim() !== '',
+    )
+    .slice(0, 3);
+
   const linkWhatsApp = construirLinkWhatsApp({
     telefone: perfil.telefone,
     nome: perfil.nome,
@@ -81,6 +93,22 @@ export function PerfilPublico() {
           <p className="mt-0.5 text-sm text-mute">
             {perfil.bairro} · {perfil.municipio}
           </p>
+
+          <p className="mt-2 flex items-baseline gap-1.5 text-sm">
+            {reputacao.media !== null ? (
+              <>
+                <span className="numeral text-lg leading-none">
+                  {reputacao.media.toFixed(1).replace('.', ',')}
+                </span>
+                <span className="text-mute">
+                  · {reputacao.total}{' '}
+                  {reputacao.total === 1 ? 'trabalho avaliado' : 'trabalhos avaliados'}
+                </span>
+              </>
+            ) : (
+              <span className="text-mute">Ainda sem avaliações</span>
+            )}
+          </p>
         </div>
       </header>
 
@@ -93,6 +121,27 @@ export function PerfilPublico() {
       <p className="mt-6 whitespace-pre-line text-[17px] leading-[1.7] text-ink-soft">
         {perfil.descricao}
       </p>
+
+      {criticas.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">
+            O que dizem de {perfil.nome.split(' ')[0]}
+          </h2>
+          <ul className="mt-2 space-y-2">
+            {criticas.map((avaliacao) => (
+              <li key={avaliacao.id} className="cartao p-4">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-sm font-semibold">{avaliacao.autorNome}</span>
+                  <span className="numeral text-sm text-brand-700">{avaliacao.nota}/5</span>
+                </div>
+                <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+                  {avaliacao.comentario}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {perfil.precoTexto && (
         <dl className="mt-6 flex items-baseline justify-between border-y border-line py-3">
