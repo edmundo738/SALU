@@ -131,6 +131,16 @@ protótipo; inaceitável com utilizadores reais.
 | D3 | Gravar vídeo de reserva | Edmundo |
 | D4 | Enviar `git push` para o GitHub | Edmundo |
 
+**Visão completa (pós-concurso)** — plano em `docs/CICLOS.md`. As decisões que bloqueiam a
+arquitectura:
+
+| # | Decisão | Efeito |
+|---|---|---|
+| C1 | Chat interno ou só acordo estruturado | Chat livre = +3 semanas e moderação contínua |
+| C2 | Canal de notificações (in-app, email ou push) | Bloqueia o ciclo de propostas |
+| C3 | Permitir publicar pedido antes de criar conta | Reduz fricção, aumenta spam |
+| C7 | Denúncias e política de conteúdo antes do piloto | Impede abertura pública sem isto |
+
 ---
 
 ## NEXT_ACTION
