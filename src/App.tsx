@@ -1,8 +1,15 @@
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { Encontrar } from './pages/Encontrar';
-import { Publicar } from './pages/Publicar';
+import { Home } from './pages/Home';
+import { Entrar } from './pages/Entrar';
+import { Explorar } from './pages/Explorar';
+import { Pedidos } from './pages/Pedidos';
+import { PedidoDetalhe } from './pages/PedidoDetalhe';
+import { PublicarPedido } from './pages/PublicarPedido';
+import { PublicarPerfil } from './pages/PublicarPerfil';
 import { PerfilPublico } from './pages/PerfilPublico';
+import { MinhaArea } from './pages/MinhaArea';
+import { Planos } from './pages/Planos';
 import { Interno } from './pages/Interno';
 import { NaoEncontrado } from './pages/NaoEncontrado';
 
@@ -10,9 +17,21 @@ export function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Encontrar />} />
-        <Route path="publicar" element={<Publicar />} />
+        <Route index element={<Home />} />
+        <Route path="entrar" element={<Entrar />} />
+
+        {/* Lado da oferta */}
+        <Route path="explorar" element={<Explorar />} />
+        <Route path="perfil/novo" element={<PublicarPerfil />} />
         <Route path="perfil/:id" element={<PerfilPublico />} />
+
+        {/* Lado da procura */}
+        <Route path="pedidos" element={<Pedidos />} />
+        <Route path="pedidos/:id" element={<PedidoDetalhe />} />
+        <Route path="publicar-pedido" element={<PublicarPedido />} />
+
+        <Route path="minha-area" element={<MinhaArea />} />
+        <Route path="planos" element={<Planos />} />
         <Route path="interno" element={<Interno />} />
         <Route path="*" element={<NaoEncontrado />} />
       </Route>

@@ -16,7 +16,6 @@
 
   body {
     @apply bg-sand text-ink antialiased;
-    font-feature-settings: 'ss01' 1;
   }
 
   :focus-visible {
@@ -51,7 +50,28 @@
            bg-paper px-5 py-3 font-medium text-ink transition hover:border-ink/30;
   }
 
+  .cartao {
+    @apply rounded-2xl border border-line bg-paper;
+  }
+
   .selo {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper
+           px-3 py-1.5 text-sm transition hover:border-ink/30;
+  }
+
+  .chip-ativo {
+    @apply border-ink bg-ink text-sand hover:border-ink;
+  }
+
+  .seccao-titulo {
+    @apply text-lg font-bold sm:text-xl;
+  }
+
+  .link-seta {
+    @apply inline-flex items-center gap-1 text-sm font-medium text-forest-600 hover:text-forest-700;
   }
 }

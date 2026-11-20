@@ -1,28 +1,37 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type {
+  AlvoTipo,
   CategoriaId,
   EventoContacto,
+  FiltroPedidos,
   FiltroPerfis,
   Municipio,
   OrigemContacto,
+  Pedido,
+  PedidoEntrada,
   Perfil,
   PerfilEntrada,
 } from '../domain/types';
-import { limparEntrada, validarPerfil } from '../domain/validacao';
+import {
+  limparEntrada,
+  limparPedido,
+  validarPedido,
+  validarPerfil,
+} from '../domain/validacao';
 import type { RepositorioSalu } from './repositorio';
 
 /**
  * Adaptador Supabase — o caminho de produção.
  *
- * ESTADO: escrito e compilado, mas NÃO testado contra um projecto Supabase real.
- * Ver docs/DATA_MODEL.md, secção «O que ainda não está verificado».
+ * ESTADO: escrito e compilado, mas NUNCA testado contra um projecto Supabase
+ * real. A demonstração do concurso corre no adaptador local. Ver a secção
+ * «O que ainda não está verificado» em docs/MODELO_DE_DADOS.md.
  *
- * Duas limitações conhecidas e deliberadas no incremento 1:
- *  1. `criarPerfil` exige sessão autenticada, porque a política RLS de INSERT
- *     usa `auth.uid()`. A entrada de conta é o incremento seguinte; até lá o
- *     modo Supabase é só de leitura.
- *  2. `listarContactos` devolve apenas o que as políticas permitem ao utilizador
- *     actual. Sem sessão, devolve lista vazia.
+ * Limitações conhecidas:
+ *  1. `criarPerfil` e `criarPedido` exigem sessão autenticada, porque as
+ *     políticas RLS usam `auth.uid()`. A autenticação não está implementada.
+ *  2. `listarContactos` devolve apenas o que as políticas permitem ao
+ *     utilizador actual. Sem sessão, devolve lista vazia.
  */
 
 interface LinhaPerfil {
@@ -35,14 +44,31 @@ interface LinhaPerfil {
   oficio: string;
   descricao: string;
   preco_texto: string | null;
+  foto_url: string | null;
   disponivel: boolean;
+  exemplo: boolean;
+  criado_em: string;
+}
+
+interface LinhaPedido {
+  id: string;
+  autor_nome: string;
+  autor_telefone: string;
+  titulo: string;
+  categoria: string;
+  municipio: string;
+  bairro: string;
+  descricao: string;
+  foto_url: string | null;
+  estado: string;
   exemplo: boolean;
   criado_em: string;
 }
 
 interface LinhaContacto {
   id: string;
-  profile_id: string;
+  alvo_tipo: string;
+  alvo_id: string;
   origem: string;
   criado_em: string;
 }
@@ -58,7 +84,25 @@ function paraPerfil(linha: LinhaPerfil): Perfil {
     oficio: linha.oficio,
     descricao: linha.descricao,
     precoTexto: linha.preco_texto,
+    fotoUrl: linha.foto_url,
     disponivel: linha.disponivel,
+    exemplo: linha.exemplo,
+    criadoEm: linha.criado_em,
+  };
+}
+
+function paraPedido(linha: LinhaPedido): Pedido {
+  return {
+    id: linha.id,
+    autorNome: linha.autor_nome,
+    autorTelefone: linha.autor_telefone,
+    titulo: linha.titulo,
+    categoria: linha.categoria as CategoriaId,
+    municipio: linha.municipio as Municipio,
+    bairro: linha.bairro,
+    descricao: linha.descricao,
+    fotoUrl: linha.foto_url,
+    estado: linha.estado === 'fechado' ? 'fechado' : 'aberto',
     exemplo: linha.exemplo,
     criadoEm: linha.criado_em,
   };
@@ -67,7 +111,8 @@ function paraPerfil(linha: LinhaPerfil): Perfil {
 function paraContacto(linha: LinhaContacto): EventoContacto {
   return {
     id: linha.id,
-    perfilId: linha.profile_id,
+    alvoTipo: linha.alvo_tipo as AlvoTipo,
+    alvoId: linha.alvo_id,
     origem: linha.origem as OrigemContacto,
     criadoEm: linha.criado_em,
   };
@@ -89,18 +134,10 @@ export class RepositorioSupabase implements RepositorioSalu {
   }
 
   async listarPerfis(filtro: FiltroPerfis): Promise<Perfil[]> {
-    let consulta = this.cliente
-      .from('profiles')
-      .select('*')
-      .eq('disponivel', true);
+    let consulta = this.cliente.from('profiles').select('*').eq('disponivel', true);
 
-    if (filtro.categoria !== 'todas') {
-      consulta = consulta.eq('categoria', filtro.categoria);
-    }
-
-    if (filtro.municipio !== 'todos') {
-      consulta = consulta.eq('municipio', filtro.municipio);
-    }
+    if (filtro.categoria !== 'todas') consulta = consulta.eq('categoria', filtro.categoria);
+    if (filtro.municipio !== 'todos') consulta = consulta.eq('municipio', filtro.municipio);
 
     const termo = limparTermoPesquisa(filtro.texto);
     if (termo !== '') {
@@ -111,10 +148,7 @@ export class RepositorioSupabase implements RepositorioSalu {
     }
 
     const { data, error } = await consulta.order('criado_em', { ascending: false }).limit(200);
-
-    if (error) {
-      throw new Error(`Não foi possível carregar os perfis: ${error.message}`);
-    }
+    if (error) throw new Error(`Não foi possível carregar os perfis: ${error.message}`);
 
     return ((data ?? []) as LinhaPerfil[]).map(paraPerfil);
   }
@@ -126,10 +160,7 @@ export class RepositorioSupabase implements RepositorioSalu {
       .eq('id', id)
       .maybeSingle();
 
-    if (error) {
-      throw new Error(`Não foi possível carregar o perfil: ${error.message}`);
-    }
-
+    if (error) throw new Error(`Não foi possível carregar o perfil: ${error.message}`);
     return data ? paraPerfil(data as LinhaPerfil) : null;
   }
 
@@ -142,7 +173,7 @@ export class RepositorioSupabase implements RepositorioSalu {
     const { data: sessao } = await this.cliente.auth.getUser();
     if (!sessao.user) {
       throw new Error(
-        'Para publicar um perfil é necessário entrar na conta. A entrada de conta ainda não está implementada nesta versão.',
+        'Para publicar é necessário entrar na conta. A autenticação não está implementada nesta versão.',
       );
     }
 
@@ -160,28 +191,93 @@ export class RepositorioSupabase implements RepositorioSalu {
         oficio: limpa.oficio,
         descricao: limpa.descricao,
         preco_texto: limpa.precoTexto === '' ? null : limpa.precoTexto,
+        foto_url: limpa.fotoUrl,
       })
       .select('*')
       .single();
 
-    if (error) {
-      throw new Error(`Não foi possível publicar o perfil: ${error.message}`);
-    }
-
+    if (error) throw new Error(`Não foi possível publicar o perfil: ${error.message}`);
     return paraPerfil(data as LinhaPerfil);
   }
 
-  async registarContacto(perfilId: string, origem: OrigemContacto): Promise<EventoContacto> {
+  async listarPedidos(filtro: FiltroPedidos): Promise<Pedido[]> {
+    let consulta = this.cliente.from('requests').select('*').eq('estado', 'aberto');
+
+    if (filtro.categoria !== 'todas') consulta = consulta.eq('categoria', filtro.categoria);
+    if (filtro.municipio !== 'todos') consulta = consulta.eq('municipio', filtro.municipio);
+
+    const termo = limparTermoPesquisa(filtro.texto);
+    if (termo !== '') {
+      const padrao = `%${termo}%`;
+      consulta = consulta.or(
+        `titulo.ilike.${padrao},descricao.ilike.${padrao},bairro.ilike.${padrao}`,
+      );
+    }
+
+    const { data, error } = await consulta.order('criado_em', { ascending: false }).limit(200);
+    if (error) throw new Error(`Não foi possível carregar os pedidos: ${error.message}`);
+
+    return ((data ?? []) as LinhaPedido[]).map(paraPedido);
+  }
+
+  async obterPedido(id: string): Promise<Pedido | null> {
     const { data, error } = await this.cliente
-      .from('contact_events')
-      .insert({ profile_id: perfilId, origem })
+      .from('requests')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw new Error(`Não foi possível carregar o pedido: ${error.message}`);
+    return data ? paraPedido(data as LinhaPedido) : null;
+  }
+
+  async criarPedido(entrada: PedidoEntrada): Promise<Pedido> {
+    const validacao = validarPedido(entrada);
+    if (!validacao.valido) {
+      throw new Error(Object.values(validacao.erros)[0] ?? 'Dados inválidos.');
+    }
+
+    const { data: sessao } = await this.cliente.auth.getUser();
+    if (!sessao.user) {
+      throw new Error(
+        'Para publicar é necessário entrar na conta. A autenticação não está implementada nesta versão.',
+      );
+    }
+
+    const limpa = limparPedido(validacao.valor);
+
+    const { data, error } = await this.cliente
+      .from('requests')
+      .insert({
+        auth_user_id: sessao.user.id,
+        autor_nome: limpa.autorNome,
+        autor_telefone: limpa.autorTelefone,
+        titulo: limpa.titulo,
+        categoria: limpa.categoria,
+        municipio: limpa.municipio,
+        bairro: limpa.bairro,
+        descricao: limpa.descricao,
+        foto_url: limpa.fotoUrl,
+      })
       .select('*')
       .single();
 
-    if (error) {
-      throw new Error(`Não foi possível registar o contacto: ${error.message}`);
-    }
+    if (error) throw new Error(`Não foi possível publicar o pedido: ${error.message}`);
+    return paraPedido(data as LinhaPedido);
+  }
 
+  async registarContacto(
+    alvoTipo: AlvoTipo,
+    alvoId: string,
+    origem: OrigemContacto,
+  ): Promise<EventoContacto> {
+    const { data, error } = await this.cliente
+      .from('contact_events')
+      .insert({ alvo_tipo: alvoTipo, alvo_id: alvoId, origem })
+      .select('*')
+      .single();
+
+    if (error) throw new Error(`Não foi possível registar o contacto: ${error.message}`);
     return paraContacto(data as LinhaContacto);
   }
 
@@ -192,10 +288,8 @@ export class RepositorioSupabase implements RepositorioSalu {
       .order('criado_em', { ascending: false })
       .limit(200);
 
-    if (error) {
-      // Sem sessão, as políticas devolvem vazio — não é uma falha da aplicação.
-      return [];
-    }
+    // Sem sessão, as políticas devolvem vazio — não é uma falha da aplicação.
+    if (error) return [];
 
     return ((data ?? []) as LinhaContacto[]).map(paraContacto);
   }

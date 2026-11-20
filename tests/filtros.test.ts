@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { filtrarPerfis, normalizarTexto } from '../src/domain/filtros';
-import type { Perfil } from '../src/domain/types';
+import { filtrarPedidos, filtrarPerfis, normalizarTexto } from '../src/domain/filtros';
+import type { Pedido, Perfil } from '../src/domain/types';
 
 function perfil(alteracoes: Partial<Perfil> = {}): Perfil {
   return {
@@ -9,11 +9,30 @@ function perfil(alteracoes: Partial<Perfil> = {}): Perfil {
     telefone: '244923456789',
     municipio: 'Luanda',
     bairro: 'Maianga',
-    categoria: 'informatica',
+    categoria: 'tecnologia',
     oficio: 'Reparação de computadores',
     descricao: 'Reparo computadores e telemóveis em casa do cliente.',
     precoTexto: null,
+    fotoUrl: null,
     disponivel: true,
+    exemplo: false,
+    criadoEm: '2026-11-20T10:00:00.000Z',
+    ...alteracoes,
+  };
+}
+
+function pedido(alteracoes: Partial<Pedido> = {}): Pedido {
+  return {
+    id: 'd1',
+    autorNome: 'Cliente',
+    autorTelefone: '244923456789',
+    titulo: 'O frigorífico deixou de refrigerar',
+    categoria: 'reparacoes',
+    municipio: 'Luanda',
+    bairro: 'Maianga',
+    descricao: 'Liga mas não arrefece desde ontem.',
+    fotoUrl: null,
+    estado: 'aberto',
     exemplo: false,
     criadoEm: '2026-11-20T10:00:00.000Z',
     ...alteracoes,
@@ -62,5 +81,23 @@ describe('filtrarPerfis', () => {
   it('esconde perfis indisponíveis', () => {
     const perfis = [perfil({ disponivel: false })];
     expect(filtrarPerfis(perfis, FILTRO_VAZIO)).toHaveLength(0);
+  });
+});
+
+describe('filtrarPedidos', () => {
+  it('encontra pelo título, sem acentos', () => {
+    expect(filtrarPedidos([pedido()], { ...FILTRO_VAZIO, texto: 'frigorifico' })).toHaveLength(1);
+  });
+
+  it('filtra por categoria e por município', () => {
+    const pedidos = [pedido(), pedido({ id: 'd2', categoria: 'design', municipio: 'Talatona' })];
+
+    expect(filtrarPedidos(pedidos, { ...FILTRO_VAZIO, categoria: 'design' })).toHaveLength(1);
+    expect(filtrarPedidos(pedidos, { ...FILTRO_VAZIO, municipio: 'Talatona' })).toHaveLength(1);
+    expect(filtrarPedidos(pedidos, { ...FILTRO_VAZIO, municipio: 'Viana' })).toHaveLength(0);
+  });
+
+  it('esconde pedidos fechados — o mural só mostra o que está aberto', () => {
+    expect(filtrarPedidos([pedido({ estado: 'fechado' })], FILTRO_VAZIO)).toHaveLength(0);
   });
 });

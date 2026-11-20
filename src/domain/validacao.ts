@@ -1,14 +1,15 @@
 import { CATEGORIA_IDS, MUNICIPIOS } from './types';
-import type { CategoriaId, Municipio, PerfilEntrada } from './types';
+import type { CategoriaId, Municipio, PedidoEntrada, PerfilEntrada } from './types';
 import { normalizarTelefone } from './telefone';
 
 export type ErrosPerfil = Partial<Record<keyof PerfilEntrada, string>>;
+export type ErrosPedido = Partial<Record<keyof PedidoEntrada, string>>;
 
-export interface ResultadoValidacao {
+export interface ResultadoValidacao<T> {
   valido: boolean;
-  erros: ErrosPerfil;
+  erros: Partial<Record<keyof T, string>>;
   /** Entrada já limpa (trim, telefone normalizado). Só faz sentido quando `valido`. */
-  valor: PerfilEntrada;
+  valor: T;
 }
 
 const LIMITES = {
@@ -17,18 +18,29 @@ const LIMITES = {
   bairro: { min: 2, max: 60 },
   descricao: { min: 20, max: 400 },
   precoTexto: { max: 40 },
+  tituloPedido: { min: 4, max: 80 },
+  descricaoPedido: { min: 15, max: 500 },
 } as const;
+
+function limpar(texto: string): string {
+  return texto.trim().replace(/\s+/g, ' ');
+}
+
+// ---------------------------------------------------------------------------
+// Perfil (lado da oferta)
+// ---------------------------------------------------------------------------
 
 export function limparEntrada(entrada: PerfilEntrada): PerfilEntrada {
   return {
-    nome: entrada.nome.trim().replace(/\s+/g, ' '),
+    nome: limpar(entrada.nome),
     telefone: normalizarTelefone(entrada.telefone) ?? entrada.telefone.trim(),
     municipio: entrada.municipio,
-    bairro: entrada.bairro.trim().replace(/\s+/g, ' '),
+    bairro: limpar(entrada.bairro),
     categoria: entrada.categoria,
-    oficio: entrada.oficio.trim().replace(/\s+/g, ' '),
+    oficio: limpar(entrada.oficio),
     descricao: entrada.descricao.trim(),
     precoTexto: entrada.precoTexto.trim(),
+    fotoUrl: entrada.fotoUrl,
   };
 }
 
@@ -39,14 +51,13 @@ export function limparEntrada(entrada: PerfilEntrada): PerfilEntrada {
  * idênticas no formulário, nos testes e nas restrições da base de dados.
  * Quando divergem, entram dados inválidos por uma porta que ninguém vigia.
  */
-export function validarPerfil(entrada: PerfilEntrada): ResultadoValidacao {
+export function validarPerfil(entrada: PerfilEntrada): ResultadoValidacao<PerfilEntrada> {
   const valor = limparEntrada(entrada);
   const erros: ErrosPerfil = {};
 
-  const nome = valor.nome;
-  if (nome.length < LIMITES.nome.min) {
+  if (valor.nome.length < LIMITES.nome.min) {
     erros.nome = 'Indique o seu nome.';
-  } else if (nome.length > LIMITES.nome.max) {
+  } else if (valor.nome.length > LIMITES.nome.max) {
     erros.nome = `O nome não pode ter mais de ${LIMITES.nome.max} caracteres.`;
   }
 
@@ -94,9 +105,89 @@ export function perfilVazio(): PerfilEntrada {
     telefone: '',
     municipio: 'Luanda',
     bairro: '',
-    categoria: 'informatica',
+    categoria: 'reparacoes',
     oficio: '',
     descricao: '',
     precoTexto: '',
+    fotoUrl: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pedido (lado da procura)
+// ---------------------------------------------------------------------------
+
+export function limparPedido(entrada: PedidoEntrada): PedidoEntrada {
+  return {
+    autorNome: limpar(entrada.autorNome),
+    autorTelefone: normalizarTelefone(entrada.autorTelefone) ?? entrada.autorTelefone.trim(),
+    titulo: limpar(entrada.titulo),
+    categoria: entrada.categoria,
+    municipio: entrada.municipio,
+    bairro: limpar(entrada.bairro),
+    descricao: entrada.descricao.trim(),
+    fotoUrl: entrada.fotoUrl,
+  };
+}
+
+/**
+ * Validação de pedido.
+ *
+ * O título tem um mínimo mais alto que o de um perfil porque é o que aparece no
+ * mural: «Ajuda» não diz nada a um técnico que está a decidir se abre o pedido.
+ */
+export function validarPedido(entrada: PedidoEntrada): ResultadoValidacao<PedidoEntrada> {
+  const valor = limparPedido(entrada);
+  const erros: ErrosPedido = {};
+
+  if (valor.autorNome.length < LIMITES.nome.min) {
+    erros.autorNome = 'Indique o seu nome.';
+  } else if (valor.autorNome.length > LIMITES.nome.max) {
+    erros.autorNome = `O nome não pode ter mais de ${LIMITES.nome.max} caracteres.`;
+  }
+
+  if (normalizarTelefone(valor.autorTelefone) === null) {
+    erros.autorTelefone = 'Indique um número móvel angolano válido (ex.: 923 456 789).';
+  }
+
+  if (valor.titulo.length < LIMITES.tituloPedido.min) {
+    erros.titulo = 'Escreva um título claro do que precisa.';
+  } else if (valor.titulo.length > LIMITES.tituloPedido.max) {
+    erros.titulo = `O título não pode ter mais de ${LIMITES.tituloPedido.max} caracteres.`;
+  }
+
+  if (!CATEGORIA_IDS.includes(valor.categoria as CategoriaId)) {
+    erros.categoria = 'Escolha uma categoria.';
+  }
+
+  if (!MUNICIPIOS.includes(valor.municipio as Municipio)) {
+    erros.municipio = 'Escolha o município onde precisa do serviço.';
+  }
+
+  if (valor.bairro.length < LIMITES.bairro.min) {
+    erros.bairro = 'Indique o bairro onde precisa do serviço.';
+  } else if (valor.bairro.length > LIMITES.bairro.max) {
+    erros.bairro = `O bairro não pode ter mais de ${LIMITES.bairro.max} caracteres.`;
+  }
+
+  if (valor.descricao.length < LIMITES.descricaoPedido.min) {
+    erros.descricao = `Descreva o problema com pelo menos ${LIMITES.descricaoPedido.min} caracteres.`;
+  } else if (valor.descricao.length > LIMITES.descricaoPedido.max) {
+    erros.descricao = `A descrição não pode ter mais de ${LIMITES.descricaoPedido.max} caracteres.`;
+  }
+
+  return { valido: Object.keys(erros).length === 0, erros, valor };
+}
+
+export function pedidoVazio(): PedidoEntrada {
+  return {
+    autorNome: '',
+    autorTelefone: '',
+    titulo: '',
+    categoria: 'reparacoes',
+    municipio: 'Luanda',
+    bairro: '',
+    descricao: '',
+    fotoUrl: null,
   };
 }

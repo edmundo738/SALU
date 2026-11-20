@@ -1,43 +1,28 @@
 import type { Categoria, CategoriaId } from './types';
 
 /**
- * Categorias de arranque do piloto.
+ * Categorias do protótipo.
  *
- * Decisão de âmbito: seis categorias, todas de serviço doméstico ou técnico,
- * com procura recorrente e contacto fácil. Foi uma escolha do dono do produto;
- * ampliar a taxonomia antes de haver utilizadores reais só acrescenta ruído.
+ * Decisão revista pelo dono do produto: em vez de seis categorias domésticas,
+ * o SALU cobre desde o início trabalho manual e trabalho digital — um designer e
+ * um canalizador têm o mesmo problema (serem encontrados) e a mesma solução.
+ *
+ * Não há subcategorias. A taxonomia é plana até haver utilizadores suficientes
+ * para justificar profundidade.
  */
 export const CATEGORIAS: readonly Categoria[] = [
-  {
-    id: 'informatica',
-    rotulo: 'Informática',
-    exemplo: 'Reparação de computadores e telemóveis',
-  },
-  {
-    id: 'electricidade',
-    rotulo: 'Electricidade',
-    exemplo: 'Instalações e avarias eléctricas',
-  },
-  {
-    id: 'canalizacao',
-    rotulo: 'Canalização',
-    exemplo: 'Fugas de água, torneiras e sanitários',
-  },
-  {
-    id: 'limpeza',
-    rotulo: 'Limpeza',
-    exemplo: 'Limpeza doméstica e de escritórios',
-  },
-  {
-    id: 'explicacoes',
-    rotulo: 'Explicações',
-    exemplo: 'Aulas de matemática, inglês e informática',
-  },
-  {
-    id: 'cozinha',
-    rotulo: 'Cozinha',
-    exemplo: 'Refeições por encomenda e eventos',
-  },
+  { id: 'reparacoes', rotulo: 'Reparações', exemplo: 'Electrodomésticos e equipamentos' },
+  { id: 'electricidade', rotulo: 'Electricidade', exemplo: 'Instalações e avarias' },
+  { id: 'canalizacao', rotulo: 'Canalização', exemplo: 'Fugas, torneiras e sanitários' },
+  { id: 'limpeza', rotulo: 'Limpeza', exemplo: 'Casas, escritórios e condomínios' },
+  { id: 'tecnologia', rotulo: 'Tecnologia', exemplo: 'Computadores, telemóveis e redes' },
+  { id: 'design', rotulo: 'Design', exemplo: 'Logotipos, cartazes e redes sociais' },
+  { id: 'explicacoes', rotulo: 'Explicações', exemplo: 'Aulas e apoio escolar' },
+  { id: 'entregas', rotulo: 'Entregas', exemplo: 'Entregas e mandados na cidade' },
+  { id: 'beleza', rotulo: 'Beleza', exemplo: 'Cabelo, unhas e estética' },
+  { id: 'cozinha', rotulo: 'Cozinha', exemplo: 'Refeições, bolos e eventos' },
+  { id: 'construcao', rotulo: 'Construção', exemplo: 'Obra, pintura e acabamentos' },
+  { id: 'administrativo', rotulo: 'Administrativo', exemplo: 'Apoio virtual, dados e documentos' },
 ];
 
 const POR_ID = new Map<CategoriaId, Categoria>(CATEGORIAS.map((c) => [c.id, c]));

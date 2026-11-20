@@ -1,67 +1,92 @@
 # Modelo de dados
 
-## Incremento 1 — implementado
+## Incremento 2 — implementado
 
 ```
-profiles
+profiles                          (lado da oferta)
   id            uuid  (pk)
-  auth_user_id  uuid  (fk auth.users, nullable até existir entrada de conta)
+  auth_user_id  uuid  (fk auth.users, nullable)
   nome          text  2..60
-  telefone      text  formato 2449XXXXXXXX, único
-  municipio     text  um dos 7 municípios de Luanda
+  telefone      text  2449XXXXXXXX, único
+  municipio     text  7 municípios de Luanda
   bairro        text  2..60
-  categoria     text  6 valores fixos
+  categoria     text  12 valores fixos
   oficio        text  2..60
   descricao     text  20..400
   preco_texto   text  ≤40, texto livre
+  foto_url      text  data URL no protótipo
   disponivel    bool
-  exemplo       bool  perfil de demonstração, contacto desactivado
+  exemplo       bool  demonstração, contacto desactivado
   criado_em     timestamptz
+
+requests                          (lado da procura)
+  id              uuid  (pk)
+  auth_user_id    uuid  (fk auth.users, nullable)
+  autor_nome      text  2..60
+  autor_telefone  text  2449XXXXXXXX
+  titulo          text  4..80
+  categoria       text  12 valores fixos
+  municipio       text
+  bairro          text  2..60
+  descricao       text  15..500
+  foto_url        text
+  estado          text  'aberto' | 'fechado'
+  exemplo         bool
+  criado_em       timestamptz
 
 contact_events
   id          uuid  (pk)
-  profile_id  uuid  (fk profiles)
-  origem      text  'perfil' | 'pesquisa'
+  alvo_tipo   text  'perfil' | 'pedido'
+  alvo_id     uuid
+  origem      text  'perfil' | 'pesquisa' | 'pedido'
   criado_em   timestamptz
 ```
 
-Relação: um perfil tem muitos eventos de contacto. Um evento pertence a um perfil.
+Relações: um perfil recebe muitos contactos; um pedido recebe muitos contactos. Um
+contacto aponta para **um** alvo, identificado por `alvo_tipo` + `alvo_id`.
+
+**Porque `alvo_tipo` existe:** um contacto a um perfil é um cliente a procurar um
+profissional; um contacto a um pedido é um profissional a responder a alguém. Sem esta
+distinção não se sabe qual dos lados está a puxar o mercado — e essa é a informação que
+decide o próximo passo do produto.
 
 ## Regras de validação (três camadas, uma regra)
 
-| Regra | Formulário | Domínio (`validacao.ts`) | Base de dados |
+| Regra | Formulário | Domínio | Base de dados |
 |---|---|---|---|
 | nome 2..60 | sim | sim | `check` |
-| telefone móvel AO | sim | sim | `check` + índice único |
-| descrição 20..400 | sim | sim | `check` |
+| telefone móvel AO | sim | sim | `check` (+ único em perfis) |
+| título do pedido 4..80 | sim | sim | `check` |
+| descrição do pedido 15..500 | sim | sim | `check` |
 | categoria válida | sim | sim | `check` |
-| preço ≤40 | sim | sim | `check` |
 
-A duplicação é intencional: o formulário dá feedback imediato, o domínio garante a
-regra nos testes, a base de dados recusa o que passar por todos os outros caminhos.
-Quando as três divergirem, a base de dados é a última linha.
+A duplicação é intencional: o formulário dá feedback imediato, o domínio garante a regra
+nos testes, a base de dados recusa o que passar por todos os outros caminhos.
 
 ## Políticas de acesso (RLS)
 
 | Tabela | Operação | Quem | Condição |
 |---|---|---|---|
 | profiles | select | todos | `disponivel = true` ou é o dono |
-| profiles | insert | autenticados | `auth.uid() = auth_user_id` |
-| profiles | update | autenticados | é o dono |
+| profiles | insert/update | autenticados | é o dono |
+| requests | select | todos | `estado = 'aberto'` ou é o dono |
+| requests | insert/update | autenticados | é o dono |
 | contact_events | insert | anónimos e autenticados | sem condição (ver limitação) |
-| contact_events | select | autenticados | é o dono do perfil |
+| contact_events | select | autenticados | é o dono do alvo |
 
-## Incremento 2 — planeado, não implementado
+## Armazenamento local (protótipo)
+
+Chaves `salu:v2:perfis`, `salu:v2:pedidos`, `salu:v2:contactos`, `salu:v2:sessao`.
+O limite do `localStorage` ronda 5 MB, daí a compressão de fotografias para ~80 KB.
+
+## Incremento 3 — planeado, não implementado
 
 ```
-requests    pedidos de clientes
-responses   respostas de prestadores a pedidos
-reviews     avaliações após trabalho concluído
-reports     denúncias
+reviews   avaliações após trabalho concluído
+reports   denúncias
 ```
 
-Não estão criadas. Criar tabelas antes de haver um ecrã que as use é dívida, não
-progresso.
+Não estão criadas. Uma tabela sem ecrã que a use é dívida, não progresso.
 
 ## O que ainda não está verificado
 
@@ -69,17 +94,18 @@ Regra do projecto: nada é apresentado como funcional sem teste.
 
 | Item | Estado |
 |---|---|
-| Regras de domínio (validação, telefone, filtros, WhatsApp) | **Testadas** — 36 testes, todos verdes |
-| Adaptador local (criar, listar, obter, contactos, persistência) | **Testado** |
+| Regras de domínio (validação, telefone, filtros, WhatsApp) | **Testadas** — 43 testes |
+| Adaptador local (perfis, pedidos, contactos, persistência) | **Testado** |
 | Build de produção | **Verificado** — `tsc --noEmit` + `vite build` |
-| Publicar perfil pelo formulário | **Verificado no browser** — perfil criado, telefone normalizado para 244923555111 |
-| Validação a bloquear submissão inválida | **Verificado no browser** — erro mostrado, `aria-invalid=true`, sem navegação |
-| Perfil público e link de WhatsApp | **Verificado no browser** — `wa.me/244923555111?text=…` com mensagem codificada |
-| Registo de contacto | **Verificado no browser** — evento gravado e visível na área interna |
-| Perfis de exemplo sem contacto | **Verificado no browser** — sem link de WhatsApp, aviso visível |
-| Layout a 375 px | **Verificado** — sem transbordo horizontal, botão de 343×48 px |
-| Migração SQL | **Não executada** — escrita, nunca corrida contra Postgres |
-| Adaptador Supabase | **Não testado** — falta projecto real e credenciais |
+| Publicar perfil com validação | **Verificado no browser** |
+| Publicar pedido | **Verificado no browser** — aparece no mural em primeiro |
+| Contacto a partir de um pedido | **Verificado no browser** — evento com `alvoTipo: "pedido"` |
+| Contacto a partir de um perfil | **Verificado no browser** (incremento 1) |
+| Área interna com contadores por lado | **Verificado no browser** — 8 / 5 / 0 / 2 |
+| Layout a 375 px | **Verificado** — sem transbordo horizontal |
+| Compressão de fotografia | **Não verificado** — `createImageBitmap` não testado em telemóvel real |
+| Migrações SQL | **Não executadas** |
+| Adaptador Supabase | **Não testado** |
 | Autenticação | **Não implementada** |
-| RLS a bloquear leitura cruzada | **Não testado** — só se prova com duas contas reais |
+| RLS a bloquear leitura cruzada | **Não testado** |
 | Uso num telemóvel real (não emulador) | **Não verificado** |

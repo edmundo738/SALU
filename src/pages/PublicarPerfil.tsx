@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../state/store';
+import { useSessao } from '../state/sessao';
 import { CATEGORIAS } from '../domain/categorias';
 import { MUNICIPIOS } from '../domain/types';
 import type { CategoriaId, Municipio, PerfilEntrada } from '../domain/types';
 import { perfilVazio, validarPerfil, type ErrosPerfil } from '../domain/validacao';
+import { SeletorFoto } from '../components/SeletorFoto';
 
-export function Publicar() {
+export function PublicarPerfil() {
   const navegar = useNavigate();
-  const publicar = useApp((estado) => estado.publicar);
+  const publicarPerfil = useApp((estado) => estado.publicarPerfil);
+  const sessao = useSessao((estado) => estado.sessao);
+  const definirPerfil = useSessao((estado) => estado.definirPerfil);
 
-  const [entrada, setEntrada] = useState<PerfilEntrada>(perfilVazio);
+  const [entrada, setEntrada] = useState<PerfilEntrada>(() => ({
+    ...perfilVazio(),
+    nome: sessao?.tipo === 'prestador' ? sessao.nome : '',
+  }));
   const [erros, setErros] = useState<ErrosPerfil>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
@@ -32,7 +39,8 @@ export function Publicar() {
 
     setAEnviar(true);
     try {
-      const perfil = await publicar(validacao.valor);
+      const perfil = await publicarPerfil(validacao.valor);
+      definirPerfil(perfil.id);
       navegar(`/perfil/${perfil.id}`);
     } catch (erro) {
       setErroGeral(erro instanceof Error ? erro.message : 'Não foi possível publicar.');
@@ -42,17 +50,16 @@ export function Publicar() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-black sm:text-3xl">Publicar o meu perfil</h1>
-      <p className="mt-2 max-w-prose text-sm text-mute">
-        É gratuito. O seu número só é mostrado como botão de contacto — não aparece escrito
-        na página.
+    <div className="mx-auto max-w-2xl">
+      <h1 className="text-2xl font-black sm:text-3xl">O meu perfil profissional</h1>
+      <p className="mt-2 text-sm text-mute">
+        É gratuito e leva dois minutos. O teu número só aparece como botão de contacto.
       </p>
 
       <form onSubmit={aoSubmeter} className="mt-6 space-y-5" noValidate>
         <div>
           <label htmlFor="nome" className="etiqueta">
-            O seu nome
+            O teu nome
           </label>
           <input
             id="nome"
@@ -61,18 +68,13 @@ export function Publicar() {
             value={entrada.nome}
             onChange={(evento) => actualizar('nome', evento.target.value)}
             aria-invalid={Boolean(erros.nome)}
-            aria-describedby={erros.nome ? 'erro-nome' : undefined}
           />
-          {erros.nome && (
-            <p id="erro-nome" className="mt-1 text-sm text-red-700">
-              {erros.nome}
-            </p>
-          )}
+          {erros.nome && <p className="mt-1 text-sm text-red-700">{erros.nome}</p>}
         </div>
 
         <div>
           <label htmlFor="telefone" className="etiqueta">
-            Número de WhatsApp
+            Telemóvel (WhatsApp)
           </label>
           <input
             id="telefone"
@@ -83,16 +85,11 @@ export function Publicar() {
             value={entrada.telefone}
             onChange={(evento) => actualizar('telefone', evento.target.value)}
             aria-invalid={Boolean(erros.telefone)}
-            aria-describedby={erros.telefone ? 'erro-telefone' : 'dica-telefone'}
           />
-          <p id="dica-telefone" className="mt-1 text-xs text-mute">
-            Número angolano. É por aqui que os clientes vão falar consigo.
+          <p className="mt-1 text-xs text-mute">
+            É por aqui que os clientes vão falar contigo.
           </p>
-          {erros.telefone && (
-            <p id="erro-telefone" className="mt-1 text-sm text-red-700">
-              {erros.telefone}
-            </p>
-          )}
+          {erros.telefone && <p className="mt-1 text-sm text-red-700">{erros.telefone}</p>}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -135,7 +132,7 @@ export function Publicar() {
 
         <div>
           <label htmlFor="bairro" className="etiqueta">
-            Bairro onde trabalha
+            Bairro onde trabalhas
           </label>
           <input
             id="bairro"
@@ -150,7 +147,7 @@ export function Publicar() {
 
         <div>
           <label htmlFor="oficio" className="etiqueta">
-            O que sabe fazer
+            O que sabes fazer
           </label>
           <input
             id="oficio"
@@ -165,12 +162,12 @@ export function Publicar() {
 
         <div>
           <label htmlFor="descricao" className="etiqueta">
-            Descrição
+            Apresentação
           </label>
           <textarea
             id="descricao"
             className="campo min-h-32 resize-y"
-            placeholder="Explique em poucas frases o que faz, como trabalha e o que o cliente deve esperar."
+            placeholder="O que fazes, como trabalhas e o que o cliente deve esperar."
             value={entrada.descricao}
             onChange={(evento) => actualizar('descricao', evento.target.value)}
             aria-invalid={Boolean(erros.descricao)}
@@ -194,6 +191,11 @@ export function Publicar() {
           />
           {erros.precoTexto && <p className="mt-1 text-sm text-red-700">{erros.precoTexto}</p>}
         </div>
+
+        <SeletorFoto
+          valor={entrada.fotoUrl}
+          onChange={(fotoUrl) => actualizar('fotoUrl', fotoUrl)}
+        />
 
         {erroGeral && (
           <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">

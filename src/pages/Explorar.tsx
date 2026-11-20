@@ -6,7 +6,7 @@ import { CATEGORIAS } from '../domain/categorias';
 import { MUNICIPIOS } from '../domain/types';
 import type { CategoriaId, Municipio } from '../domain/types';
 
-export function Encontrar() {
+export function Explorar() {
   const perfis = usePerfisFiltrados();
   const filtro = useApp((estado) => estado.filtro);
   const definirFiltro = useApp((estado) => estado.definirFiltro);
@@ -20,17 +20,14 @@ export function Encontrar() {
 
   return (
     <div>
-      <section className="mb-6">
-        <h1 className="text-3xl font-black leading-tight sm:text-4xl">
-          Encontre quem sabe fazer.
-        </h1>
-        <p className="mt-2 max-w-prose text-mute">
-          Perfis de profissionais em Luanda que ficam visíveis depois de a conversa acabar —
-          ao contrário do que acontece num grupo de WhatsApp.
+      <header className="mb-5">
+        <h1 className="text-2xl font-black sm:text-3xl">Profissionais</h1>
+        <p className="mt-1 text-sm text-mute">
+          Perfis que continuam visíveis depois de a conversa acabar.
         </p>
-      </section>
+      </header>
 
-      <section aria-label="Pesquisa" className="mb-6 space-y-3">
+      <section aria-label="Pesquisa" className="mb-5 space-y-3">
         <label htmlFor="pesquisa" className="sr-only">
           Pesquisar por ofício, nome ou bairro
         </label>
@@ -98,23 +95,16 @@ export function Encontrar() {
         {perfis.length === 1 ? '1 profissional' : `${perfis.length} profissionais`}
       </p>
 
-      {estado === 'a-carregar' && perfis.length === 0 ? (
-        <p className="text-sm text-mute">A carregar…</p>
-      ) : perfis.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line p-6 text-center">
+      {perfis.length === 0 ? (
+        <div className="cartao border-dashed p-6 text-center">
           <p className="font-medium">Nenhum perfil encontrado.</p>
-          <p className="mt-1 text-sm text-mute">
-            Tente outra palavra ou remova os filtros.
-          </p>
-          <Link
-            to="/publicar"
-            className="btn-secundario mt-4"
-          >
+          <p className="mt-1 text-sm text-mute">Tente outra palavra ou remova os filtros.</p>
+          <Link to="/perfil/novo" className="btn-secundario mt-4">
             Publicar o meu perfil
           </Link>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {perfis.map((perfil) => (
             <li key={perfil.id}>
               <PerfilCartao perfil={perfil} />

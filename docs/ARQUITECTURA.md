@@ -90,3 +90,44 @@ Os números de telefone dos exemplos são espaços reservados.
 3. **Sem pesquisa no servidor em escala.** Os perfis são lidos de uma vez e filtrados
    em memória. Correto e instantâneo até algumas centenas; depois passa a SQL.
 4. **Sem limite de frequência no registo de contactos.** Ver o comentário na migração.
+
+## Incremento 2 — o produto passa a ter dois lados
+
+O âmbito deixou de ser «directório de profissionais». O SALU tem agora dois percursos,
+porque um marketplace com um só lado não é um marketplace.
+
+### Decisões novas
+
+**Sessão de demonstração em vez de autenticação.** O visitante escolhe «quero trabalhar»
+ou «preciso de um serviço» e escreve o nome. Não há palavra-passe, verificação nem SMS.
+A interface diz «sessão de demonstração» em vez de fingir segurança. Isto permite ao
+jurado percorrer os dois lados em dois minutos, que é o objectivo do protótipo.
+
+**Categorias planas, doze, cobrindo trabalho manual e digital.** Um designer e um
+canalizador têm o mesmo problema — serem encontrados — e a mesma solução. Subcategorias
+só quando houver utilizadores que as peçam.
+
+**`contact_events` passou a apontar para perfis *ou* pedidos.** É a métrica que diz qual
+dos lados está a puxar o mercado. Sem ela, «30 contactos» não indica se o produto está a
+funcionar como directório ou como mural.
+
+**Fotografias comprimidas no dispositivo.** Redimensiona para 1000 px e converte para
+JPEG a 72%: uma fotografia de telemóvel passa de megabytes para ~80 KB. Sem isto, três
+fotografias esgotavam o armazenamento local. O limite de 8 MB e o tipo de ficheiro são
+validados antes de tocar na memória.
+
+**Dois adaptadores actualizados em paralelo.** O SQL do incremento 2 foi escrito a par do
+adaptador Supabase, para a produção não divergir do protótipo. Nenhum dos dois foi
+executado — está registado como não verificado.
+
+### O que ficou deliberadamente de fora
+
+Autenticação real, avaliações, denúncias, notificações, pagamentos, mapas, pesquisa no
+servidor. Cada uma destas peças só faz sentido depois de alguém usar os dois percursos.
+
+### Risco assumido
+
+O protótipo guarda tudo num dispositivo. Um jurado que abra o site no telemóvel dele vê
+os dados de demonstração, mas não vê o que outro visitante criou. A interface diz isso.
+É a limitação mais séria da demonstração e a primeira coisa a resolver se houver tempo
+antes do dia 28.
