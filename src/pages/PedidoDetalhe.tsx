@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../state/store';
 import { useSessao } from '../state/sessao';
@@ -17,6 +17,8 @@ export function PedidoDetalhe() {
   const registarContacto = useApp((estado) => estado.registarContacto);
   const sessao = useSessao((estado) => estado.sessao);
 
+  const [contactado, setContactado] = useState(false);
+
   useEffect(() => {
     void carregar();
     void carregarContactos();
@@ -26,12 +28,12 @@ export function PedidoDetalhe() {
 
   if (!pedido) {
     return (
-      <div className="cartao border-dashed p-8 text-center">
-        <p className="font-medium">
+      <div className="cartao mx-auto max-w-md p-10 text-center">
+        <p className="font-semibold">
           {estado === 'a-carregar' ? 'A carregar…' : 'Pedido não encontrado.'}
         </p>
         {estado !== 'a-carregar' && (
-          <Link to="/pedidos" className="btn-secundario mt-4">
+          <Link to="/pedidos" className="btn-secundario mt-5 px-4 py-2 text-sm">
             Voltar ao mural
           </Link>
         )}
@@ -42,10 +44,8 @@ export function PedidoDetalhe() {
   const categoria = obterCategoria(pedido.categoria);
 
   /*
-   * Regra de produto: quem publica o pedido está a pedir ajuda, não a contactar.
-   * O primeiro passo é de quem vai resolver — por isso o botão de WhatsApp não
-   * aparece ao autor do pedido. Mostrar-lhe o seu próprio contacto era pedir-lhe
-   * que falasse consigo mesmo.
+   * Quem publica o pedido está a pedir, não a contactar. O primeiro passo é de
+   * quem vai resolver — por isso o botão de WhatsApp nunca aparece ao autor.
    */
   const ehMeuPedido = Boolean(sessao?.pedidoIds.includes(pedido.id));
   const contactosRecebidos = contactos.filter(
@@ -60,76 +60,109 @@ export function PedidoDetalhe() {
 
   return (
     <article className="mx-auto max-w-2xl">
-      <Link to="/pedidos" className="text-sm text-mute hover:text-ink">
-        ← Mural de pedidos
+      <Link
+        to="/pedidos"
+        className="btn-fantasma -ml-2 text-mute hover:text-ink"
+      >
+        <span aria-hidden="true">←</span> Mural de pedidos
       </Link>
 
-      <header className="mt-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="selo gap-1 bg-forest-500/10 text-forest-600">
+      <header className="mt-6">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.12em]">
+          <span className="inline-flex items-center gap-1.5 text-brand-700">
             <IconeCategoria categoria={pedido.categoria} className="h-3.5 w-3.5" />
             {categoria.rotulo}
           </span>
+          <span aria-hidden="true" className="text-line">
+            /
+          </span>
+          <span className="text-mute">
+            {pedido.bairro} · {pedido.municipio}
+          </span>
+          <span aria-hidden="true" className="text-line">
+            /
+          </span>
+          <span className="text-mute">{tempoRelativo(pedido.criadoEm)}</span>
           {pedido.exemplo && (
-            <span className="selo bg-line/70 text-mute">Pedido de exemplo</span>
+            <span className="selo ml-auto bg-ink/5 text-mute">pedido de exemplo</span>
           )}
-          <span className="text-xs text-mute">{tempoRelativo(pedido.criadoEm)}</span>
         </div>
 
-        <h1 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">
+        <h1 className="titulo-display mt-4 text-[clamp(2rem,5.5vw,3.4rem)] texto-balanco">
           {pedido.titulo}
         </h1>
-        <p className="mt-1 text-sm text-mute">
-          {pedido.bairro} · {pedido.municipio}
-        </p>
       </header>
 
       {pedido.fotoUrl && (
         <img
           src={pedido.fotoUrl}
           alt="Fotografia enviada com o pedido"
-          className="mt-5 w-full rounded-2xl border border-line object-cover"
+          className="mt-6 w-full rounded-cartao border border-line object-cover"
         />
       )}
 
-      <section className="cartao mt-5 p-5">
-        <h2 className="sr-only">Descrição do pedido</h2>
-        <p className="whitespace-pre-line leading-relaxed">{pedido.descricao}</p>
-      </section>
+      <p className="mt-6 whitespace-pre-line text-[17px] leading-[1.7] text-ink-soft">
+        {pedido.descricao}
+      </p>
 
-      <section className="mt-6">
+      <footer className="mt-8">
         {ehMeuPedido ? (
-          <div className="cartao p-5">
-            <p className="font-semibold">O teu pedido está publicado.</p>
-            <p className="mt-1 text-sm text-mute">
-              Já está no mural, à espera de um profissional. Quem tiver interesse entra em
-              contacto contigo pelo WhatsApp — o primeiro passo é de quem vai resolver.
+          <div className="cartao p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-forest-500" />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-forest-700">
+                Publicado
+              </p>
+            </div>
+
+            <p className="mt-3 text-lg font-semibold">O teu pedido está no mural.</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-mute">
+              Quem tiver interesse entra em contacto contigo pelo WhatsApp. O primeiro
+              passo é de quem vai resolver — não precisas de fazer mais nada.
             </p>
 
-            {contactosRecebidos > 0 && (
-              <p className="mt-3 text-sm">
-                <span className="font-semibold">{contactosRecebidos}</span>{' '}
-                {contactosRecebidos === 1
-                  ? 'profissional já demonstrou interesse'
-                  : 'profissionais já demonstraram interesse'}
-                .
-              </p>
-            )}
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-sand px-4 py-3">
+              <span className="text-xs font-medium uppercase tracking-[0.1em] text-mute">
+                Profissionais interessados
+              </span>
+              <span className="numeral text-2xl leading-none">{contactosRecebidos}</span>
+            </div>
 
-            <Link to="/pedidos" className="btn-secundario mt-4 w-full">
-              Ver o mural de pedidos
+            <Link to="/pedidos" className="btn-secundario mt-4 w-full px-4 py-2.5 text-sm">
+              Ver o mural
             </Link>
           </div>
         ) : pedido.exemplo ? (
-          <div className="cartao p-5">
-            <p className="text-sm text-mute">
-              Este é um pedido de exemplo, criado para mostrar como funciona. Não
-              corresponde a uma pessoa real e o contacto está desactivado. Publica o teu
-              próprio pedido para experimentar o percurso completo.
+          <div className="cartao p-5 sm:p-6">
+            <p className="text-sm leading-relaxed text-mute">
+              Este é um pedido de exemplo, criado para mostrar como funciona. Não representa
+              uma pessoa real, por isso o contacto está desactivado. Publica o teu próprio
+              pedido para percorrer a experiência completa.
             </p>
-            <Link to="/publicar-pedido" className="btn-secundario mt-4 w-full">
+            <Link to="/publicar-pedido" className="btn-primario mt-4 w-full px-4 py-2.5 text-sm">
               Publicar um pedido
             </Link>
+          </div>
+        ) : contactado ? (
+          <div className="cartao border-forest-500/30 p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-forest-500" />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-forest-700">
+                Contacto iniciado
+              </p>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+              Abrimos o WhatsApp com a mensagem já escrita. Combinam preço, deslocação e
+              pagamento directamente entre vocês — o SALU não intermedeia o dinheiro.
+            </p>
+            <a
+              href={linkWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secundario mt-4 w-full px-4 py-2.5 text-sm"
+            >
+              Reabrir conversa
+            </a>
           </div>
         ) : (
           <>
@@ -137,20 +170,21 @@ export function PedidoDetalhe() {
               href={linkWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primario w-full text-base"
+              className="btn-clay w-full px-5 py-3.5 text-base"
               onClick={() => {
+                setContactado(true);
                 void registarContacto('pedido', pedido.id, 'pedido');
               }}
             >
               Falar no WhatsApp
             </a>
-            <p className="mt-3 text-center text-xs text-mute">
-              Combinam preço, deslocação e pagamento directamente entre vocês. O SALU não
-              recebe nem intermedeia o dinheiro.
+            <p className="mt-3 text-center text-xs leading-relaxed text-mute">
+              A mensagem já vai escrita com o título do pedido. O SALU não recebe nem
+              intermedeia o pagamento.
             </p>
           </>
         )}
-      </section>
+      </footer>
     </article>
   );
 }

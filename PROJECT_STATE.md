@@ -20,7 +20,7 @@ demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
 | Ecrãs | `MEASURED` | 11 rotas |
 | Testes | `MEASURED` | 43, todos verdes |
 | Build | `MEASURED` | `tsc --noEmit` limpo |
-| Bundle inicial | `MEASURED` | 71,1 kB gzip (+ 61 kB Supabase lazy) |
+| Bundle inicial | `MEASURED` | 72,7 kB gzip + 73 kB de fontes woff2 (+ 61 kB Supabase lazy) |
 | Modo de dados | `OBSERVED` | local |
 | URL público | `UNKNOWN` | **não existe ainda** |
 
@@ -84,6 +84,15 @@ verifica depois do deploy.
 Ao mudar de lado, a sessão preservava `pedidoIds` da sessão anterior, pelo que o prestador
 era tratado como autor do pedido e perdia o botão de contacto. Corrigido: `entrar()`
 inicia sempre uma sessão nova. Verificado: `pedidoIds: 0` e botão presente.
+
+### E5 — Redesenho visual `OBSERVED`
+Linguagem substituída: papel e tinta em vez de cartões genéricos. Serifa Instrument
+Serif nas manchetes e Instrument Sans no corpo, ambas servidas do próprio sítio
+(73 kB woff2, sem pedidos a terceiros). Paleta de argila e ocre; verde reduzido a
+contacto. Grão sobre o papel, numeração editorial em «Como funciona», barra inferior de
+aplicação no telemóvel, estados de contacto iniciado a fechar o ciclo.
+Verificado a 375 px e em desktop: sem transbordo horizontal; barra inferior dentro do
+viewport; tipografia a carregar (família calculada confirmada).
 
 ---
 

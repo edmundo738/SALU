@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../state/store';
 import { useSessao } from '../state/sessao';
@@ -16,6 +16,8 @@ export function PerfilPublico() {
   const registarContacto = useApp((estado) => estado.registarContacto);
   const sessao = useSessao((estado) => estado.sessao);
 
+  const [contactado, setContactado] = useState(false);
+
   useEffect(() => {
     void carregar();
   }, [carregar]);
@@ -24,12 +26,12 @@ export function PerfilPublico() {
 
   if (!perfil) {
     return (
-      <div className="cartao border-dashed p-8 text-center">
-        <p className="font-medium">
+      <div className="cartao mx-auto max-w-md p-10 text-center">
+        <p className="font-semibold">
           {estado === 'a-carregar' ? 'A carregar…' : 'Perfil não encontrado.'}
         </p>
         {estado !== 'a-carregar' && (
-          <Link to="/explorar" className="btn-secundario mt-4">
+          <Link to="/explorar" className="btn-secundario mt-5 px-4 py-2 text-sm">
             Voltar aos profissionais
           </Link>
         )}
@@ -46,79 +48,109 @@ export function PerfilPublico() {
 
   return (
     <article className="mx-auto max-w-2xl">
-      <Link to="/explorar" className="text-sm text-mute hover:text-ink">
-        ← Profissionais
+      <Link to="/explorar" className="btn-fantasma -ml-2 text-mute hover:text-ink">
+        <span aria-hidden="true">←</span> Profissionais
       </Link>
 
-      <header className="mt-4 flex items-start gap-4">
+      <header className="mt-6 flex items-start gap-4 sm:gap-5">
         {perfil.fotoUrl ? (
           <img
             src={perfil.fotoUrl}
             alt=""
-            className="h-20 w-20 shrink-0 rounded-3xl object-cover"
+            className="h-20 w-20 shrink-0 rounded-2xl object-cover sm:h-24 sm:w-24"
           />
         ) : (
           <span
             aria-hidden="true"
-            className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl bg-brand-100 text-2xl font-black text-brand-700"
+            className="titulo-display grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-brand-100 text-4xl text-brand-700 sm:h-24 sm:w-24"
           >
-            {iniciais(perfil.nome)}
+            {iniciais(perfil.nome).charAt(0)}
           </span>
         )}
 
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="selo gap-1 bg-forest-500/10 text-forest-600">
-              <IconeCategoria categoria={perfil.categoria} className="h-3.5 w-3.5" />
-              {categoria.rotulo}
-            </span>
-            {perfil.exemplo && (
-              <span className="selo bg-line/70 text-mute">Perfil de exemplo</span>
-            )}
-          </div>
+        <div className="min-w-0 flex-1">
+          <span className="selo bg-forest-500/10 text-forest-700">
+            <IconeCategoria categoria={perfil.categoria} className="h-3 w-3" />
+            {categoria.rotulo}
+          </span>
 
-          <h1 className="mt-2 text-2xl font-black leading-tight sm:text-3xl">{perfil.nome}</h1>
-          <p className="text-lg text-mute">{perfil.oficio}</p>
+          <h1 className="titulo-display mt-2 text-[clamp(1.9rem,5vw,3rem)] leading-none">
+            {perfil.nome}
+          </h1>
+          <p className="mt-1.5 text-[15px] text-ink-soft">{perfil.oficio}</p>
           <p className="mt-0.5 text-sm text-mute">
             {perfil.bairro} · {perfil.municipio}
           </p>
         </div>
       </header>
 
-      <section className="cartao mt-6 p-5">
-        <h2 className="sr-only">Apresentação</h2>
-        <p className="whitespace-pre-line leading-relaxed">{perfil.descricao}</p>
+      {perfil.exemplo && (
+        <p className="mt-5 inline-flex rounded-full bg-ink/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-mute">
+          Perfil de exemplo
+        </p>
+      )}
 
-        {perfil.precoTexto && (
-          <p className="mt-4 border-t border-line pt-3 text-sm">
-            <span className="text-mute">Preço: </span>
-            <span className="font-medium">{perfil.precoTexto}</span>
-          </p>
-        )}
-      </section>
+      <p className="mt-6 whitespace-pre-line text-[17px] leading-[1.7] text-ink-soft">
+        {perfil.descricao}
+      </p>
 
-      <section className="mt-6">
+      {perfil.precoTexto && (
+        <dl className="mt-6 flex items-baseline justify-between border-y border-line py-3">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">
+            Preço
+          </dt>
+          <dd className="text-sm font-medium">{perfil.precoTexto}</dd>
+        </dl>
+      )}
+
+      <footer className="mt-7">
         {sessao?.perfilId === perfil.id ? (
-          <div className="cartao p-5">
-            <p className="font-semibold">Este é o teu perfil público.</p>
-            <p className="mt-1 text-sm text-mute">
-              É assim que os clientes te vêem. Apareces na pesquisa por ofício, categoria e
-              bairro, e o contacto chega-te pelo WhatsApp.
+          <div className="cartao p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-forest-500" />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-forest-700">
+                O teu perfil
+              </p>
+            </div>
+            <p className="mt-3 text-lg font-semibold">É assim que os clientes te vêem.</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-mute">
+              Apareces na pesquisa por ofício, categoria e bairro. O contacto chega-te pelo
+              WhatsApp.
             </p>
-            <Link to="/pedidos" className="btn-primario mt-4 w-full">
+            <Link to="/pedidos" className="btn-primario mt-4 w-full px-4 py-2.5 text-sm">
               Procurar pedidos de trabalho
             </Link>
           </div>
         ) : perfil.exemplo ? (
-          <div className="cartao p-5">
-            <p className="text-sm text-mute">
+          <div className="cartao p-5 sm:p-6">
+            <p className="text-sm leading-relaxed text-mute">
               Este é um perfil de exemplo, criado para mostrar como a plataforma funciona.
-              Não corresponde a uma pessoa real e o contacto está desactivado. Publica o
-              teu próprio perfil para ativar o botão.
+              Não corresponde a uma pessoa real e o contacto está desactivado.
             </p>
-            <Link to="/perfil/novo" className="btn-secundario mt-4 w-full">
+            <Link to="/perfil/novo" className="btn-secundario mt-4 w-full px-4 py-2.5 text-sm">
               Criar o meu perfil
             </Link>
+          </div>
+        ) : contactado ? (
+          <div className="cartao border-forest-500/30 p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-forest-500" />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-forest-700">
+                Contacto iniciado
+              </p>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+              Abrimos o WhatsApp com uma mensagem já escrita. Combina o trabalho
+              directamente com {perfil.nome}.
+            </p>
+            <a
+              href={linkWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secundario mt-4 w-full px-4 py-2.5 text-sm"
+            >
+              Reabrir conversa
+            </a>
           </div>
         ) : (
           <>
@@ -126,8 +158,9 @@ export function PerfilPublico() {
               href={linkWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primario w-full text-base"
+              className="btn-clay w-full px-5 py-3.5 text-base"
               onClick={() => {
+                setContactado(true);
                 void registarContacto('perfil', perfil.id, 'perfil');
               }}
             >
@@ -138,7 +171,7 @@ export function PerfilPublico() {
             </p>
           </>
         )}
-      </section>
+      </footer>
     </article>
   );
 }

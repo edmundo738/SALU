@@ -4,43 +4,57 @@ import { obterCategoria } from '../domain/categorias';
 import { tempoRelativo } from '../lib/formato';
 import { IconeCategoria } from './IconeCategoria';
 
+/**
+ * Cartão de pedido com ar de anúncio classificado: a categoria à esquerda como
+ * marcador, o título em destaque, o resto em linhas finas. Menos caixas dentro
+ * de caixas do que a versão anterior.
+ */
 export function PedidoCartao({ pedido }: { pedido: Pedido }) {
   const categoria = obterCategoria(pedido.categoria);
 
   return (
-    <Link
-      to={`/pedidos/${pedido.id}`}
-      className="cartao group block overflow-hidden transition hover:border-ink/25 hover:shadow-sm"
-    >
-      <div className="flex gap-3 p-4">
+    <Link to={`/pedidos/${pedido.id}`} className="cartao-interativo group block p-4">
+      <div className="flex gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
+          <IconeCategoria categoria={pedido.categoria} className="h-5 w-5" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-[15px] font-semibold leading-snug texto-bonito">
+              {pedido.titulo}
+            </h3>
+            {pedido.exemplo && (
+              <span className="selo shrink-0 bg-ink/5 text-mute">exemplo</span>
+            )}
+          </div>
+
+          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-mute">
+            {pedido.descricao}
+          </p>
+        </div>
+
         {pedido.fotoUrl && (
           <img
             src={pedido.fotoUrl}
             alt=""
             className="h-16 w-16 shrink-0 rounded-xl object-cover"
+            loading="lazy"
           />
         )}
+      </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold leading-snug">{pedido.titulo}</h3>
-            {pedido.exemplo && <span className="selo shrink-0 bg-line/70 text-mute">Exemplo</span>}
-          </div>
-
-          <p className="mt-1 line-clamp-2 text-sm text-mute">{pedido.descricao}</p>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mute">
-            <span className="selo gap-1 bg-forest-500/10 text-forest-600">
-              <IconeCategoria categoria={pedido.categoria} className="h-3.5 w-3.5" />
-              {categoria.rotulo}
-            </span>
-            <span>
-              {pedido.bairro} · {pedido.municipio}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>{tempoRelativo(pedido.criadoEm)}</span>
-          </div>
-        </div>
+      <div className="mt-3 flex items-center gap-2 border-t border-line/70 pt-3 text-[11px] font-medium uppercase tracking-[0.06em] text-mute">
+        <span className="text-brand-700">{categoria.rotulo}</span>
+        <span aria-hidden="true" className="text-line">
+          /
+        </span>
+        <span className="truncate normal-case tracking-normal">
+          {pedido.bairro} · {pedido.municipio}
+        </span>
+        <span className="ml-auto shrink-0 normal-case tracking-normal">
+          {tempoRelativo(pedido.criadoEm)}
+        </span>
       </div>
     </Link>
   );

@@ -1,11 +1,22 @@
+/* Tipografia servida do próprio sítio: sem pedidos a terceiros, sem FOUT. */
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /*
- * Sem fontes externas de propósito: cada pedido a um servidor de fontes custa
- * dados ao utilizador. A pilha do sistema já inclui uma sans-serif decente em
- * Android e iOS.
+ * Sistema visual do SALU.
+ *
+ * Direcção: papel e tinta, não «cartões flutuantes». A referência não é uma
+ * aplicação de 2022 com cantos arredondados e verde-água — é um caderno de
+ * anúncios angolano bem impresso, modernizado: papel baço, serifa de contraste
+ * alto para as manchetes, grotesca para o corpo, argila e ocre como acentos.
+ *
+ * Regra: nada de decorativo que não carregue informação. O grão, a serifa e as
+ * linhas finas existem para dar textura e hierarquia, não para encher espaço.
  */
 
 @layer base {
@@ -15,11 +26,33 @@
   }
 
   body {
-    @apply bg-sand text-ink antialiased;
+    @apply bg-sand text-ink;
+    font-family: 'Instrument Sans Variable', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'ss01' 1, 'cv11' 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Grão: mata o aspecto plano de superfície digital. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    background: #e9a70c;
+    color: #14110d;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-sand;
+    outline: 2px solid #c1502e;
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 
   h1,
@@ -27,51 +60,197 @@
   h3 {
     @apply tracking-tight;
   }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d8cdb9;
+    border-radius: 999px;
+    border: 3px solid #f6f1e6;
+  }
 }
 
 @layer components {
-  .campo {
-    @apply w-full rounded-xl border border-line bg-paper px-3 py-2.5 text-base
-           placeholder:text-mute/60 focus:border-brand-500 focus:outline-none;
+  /* -- Tipografia ------------------------------------------------------- */
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-mute;
   }
 
-  .etiqueta {
-    @apply mb-1.5 block text-sm font-medium text-ink;
+  .titulo-display {
+    font-family: 'Instrument Serif', Georgia, serif;
+    @apply font-normal tracking-[-0.02em];
+    line-height: 0.98;
   }
+
+  .seccao-titulo {
+    font-family: 'Instrument Serif', Georgia, serif;
+    @apply text-2xl font-normal tracking-[-0.01em] sm:text-3xl;
+  }
+
+  .numeral {
+    font-family: 'Instrument Serif', Georgia, serif;
+    @apply tabular-nums;
+  }
+
+  /* -- Acções ----------------------------------------------------------- */
 
   .btn-primario {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-forest-600 px-5 py-3
-           font-semibold text-white transition hover:bg-forest-700
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3
+           text-[15px] font-semibold text-sand transition
+           hover:bg-ink-soft active:translate-y-px
            disabled:cursor-not-allowed disabled:bg-line disabled:text-mute;
   }
 
-  .btn-secundario {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line
-           bg-paper px-5 py-3 font-medium text-ink transition hover:border-ink/30;
+  .btn-clay {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-5 py-3
+           text-[15px] font-semibold text-white transition
+           hover:bg-brand-700 active:translate-y-px;
   }
+
+  .btn-secundario {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink/15
+           bg-paper px-5 py-3 text-[15px] font-medium text-ink transition
+           hover:border-ink/40 hover:bg-white active:translate-y-px;
+  }
+
+  .btn-fantasma {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5
+           text-sm font-medium text-ink-soft transition hover:bg-ink/5;
+  }
+
+  /* -- Superfícies ------------------------------------------------------ */
 
   .cartao {
-    @apply rounded-2xl border border-line bg-paper;
+    @apply rounded-cartao border border-line bg-paper;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
   }
 
+  .cartao-interativo {
+    @apply cartao transition duration-300;
+  }
+
+  .cartao-interativo:hover {
+    @apply border-ink/25;
+    box-shadow: 0 1px 2px rgba(20, 17, 13, 0.05), 0 14px 34px -20px rgba(20, 17, 13, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .regua {
+    @apply border-t border-line;
+  }
+
+  /* -- Formulário ------------------------------------------------------- */
+
+  .campo {
+    @apply w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-base text-ink
+           transition placeholder:text-mute/60
+           hover:border-ink/20 focus:border-brand-600 focus:outline-none
+           focus:ring-4 focus:ring-brand-600/10;
+  }
+
+  .etiqueta {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink;
+  }
+
+  /* -- Etiquetas -------------------------------------------------------- */
+
   .selo {
-    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold
+           uppercase tracking-[0.06em];
   }
 
   .chip {
     @apply inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper
-           px-3 py-1.5 text-sm transition hover:border-ink/30;
+           px-3.5 py-1.5 text-sm font-medium transition
+           hover:border-ink/30 hover:bg-white;
   }
 
   .chip-ativo {
-    @apply border-ink bg-ink text-sand hover:border-ink;
-  }
-
-  .seccao-titulo {
-    @apply text-lg font-bold sm:text-xl;
+    @apply border-ink bg-ink text-sand hover:border-ink hover:bg-ink-soft;
   }
 
   .link-seta {
-    @apply inline-flex items-center gap-1 text-sm font-medium text-forest-600 hover:text-forest-700;
+    @apply inline-flex items-center gap-1 text-sm font-semibold text-brand-700
+           underline-offset-4 transition hover:underline;
+  }
+}
+
+@layer utilities {
+  .anim-subir {
+    animation: subir 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .anim-lento {
+    animation-duration: 1.1s;
+  }
+
+  .atraso-1 {
+    animation-delay: 0.06s;
+  }
+  .atraso-2 {
+    animation-delay: 0.12s;
+  }
+  .atraso-3 {
+    animation-delay: 0.18s;
+  }
+  .atraso-4 {
+    animation-delay: 0.24s;
+  }
+
+  .marquee {
+    animation: deslizar 44s linear infinite;
+  }
+
+  .marquee:hover {
+    animation-play-state: paused;
+  }
+
+  .texto-balanco {
+    text-wrap: balance;
+  }
+
+  .texto-bonito {
+    text-wrap: pretty;
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes deslizar {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
