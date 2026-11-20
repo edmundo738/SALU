@@ -14,6 +14,9 @@ function perfil(alteracoes: Partial<Perfil> = {}): Perfil {
     descricao: 'Reparo computadores e telemóveis em casa do cliente.',
     precoTexto: null,
     fotoUrl: null,
+    tipoEntidade: 'individual',
+    competencias: [],
+    disponibilidadeTexto: null,
     disponivel: true,
     exemplo: false,
     criadoEm: '2026-11-20T10:00:00.000Z',
@@ -79,6 +82,11 @@ describe('filtrarPerfis', () => {
     const resultado = filtrarPerfis(perfis, { ...FILTRO_VAZIO, municipio: 'Viana' });
     expect(resultado).toHaveLength(1);
     expect(resultado[0]?.id).toBe('p2');
+  });
+
+  it('encontra pelas competências', () => {
+    const perfis = [perfil({ competencias: ['Frigoríficos Samsung', 'Arcas'] })];
+    expect(filtrarPerfis(perfis, { ...FILTRO_VAZIO, texto: 'samsung' })).toHaveLength(1);
   });
 
   it('esconde perfis indisponíveis', () => {

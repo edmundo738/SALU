@@ -18,6 +18,22 @@ alter table public.requests
   add column if not exists historico jsonb not null default '[]'::jsonb;
 
 -- ---------------------------------------------------------------------------
+-- profiles: tipo de entidade, competências e disponibilidade
+-- ---------------------------------------------------------------------------
+
+alter table public.profiles
+  add column if not exists tipo_entidade text not null default 'individual'
+    check (tipo_entidade in ('individual', 'pequeno-negocio', 'empresa'));
+
+alter table public.profiles
+  add column if not exists competencias jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(competencias) = 'array' and jsonb_array_length(competencias) <= 8);
+
+alter table public.profiles
+  add column if not exists disponibilidade_texto text
+    check (disponibilidade_texto is null or char_length(disponibilidade_texto) <= 60);
+
+-- ---------------------------------------------------------------------------
 -- reviews: três dimensões e «voltaria a trabalhar»
 -- ---------------------------------------------------------------------------
 

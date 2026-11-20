@@ -36,7 +36,7 @@ export function perfilCorresponde(perfil: Perfil, filtro: FiltroPerfis): boolean
   }
 
   return correspondeAoTexto(
-    [perfil.nome, perfil.oficio, perfil.bairro, perfil.descricao, perfil.municipio],
+    [perfil.nome, perfil.oficio, perfil.bairro, perfil.descricao, perfil.municipio, ...perfil.competencias],
     filtro,
   );
 }

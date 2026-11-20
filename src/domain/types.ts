@@ -45,6 +45,15 @@ export type Municipio = (typeof MUNICIPIOS)[number];
 // Lado da oferta
 // ---------------------------------------------------------------------------
 
+/** O SALU serve pessoas e pequenos negócios; o perfil diz qual é. */
+export type TipoEntidade = 'individual' | 'pequeno-negocio' | 'empresa';
+
+export const TIPOS_ENTIDADE: { id: TipoEntidade; rotulo: string }[] = [
+  { id: 'individual', rotulo: 'Trabalho por conta própria' },
+  { id: 'pequeno-negocio', rotulo: 'Pequeno negócio' },
+  { id: 'empresa', rotulo: 'Empresa' },
+];
+
 export interface Perfil {
   id: string;
   nome: string;
@@ -59,6 +68,11 @@ export interface Perfil {
   precoTexto: string | null;
   /** Fotografia do profissional ou de um trabalho. Data URL no protótipo. */
   fotoUrl: string | null;
+  tipoEntidade: TipoEntidade;
+  /** Até 8 competências curtas: «frigoríficos Samsung», «quadros trifásicos». */
+  competencias: string[];
+  /** Disponibilidade em texto: «seg–sáb, 8h–18h». Nunca uma agenda calculada. */
+  disponibilidadeTexto: string | null;
   disponivel: boolean;
   /**
    * Perfil de exemplo criado pelo sistema para demonstração.
@@ -78,6 +92,10 @@ export interface PerfilEntrada {
   descricao: string;
   precoTexto: string;
   fotoUrl: string | null;
+  tipoEntidade: TipoEntidade;
+  /** Competências separadas por vírgula, como a pessoa as escreve. */
+  competenciasTexto: string;
+  disponibilidadeTexto: string;
 }
 
 export interface FiltroPerfis {

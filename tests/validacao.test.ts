@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { perfilVazio, validarPerfil } from '../src/domain/validacao';
+import { competenciasDeTexto, perfilVazio, validarPerfil } from '../src/domain/validacao';
 import type { PerfilEntrada } from '../src/domain/types';
 
 function perfilValido(alteracoes: Partial<PerfilEntrada> = {}): PerfilEntrada {
@@ -13,6 +13,24 @@ function perfilValido(alteracoes: Partial<PerfilEntrada> = {}): PerfilEntrada {
     ...alteracoes,
   };
 }
+
+describe('competenciasDeTexto', () => {
+  it('separa por vírgula, limpa e remove repetidas sem olhar a maiúsculas', () => {
+    expect(competenciasDeTexto('frigoríficos, arcas,  Máquinas de lavar ,FRIGORÍFICOS,')).toEqual([
+      'frigoríficos',
+      'arcas',
+      'Máquinas de lavar',
+    ]);
+  });
+
+  it('corta a oito', () => {
+    expect(competenciasDeTexto('a,b,c,d,e,f,g,h,i,j')).toHaveLength(8);
+  });
+
+  it('texto vazio dá lista vazia', () => {
+    expect(competenciasDeTexto('   ')).toEqual([]);
+  });
+});
 
 describe('validarPerfil', () => {
   it('aceita um perfil completo', () => {

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../state/store';
 import { useSessao } from '../state/sessao';
 import { CATEGORIAS } from '../domain/categorias';
-import { MUNICIPIOS } from '../domain/types';
-import type { CategoriaId, Municipio, PerfilEntrada } from '../domain/types';
+import { MUNICIPIOS, TIPOS_ENTIDADE } from '../domain/types';
+import type { CategoriaId, Municipio, PerfilEntrada, TipoEntidade } from '../domain/types';
 import { perfilVazio, validarPerfil, type ErrosPerfil } from '../domain/validacao';
 import { SeletorFoto } from '../components/SeletorFoto';
 
@@ -175,6 +175,52 @@ export function PublicarPerfil() {
           <div className="mt-1 flex justify-between text-xs text-mute">
             <span>{erros.descricao ?? 'Mínimo 20 caracteres.'}</span>
             <span>{entrada.descricao.trim().length}/400</span>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="competencias" className="etiqueta">
+            Competências <span className="font-normal text-mute">(opcional, separadas por vírgula)</span>
+          </label>
+          <input
+            id="competencias"
+            className="campo"
+            placeholder="Ex.: frigoríficos Samsung, arcas, máquinas de lavar"
+            value={entrada.competenciasTexto}
+            onChange={(evento) => actualizar('competenciasTexto', evento.target.value)}
+            aria-invalid={Boolean(erros.competenciasTexto)}
+          />
+          <p className="mt-1 text-xs text-mute">Até 8. É por aqui que os clientes te encontram na pesquisa.</p>
+          {erros.competenciasTexto && <p className="mt-1 text-sm text-red-700">{erros.competenciasTexto}</p>}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="tipo-entidade" className="etiqueta">Trabalhas como</label>
+            <select
+              id="tipo-entidade"
+              className="campo"
+              value={entrada.tipoEntidade}
+              onChange={(evento) => actualizar('tipoEntidade', evento.target.value as TipoEntidade)}
+            >
+              {TIPOS_ENTIDADE.map((tipo) => (
+                <option key={tipo.id} value={tipo.id}>{tipo.rotulo}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="disponibilidade" className="etiqueta">
+              Disponibilidade <span className="font-normal text-mute">(opcional)</span>
+            </label>
+            <input
+              id="disponibilidade"
+              className="campo"
+              placeholder="Ex.: seg–sáb, 8h–18h"
+              value={entrada.disponibilidadeTexto}
+              onChange={(evento) => actualizar('disponibilidadeTexto', evento.target.value)}
+              aria-invalid={Boolean(erros.disponibilidadeTexto)}
+            />
+            {erros.disponibilidadeTexto && <p className="mt-1 text-sm text-red-700">{erros.disponibilidadeTexto}</p>}
           </div>
         </div>
 

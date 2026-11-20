@@ -20,6 +20,9 @@ export function perfisDeExemplo(agora: string = new Date().toISOString()): Perfi
     criadoEm: agora,
     telefone: TELEFONE_RESERVADO,
     fotoUrl: null,
+    tipoEntidade: 'individual' as const,
+    competencias: [] as string[],
+    disponibilidadeTexto: null,
   };
 
   return [

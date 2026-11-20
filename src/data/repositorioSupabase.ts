@@ -21,6 +21,7 @@ import type {
   PropostaEntrada,
 } from '../domain/types';
 import {
+  competenciasDeTexto,
   limparEntrada,
   limparPedido,
   validarAvaliacao,
@@ -56,6 +57,9 @@ interface LinhaPerfil {
   descricao: string;
   preco_texto: string | null;
   foto_url: string | null;
+  tipo_entidade: string | null;
+  competencias: string[] | null;
+  disponibilidade_texto: string | null;
   disponivel: boolean;
   exemplo: boolean;
   criado_em: string;
@@ -99,6 +103,12 @@ function paraPerfil(linha: LinhaPerfil): Perfil {
     descricao: linha.descricao,
     precoTexto: linha.preco_texto,
     fotoUrl: linha.foto_url,
+    tipoEntidade:
+      linha.tipo_entidade === 'pequeno-negocio' || linha.tipo_entidade === 'empresa'
+        ? linha.tipo_entidade
+        : 'individual',
+    competencias: linha.competencias ?? [],
+    disponibilidadeTexto: linha.disponibilidade_texto,
     disponivel: linha.disponivel,
     exemplo: linha.exemplo,
     criadoEm: linha.criado_em,
@@ -290,6 +300,9 @@ export class RepositorioSupabase implements RepositorioSalu {
         descricao: limpa.descricao,
         preco_texto: limpa.precoTexto === '' ? null : limpa.precoTexto,
         foto_url: limpa.fotoUrl,
+        tipo_entidade: limpa.tipoEntidade,
+        competencias: competenciasDeTexto(limpa.competenciasTexto),
+        disponibilidade_texto: limpa.disponibilidadeTexto === '' ? null : limpa.disponibilidadeTexto,
       })
       .select('*')
       .single();

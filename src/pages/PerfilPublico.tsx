@@ -126,6 +126,38 @@ export function PerfilPublico() {
         {perfil.descricao}
       </p>
 
+      {perfil.competencias.length > 0 && (
+        <section className="mt-5">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">Competências</h2>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {perfil.competencias.map((competencia) => (
+              <li key={competencia} className="rounded-full border border-line bg-paper px-3 py-1 text-sm">
+                {competencia}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(perfil.disponibilidadeTexto || perfil.tipoEntidade !== 'individual') && (
+        <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
+          {perfil.disponibilidadeTexto && (
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-mute">Disponibilidade</dt>
+              <dd className="mt-0.5 font-medium">{perfil.disponibilidadeTexto}</dd>
+            </div>
+          )}
+          {perfil.tipoEntidade !== 'individual' && (
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-mute">Tipo</dt>
+              <dd className="mt-0.5 font-medium">
+                {perfil.tipoEntidade === 'empresa' ? 'Empresa' : 'Pequeno negócio'}
+              </dd>
+            </div>
+          )}
+        </dl>
+      )}
+
       <Reputacao resumo={reputacao} tipo="prestador" />
 
       {sessao && sessao.perfilId !== perfil.id && !perfil.exemplo && (() => {

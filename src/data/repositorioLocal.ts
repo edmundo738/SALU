@@ -18,6 +18,7 @@ import type {
 } from '../domain/types';
 import { filtrarPedidos, filtrarPerfis } from '../domain/filtros';
 import {
+  competenciasDeTexto,
   limparEntrada,
   limparPedido,
   validarAvaliacao,
@@ -78,7 +79,13 @@ export class RepositorioLocal implements RepositorioSalu {
   // -- perfis ---------------------------------------------------------------
 
   private lerPerfis(): Perfil[] {
-    return ler<Perfil[]>(this.armazenamento, CHAVE_PERFIS, []);
+    // Perfis gravados antes de existirem estes campos ganham valores neutros.
+    return ler<Perfil[]>(this.armazenamento, CHAVE_PERFIS, []).map((perfil) => ({
+      ...perfil,
+      tipoEntidade: perfil.tipoEntidade ?? 'individual',
+      competencias: perfil.competencias ?? [],
+      disponibilidadeTexto: perfil.disponibilidadeTexto ?? null,
+    }));
   }
 
   private gravarPerfis(perfis: Perfil[]): void {
@@ -100,11 +107,14 @@ export class RepositorioLocal implements RepositorioSalu {
     }
 
     const limpa = limparEntrada(validacao.valor);
+    const { competenciasTexto, disponibilidadeTexto, ...resto } = limpa;
 
     const perfil: Perfil = {
       id: this.gerarId(),
-      ...limpa,
+      ...resto,
       precoTexto: limpa.precoTexto === '' ? null : limpa.precoTexto,
+      competencias: competenciasDeTexto(competenciasTexto),
+      disponibilidadeTexto: disponibilidadeTexto === '' ? null : disponibilidadeTexto,
       disponivel: true,
       exemplo: false,
       criadoEm: this.agora(),

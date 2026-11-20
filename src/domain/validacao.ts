@@ -1,4 +1,4 @@
-import { CATEGORIA_IDS, MUNICIPIOS, URGENCIAS } from './types';
+import { CATEGORIA_IDS, MUNICIPIOS, TIPOS_ENTIDADE, URGENCIAS } from './types';
 import type {
   AvaliacaoEntrada,
   CategoriaId,
@@ -37,6 +37,29 @@ function limpar(texto: string): string {
 // Perfil (lado da oferta)
 // ---------------------------------------------------------------------------
 
+const LIMITE_COMPETENCIAS = 8;
+const LIMITE_COMPETENCIA_CHARS = 30;
+
+/**
+ * «frigoríficos, arcas,  máquinas de lavar,frigoríficos» → 3 competências.
+ * Separa por vírgula ou nova linha, limpa espaços, remove repetidas (sem olhar
+ * a maiúsculas) e corta ao limite. É a mesma regra no formulário e na gravação.
+ */
+export function competenciasDeTexto(texto: string): string[] {
+  const vistas = new Set<string>();
+  const saida: string[] = [];
+  for (const bruto of texto.split(/[,\n;]/)) {
+    const item = limpar(bruto);
+    if (item === '') continue;
+    const chave = item.toLowerCase();
+    if (vistas.has(chave)) continue;
+    vistas.add(chave);
+    saida.push(item);
+    if (saida.length === LIMITE_COMPETENCIAS) break;
+  }
+  return saida;
+}
+
 export function limparEntrada(entrada: PerfilEntrada): PerfilEntrada {
   return {
     nome: limpar(entrada.nome),
@@ -48,6 +71,9 @@ export function limparEntrada(entrada: PerfilEntrada): PerfilEntrada {
     descricao: entrada.descricao.trim(),
     precoTexto: entrada.precoTexto.trim(),
     fotoUrl: entrada.fotoUrl,
+    tipoEntidade: entrada.tipoEntidade,
+    competenciasTexto: competenciasDeTexto(entrada.competenciasTexto).join(', '),
+    disponibilidadeTexto: limpar(entrada.disponibilidadeTexto),
   };
 }
 
@@ -102,6 +128,18 @@ export function validarPerfil(entrada: PerfilEntrada): ResultadoValidacao<Perfil
     erros.precoTexto = `O preço não pode ter mais de ${LIMITES.precoTexto.max} caracteres.`;
   }
 
+  if (!TIPOS_ENTIDADE.some((t) => t.id === valor.tipoEntidade)) {
+    erros.tipoEntidade = 'Indique se trabalha por conta própria, como pequeno negócio ou empresa.';
+  }
+
+  if (competenciasDeTexto(valor.competenciasTexto).some((c) => c.length > LIMITE_COMPETENCIA_CHARS)) {
+    erros.competenciasTexto = `Cada competência deve ter no máximo ${LIMITE_COMPETENCIA_CHARS} caracteres.`;
+  }
+
+  if (valor.disponibilidadeTexto.length > 60) {
+    erros.disponibilidadeTexto = 'A disponibilidade não pode ter mais de 60 caracteres.';
+  }
+
   return { valido: Object.keys(erros).length === 0, erros, valor };
 }
 
@@ -117,6 +155,9 @@ export function perfilVazio(): PerfilEntrada {
     descricao: '',
     precoTexto: '',
     fotoUrl: null,
+    tipoEntidade: 'individual',
+    competenciasTexto: '',
+    disponibilidadeTexto: '',
   };
 }
 

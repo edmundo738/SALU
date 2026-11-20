@@ -25,6 +25,9 @@ function entradaValida(alteracoes: Partial<PerfilEntrada> = {}): PerfilEntrada {
     descricao: 'Instalo e reparo quadros eléctricos, tomadas e iluminação em casas e lojas.',
     precoTexto: 'A combinar',
     fotoUrl: null,
+    tipoEntidade: 'individual',
+    competenciasTexto: 'Quadros, tomadas, quadros, iluminação',
+    disponibilidadeTexto: 'Seg–sáb',
     ...alteracoes,
   };
 }
@@ -72,6 +75,9 @@ describe('RepositorioLocal — perfis', () => {
     expect(perfil.exemplo).toBe(false);
     expect(perfil.disponivel).toBe(true);
     expect(perfil.telefone).toBe('244923111222');
+    // Competências limpas e sem repetidas.
+    expect(perfil.competencias).toEqual(['Quadros', 'tomadas', 'iluminação']);
+    expect(perfil.disponibilidadeTexto).toBe('Seg–sáb');
   });
 
   it('rejeita dados inválidos em vez de os guardar', async () => {

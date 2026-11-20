@@ -36,7 +36,9 @@ export function PerfilCartao({ perfil }: { perfil: Perfil }) {
 
           <p className="mt-0.5 truncate text-sm text-ink-soft">{perfil.oficio}</p>
           <p className="mt-1 truncate text-xs text-mute">
-            {perfil.bairro} · {perfil.municipio}
+            {perfil.competencias.length > 0
+              ? perfil.competencias.slice(0, 3).join(' · ')
+              : `${perfil.bairro} · ${perfil.municipio}`}
           </p>
         </div>
       </div>
