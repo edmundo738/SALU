@@ -1,0 +1,14 @@
+# Netlify — aplicação de página única com rotas do lado do cliente.
+# Sem esta reescrita, abrir /pedidos/abc directamente dá 404.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
