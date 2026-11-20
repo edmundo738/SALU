@@ -136,7 +136,7 @@ arquitectura:
 
 | # | Decisão | Efeito |
 |---|---|---|
-| C1 | Chat interno ou só acordo estruturado | Chat livre = +3 semanas e moderação contínua |
+| C1 | **Decidido (20/11):** há chat interno, separado do acordo | +3 semanas e moderação contínua. Regras em `docs/CICLOS.md` §Ciclo 5 |
 | C2 | Canal de notificações (in-app, email ou push) | Bloqueia o ciclo de propostas |
 | C3 | Permitir publicar pedido antes de criar conta | Reduz fricção, aumenta spam |
 | C7 | Denúncias e política de conteúdo antes do piloto | Impede abertura pública sem isto |

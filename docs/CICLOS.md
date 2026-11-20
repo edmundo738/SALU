@@ -131,20 +131,46 @@ as restantes ficam recusadas; o pedido deixa de aceitar propostas.
 
 ---
 
-## Ciclo 5 — Negociação e acordo
+## Ciclo 5 — Conversa e acordo
 
-**Objectivo:** registar o que foi combinado, com confirmação das duas partes.
-**Depende de:** Ciclo 4.
+**Objectivo:** as partes falam dentro da plataforma e registam o que combinaram.
+**Depende de:** Ciclo 4. **Alimenta:** Ciclo 8 (moderação).
 
-- **Acordo estruturado, não chat livre:** proposta de condições → contraproposta →
-  confirmação explícita de cada lado.
+Decidido pelo dono do produto: **há chat interno**, além do acordo estruturado.
+As duas coisas são separadas de propósito, e essa separação é o que as torna seguras:
+
+- **A conversa é informal.** Serve para perguntar, mostrar uma fotografia, combinar uma
+  visita. Nada do que é dito ali é vinculativo.
+- **O acordo é formal.** Preço, prazo e condições num formulário, confirmado por cada
+  lado. **O acordo é a fonte de verdade, nunca a conversa.**
+
+### Regras da conversa
+
+| Regra | Porquê |
+|---|---|
+| Só existe **dentro de um pedido** | Não há caixa de entrada global nem conversas entre estranhos |
+| O prestador só escreve **depois de enviar proposta** | Impede mensagens não solicitadas a clientes |
+| A conversa fecha quando o pedido fecha | Fica em leitura, não em escrita |
+| Texto e uma fotografia por mensagem | Voz e vídeo são custo de armazenamento e de moderação |
+| Botão de denúncia em cada mensagem | A moderação é o Ciclo 8, não uma ideia para depois |
+| Limite de mensagens por hora em contas novas | O primeiro ataque a um chat aberto é spam |
+
+Tecnicamente usa **Supabase Realtime** — já faz parte da stack, não é dependência nova.
+
+### O acordo
+
+- Proposta de condições → contraproposta → confirmação explícita de cada lado.
 - Preço final e condições guardados, **privados** — nunca em página pública.
 - O serviço só avança quando **ambas** confirmam.
 
-**Verificável:** A propõe, B contrapropõe, A aceita, B confirma → estado «acordado». Com
-apenas uma confirmação, continua «em negociação». O preço não aparece em nenhuma listagem.
-**Riscos:** um acordo registado tem peso probatório — exige termos de utilização claros.
-**Esforço:** ~2 semanas.
+**Verificável:** um prestador sem proposta não consegue abrir conversa com o cliente; com
+proposta, as mensagens chegam em tempo real ao outro dispositivo. A propõe, B
+contrapropõe, A aceita, B confirma → «acordado»; com uma só confirmação, continua «em
+negociação». O preço não aparece em nenhuma listagem. Um pedido concluído fecha a conversa.
+**Riscos:** o chat é o sítio onde aparece fraude, assédio e conteúdo proibido — sem o
+Ciclo 8 ligado no mesmo dia, não deve ser aberto a estranhos. O acordo registado tem peso
+probatório e exige termos de utilização claros.
+**Esforço:** ~3 semanas de construção (conversa + acordo) e **moderação contínua**.
 
 ---
 
@@ -249,12 +275,19 @@ push (service worker). **Canal por decidir** — e é a decisão que mais atrasa
 ## Grafo de dependências
 
 ```
-0 Fundação ─┬─ 1 Identidade ── 2 Oferta/procura ── 3 Descoberta ── 4 Propostas ── 5 Acordo ── 6 Estados ── 7 Reputação ── 9 Reconhecimentos
-            │                                                    ▲
-            └─ 8 Denúncias ────────────────────────────────────┘
+0 Fundação ─┬─ 1 Identidade ── 2 Oferta/procura ── 3 Descoberta ── 4 Propostas
+            │                                                          │
+            │                                                          ▼
+            │                                            5 Conversa + acordo
+            │                                                          │
+            │                                                          ▼
+            │                                              6 Estados ── 7 Reputação ── 9 Reconhecimentos
+            │                                                          ▲
+            └─ 8 Denúncias ────────────────────────────────────────────┘
                     └─ 10 Categorias personalizadas
 
 Notificações ──► necessárias em 4, 5, 6, 7
+8 Denúncias  ──► **pré-requisito do Ciclo 5**: sem moderação não se abre chat
 ```
 
 ---
@@ -265,7 +298,7 @@ Estas não são detalhes: mudam a arquitectura.
 
 | # | A visão pede | O que está decidido hoje | Consequência |
 |---|---|---|---|
-| C1 | «A comunicação interna deve ser incentivada» | WhatsApp é o canal; não se constrói chat | Chat livre exige tempo real, moderação e armazenamento: **+3 semanas e custo operacional**. Alternativa recomendada: **acordo estruturado** (Ciclo 5), que preserva o histórico sem chat |
+| C1 | «A comunicação interna deve ser incentivada» | **Decidido: há chat**, separado do acordo | +3 semanas e moderação contínua. Mitigado pelas regras do Ciclo 5: conversa só dentro de um pedido, prestador só escreve após proposta, denúncia em cada mensagem |
 | C2 | Notificações em vários ciclos | Não existem; canal por decidir | Bloqueia o Ciclo 4 |
 | C3 | Publicar pedido **antes** de criar conta | Tudo exige identidade | Reduz fricção, aumenta spam. Exige fluxo de «reclamar pedido» e limites por dispositivo |
 | C4 | Preço acordado registado | Sem pagamentos no produto | Registar não é processar — mas cria valor probatório; exige termos claros |
@@ -282,12 +315,13 @@ Estas não são detalhes: mudam a arquitectura.
 | Bloco | Ciclos | Duração |
 |---|---|---|
 | Plataforma utilizável entre pessoas | 0–2 | ~5 semanas |
-| Mercado a funcionar (propostas, acordo, estados) | 3–6 | ~6,5 semanas |
+| Mercado a funcionar (propostas, conversa, acordo, estados) | 3–6 | ~9,5 semanas |
 | Confiança (reputação, denúncias) | 7–8 | ~5 semanas |
 | Refinamento | 9–10 | ~2,5 semanas |
 
-**≈ 5 meses** até ao produto descrito. Não são 5 meses de código: dois deles são operação
-(moderação, suporte, resolução de disputas), que não se automatiza.
+**≈ 6 meses** até ao produto descrito. Não são 6 meses de código: dois deles são operação
+(moderação, suporte, resolução de disputas), que não se automatiza. O chat acrescenta
+tempo de construção **e** volume de moderação — foi o custo que a decisão assumiu.
 
 ---
 
@@ -296,6 +330,8 @@ Estas não são detalhes: mudam a arquitectura.
 **Nada disto.** Até 28 de Novembro o objectivo é a demonstração: publicar, ensaiar, gravar.
 Os ciclos começam a 29.
 
-A única peça desta visão que vale a pena mencionar ao júri é o **Ciclo 5** — o acordo
-estruturado com confirmação das duas partes. É barato de explicar, distingue o SALU de um
-grupo de WhatsApp e não exige chat.
+A única peça desta visão que vale a pena mencionar ao júri é o **Ciclo 5** — a conversa
+dentro do pedido e o acordo confirmado pelas duas partes. É barato de explicar e
+distingue o SALU de um grupo de WhatsApp.
+
+Ao júri diz-se «planeado», nunca «feito». O protótipo do dia 28 não tem chat.
