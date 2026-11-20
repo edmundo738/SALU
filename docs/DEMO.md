@@ -1,80 +1,92 @@
 # Roteiro de demonstração — 2 minutos
 
-Limite do concurso: **2 minutos**. Este roteiro tem 1 min 55 s e deixa margem.
+Limite do concurso: **2 minutos**. Este roteiro tem 1 min 55 s.
 
-**Antes de gravar:** telemóvel com o URL aberto e sem sessão iniciada; uma fotografia de
-um electrodoméstico na galeria; WhatsApp instalado; modo de avião desligado.
+**Antes de gravar:** telemóvel com o URL aberto e **sem sessão iniciada**; uma fotografia
+de um electrodoméstico na galeria; WhatsApp instalado.
+
+**Nota sobre trocar de lado:** a demonstração decorre num só dispositivo, por isso os dois
+papéis são interpretados pela mesma pessoa. No vídeo, use **corte seco** nas trocas de
+sessão — não mostre os cliques de sair e entrar. Corte para o ecrã já com o outro papel.
 
 ---
 
-## 0:00–0:15 · O problema
+## 0:00–0:12 · O problema
 
 **Ecrã:** página inicial.
 
 **Diz:** «Em Angola muita gente sabe fazer alguma coisa e não consegue ser encontrada.
-Publica num grupo de WhatsApp e o pedido desaparece em duas horas. O SALU existe para
-que esse pedido não desapareça.»
+Publica num grupo de WhatsApp e o pedido desaparece em duas horas.»
 
 ---
 
-## 0:15–0:30 · Dois lados, uma plataforma
+## 0:12–0:22 · Dois lados, uma plataforma
 
-**Ecrã:** os dois cartões da página inicial.
+**Ecrã:** os dois cartões numerados.
 
-**Diz:** «Um lado procura trabalho. O outro precisa de um serviço. A plataforma serve os
-dois — e é isso que a torna um mercado e não um directório.»
-
----
-
-## 0:30–0:55 · O cliente publica
-
-**Acções:** *Preciso de um serviço* → nome → *Publicar pedido* → título «Frigorífico
-deixou de refrigerar» → categoria Reparações → município Kilamba Kiaxi → bairro
-Centralidade do Kilamba → descrição → **fotografia** → *Publicar pedido*.
-
-**Diz:** «A Marta tem um frigorífico avariado. Descreve o problema, junta uma fotografia
-e indica onde está.»
+**Diz:** «Um lado procura trabalho. O outro precisa de um serviço. O SALU serve os dois.»
+*(Corta para a secção seguinte.)*
 
 ---
 
-## 0:55–1:10 · A regra que evita confusão
+## 0:22–0:42 · O cliente publica
 
-**Ecrã:** página do pedido acabado de publicar.
+**Acções:** *Preciso de um serviço* → nome → título «Frigorífico deixou de refrigerar» →
+Reparações → Kilamba Kiaxi → Centralidade do Kilamba → descrição → **fotografia** →
+*Publicar pedido*.
 
-**Diz:** «Reparem no que **não** está aqui: não há botão para a Marta contactar ninguém.
-Ela está a pedir — o primeiro passo é de quem vai resolver. O sistema respeita a
-intenção de quem está em cada lado.»
-
-*(Se aparecer «O teu pedido está publicado», está correcto.)*
+**Diz:** «A Marta tem um frigorífico avariado. Descreve, fotografa e diz onde está.»
 
 ---
 
-## 1:10–1:30 · O prestador encontra
+## 0:42–0:55 · A regra do primeiro passo
 
-**Acções:** sair → *Entrar* → *Sou prestador* → nome → *Mural de pedidos* → filtro
-Reparações / Kilamba Kiaxi.
+**Ecrã:** página do pedido recém-publicado.
 
-**Diz:** «Do outro lado, o Ivo é técnico de frigoríficos. Em vez de esperar que alguém
-lhe ligue, abre o mural e encontra trabalho na zona dele e na sua especialidade.»
-
----
-
-## 1:30–1:45 · O contacto
-
-**Acções:** abrir o pedido → *Falar no WhatsApp*.
-
-**Diz:** «Abre o WhatsApp com a mensagem já escrita: o Ivo sabe de que pedido se trata e
-a Marta sabe quem lhe está a escrever. Combinam preço e hora directamente — o SALU não
-toca no dinheiro.»
+**Diz:** «Reparem no que não está aqui: nenhum botão para a Marta contactar ninguém. Ela
+está a pedir — o primeiro passo é de quem vai resolver.»
 
 ---
 
-## 1:45–1:55 · A prova
+## 0:55–1:15 · O prestador encontra e propõe
 
-**Ecrã:** rodapé → *Área interna*.
+**Corte.** Ecrã já como prestador, no mural filtrado por Reparações.
 
-**Diz:** «Cada contacto fica registado. É esta a métrica que queremos medir no piloto:
-quantas pessoas conseguem o primeiro trabalho.»
+**Acções:** abre o pedido → preenche *Enviar proposta* (mensagem, 15.000 Kz, amanhã) →
+*Enviar proposta*.
+
+**Diz:** «O Ivo é técnico de frigoríficos. Encontra o pedido na zona dele e envia uma
+proposta concreta: o que faz, quanto, e quando.»
+
+---
+
+## 1:15–1:35 · A conversa
+
+**Acções:** escreve na conversa: «Bom dia, consigo passar às 9h. Serve?»
+**Corte.** Ecrã da Marta: vê a proposta, lê a mensagem, responde «Perfeito, às 9h. Obrigada.»
+
+**Diz:** «A conversa fica dentro do pedido. Não se perde num telefone, e nenhum dos dois
+pode mudar depois a versão do que foi combinado.»
+
+---
+
+## 1:35–1:48 · A saída para o WhatsApp
+
+**Corte.** Ecrã da Marta.
+
+**Diz:** «Quando quiserem, continuam no WhatsApp — o SALU não prende ninguém. O que fica
+registado é que houve contacto.»
+
+*(Mostra o botão e a mensagem já escrita. Não é preciso abrir a aplicação.)*
+
+---
+
+## 1:48–1:55 · A prova
+
+**Ecrã:** *Área interna*.
+
+**Diz:** «Cada contacto fica registado. É esta a métrica do piloto: quantas pessoas
+conseguem o primeiro trabalho.»
 
 ---
 
@@ -82,8 +94,7 @@ quantas pessoas conseguem o primeiro trabalho.»
 
 **Ecrã:** *Planos*.
 
-**Diz:** «Quem procura a primeira oportunidade nunca paga para ser visto. É esse o
-princípio do SALU.»
+**Diz:** «Quem procura a primeira oportunidade nunca paga para ser visto.»
 
 ---
 
@@ -91,20 +102,17 @@ princípio do SALU.»
 
 | Situação | O que fazer |
 |---|---|
-| A fotografia não carrega | Continuar sem fotografia — o campo é opcional; dizer «a fotografia ajuda, mas não é obrigatória» |
-| WhatsApp não abre | Mostrar o botão e a mensagem gerada; dizer que é um `wa.me` com texto pré-preenchido |
-| O pedido não aparece no mural | Recarregar a página; o pedido está guardado no dispositivo |
-| Internet lenta | O arranque são 71 kB; se falhar, usar o vídeo pré-gravado como plano B |
-
-## Gravar o vídeo de reserva
-
-Gravar uma vez com antecedência e guardar. No dia, se a rede falhar, apresenta-se o
-vídeo em vez da demonstração ao vivo.
+| A fotografia não carrega | Continuar sem ela — é opcional |
+| A conversa não abre | Confirma que entraste como prestador **antes** de abrir o pedido |
+| As propostas não aparecem | Confirma que voltaste a entrar com **o mesmo nome** da cliente |
+| WhatsApp não abre | Mostrar o botão e a mensagem gerada; não insistir |
+| Rede lenta | O arranque são 75 kB; ter o vídeo de reserva |
 
 ## O que **não** dizer
 
 - Não dizer que há utilizadores reais, avaliações ou trabalhos concluídos.
-- Não dizer que funciona entre dispositivos — não funciona.
+- Não dizer que funciona entre dispositivos — **não funciona**.
 - Não dizer que a autenticação está feita.
+- Não dizer que o acordo é vinculativo — nesta versão é uma conversa registada.
 
 A frase certa: **«é assim que o produto vai funcionar; a comunidade é o próximo passo».**

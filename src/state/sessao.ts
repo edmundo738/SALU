@@ -1,11 +1,43 @@
 import { create } from 'zustand';
 import type { Sessao, TipoSessao } from '../domain/types';
 
-const CHAVE = 'salu:v2:sessao';
+const CHAVE_SESSAO = 'salu:v2:sessao';
+const CHAVE_PERTENCE = 'salu:v2:pertence';
 
-function ler(): Sessao | null {
+interface RegistoPertence {
+  perfilId: string | null;
+  pedidoIds: string[];
+}
+
+type MapaPertence = Record<string, RegistoPertence>;
+
+const VAZIO: RegistoPertence = { perfilId: null, pedidoIds: [] };
+
+/** O nome é a identidade neste protótipo: sem autenticação, é o que existe. */
+function chaveNome(nome: string): string {
+  return nome.trim().toLowerCase();
+}
+
+function lerPertence(): MapaPertence {
   try {
-    const bruto = window.localStorage.getItem(CHAVE);
+    const bruto = window.localStorage.getItem(CHAVE_PERTENCE);
+    return bruto ? (JSON.parse(bruto) as MapaPertence) : {};
+  } catch {
+    return {};
+  }
+}
+
+function gravarPertence(mapa: MapaPertence): void {
+  try {
+    window.localStorage.setItem(CHAVE_PERTENCE, JSON.stringify(mapa));
+  } catch {
+    // Sem armazenamento, a posse vive apenas em memória nesta sessão.
+  }
+}
+
+function lerSessao(): Sessao | null {
+  try {
+    const bruto = window.localStorage.getItem(CHAVE_SESSAO);
     if (!bruto) return null;
     const dados = JSON.parse(bruto) as Partial<Sessao>;
     if (!dados || typeof dados.nome !== 'string') return null;
@@ -21,12 +53,12 @@ function ler(): Sessao | null {
   }
 }
 
-function gravar(sessao: Sessao | null): void {
+function gravarSessao(sessao: Sessao | null): void {
   try {
     if (sessao) {
-      window.localStorage.setItem(CHAVE, JSON.stringify(sessao));
+      window.localStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessao));
     } else {
-      window.localStorage.removeItem(CHAVE);
+      window.localStorage.removeItem(CHAVE_SESSAO);
     }
   } catch {
     // Sem armazenamento, a sessão vive apenas em memória.
@@ -44,53 +76,65 @@ interface EstadoSessao {
 /**
  * Sessão de demonstração.
  *
- * Não é autenticação. Não há palavra-passe, verificação nem conta. Serve para o
- * visitante escolher de que lado do mercado quer explorar o produto — e a
- * interface diz isso de forma discreta em vez de fingir que existe segurança.
+ * Não é autenticação: não há palavra-passe, verificação nem conta. Serve para o
+ * visitante escolher de que lado do mercado quer explorar o produto.
+ *
+ * A posse do que cada pessoa criou é guardada **por nome**, não pela sessão
+ * activa. Sem isso, trocar de lado para ver o outro lado de um pedido apagava a
+ * autoria — e o cliente nunca conseguia ver as propostas que recebeu. É uma
+ * identidade fraca (duas pessoas com o mesmo nome colidem), aceitável num
+ * protótipo e substituída por autenticação no Ciclo 0 de `docs/CICLOS.md`.
  */
 export const useSessao = create<EstadoSessao>((set, get) => ({
-  sessao: ler(),
+  sessao: lerSessao(),
 
   entrar: (tipo, nome) => {
-    /*
-     * Entrar inicia sempre uma sessão nova.
-     *
-     * Uma versão anterior tentava ser mais esperta e preservava o perfil e os
-     * pedidos da sessão anterior. O resultado foi um prestador tratado como
-     * autor de pedidos que nunca publicou — e, por isso, sem botão de contacto.
-     * Numa demonstração cada entrada representa uma pessoa; não há forma fiável
-     * de saber que é a mesma, porque não há autenticação.
-     */
+    const limpo = nome.trim();
+    const registo = lerPertence()[chaveNome(limpo)] ?? VAZIO;
+
     const sessao: Sessao = {
       tipo,
-      nome: nome.trim(),
+      nome: limpo,
       criadoEm: new Date().toISOString(),
-      perfilId: null,
-      pedidoIds: [],
+      perfilId: registo.perfilId,
+      pedidoIds: [...registo.pedidoIds],
     };
 
-    gravar(sessao);
+    gravarSessao(sessao);
     set({ sessao });
   },
 
   sair: () => {
-    gravar(null);
+    gravarSessao(null);
     set({ sessao: null });
   },
 
   definirPerfil: (perfilId) => {
     const actual = get().sessao;
     if (!actual) return;
+
+    const mapa = lerPertence();
+    const chave = chaveNome(actual.nome);
+    mapa[chave] = { perfilId, pedidoIds: mapa[chave]?.pedidoIds ?? actual.pedidoIds };
+    gravarPertence(mapa);
+
     const sessao = { ...actual, perfilId };
-    gravar(sessao);
+    gravarSessao(sessao);
     set({ sessao });
   },
 
   adicionarPedido: (pedidoId) => {
     const actual = get().sessao;
     if (!actual) return;
-    const sessao = { ...actual, pedidoIds: [pedidoId, ...actual.pedidoIds] };
-    gravar(sessao);
+
+    const mapa = lerPertence();
+    const chave = chaveNome(actual.nome);
+    const pedidoIds = [pedidoId, ...(mapa[chave]?.pedidoIds ?? actual.pedidoIds)];
+    mapa[chave] = { perfilId: mapa[chave]?.perfilId ?? actual.perfilId, pedidoIds };
+    gravarPertence(mapa);
+
+    const sessao = { ...actual, pedidoIds };
+    gravarSessao(sessao);
     set({ sessao });
   },
 }));

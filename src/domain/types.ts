@@ -150,6 +150,52 @@ export interface EventoContacto {
 }
 
 // ---------------------------------------------------------------------------
+// Propostas e conversa (Ciclo 5, versão de demonstração)
+// ---------------------------------------------------------------------------
+
+/**
+ * Uma proposta é a manifestação formal de interesse de um prestador num pedido.
+ *
+ * A regra que a torna necessária: sem proposta, um prestador não pode abrir
+ * conversa com o cliente. É o que impede mensagens não solicitadas.
+ */
+export interface Proposta {
+  id: string;
+  pedidoId: string;
+  autorNome: string;
+  mensagem: string;
+  precoTexto: string;
+  prazoTexto: string;
+  criadoEm: string;
+}
+
+export interface PropostaEntrada {
+  pedidoId: string;
+  autorNome: string;
+  mensagem: string;
+  precoTexto: string;
+  prazoTexto: string;
+}
+
+export type LadoConversa = 'cliente' | 'prestador';
+
+export interface Mensagem {
+  id: string;
+  pedidoId: string;
+  lado: LadoConversa;
+  autorNome: string;
+  texto: string;
+  criadoEm: string;
+}
+
+export interface MensagemEntrada {
+  pedidoId: string;
+  lado: LadoConversa;
+  autorNome: string;
+  texto: string;
+}
+
+// ---------------------------------------------------------------------------
 // Sessão de demonstração
 // ---------------------------------------------------------------------------
 

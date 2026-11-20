@@ -6,10 +6,13 @@ import { obterCategoria } from '../domain/categorias';
 import { construirLinkWhatsAppPedido } from '../domain/whatsapp';
 import { tempoRelativo } from '../lib/formato';
 import { IconeCategoria } from '../components/IconeCategoria';
+import { Conversa } from '../components/Conversa';
+import { FormularioProposta } from '../components/FormularioProposta';
 
 export function PedidoDetalhe() {
   const { id } = useParams<{ id: string }>();
   const pedidos = useApp((estado) => estado.pedidos);
+  const propostas = useApp((estado) => estado.propostas);
   const contactos = useApp((estado) => estado.contactos);
   const carregar = useApp((estado) => estado.carregar);
   const carregarContactos = useApp((estado) => estado.carregarContactos);
@@ -48,6 +51,13 @@ export function PedidoDetalhe() {
    * quem vai resolver — por isso o botão de WhatsApp nunca aparece ao autor.
    */
   const ehMeuPedido = Boolean(sessao?.pedidoIds.includes(pedido.id));
+
+  const propostasDoPedido = propostas.filter((proposta) => proposta.pedidoId === pedido.id);
+
+  const minhaProposta = sessao
+    ? propostasDoPedido.find((proposta) => proposta.autorNome === sessao.nome)
+    : undefined;
+
   const contactosRecebidos = contactos.filter(
     (evento) => evento.alvoTipo === 'pedido' && evento.alvoId === pedido.id,
   ).length;
@@ -60,10 +70,7 @@ export function PedidoDetalhe() {
 
   return (
     <article className="mx-auto max-w-2xl">
-      <Link
-        to="/pedidos"
-        className="btn-fantasma -ml-2 text-mute hover:text-ink"
-      >
+      <Link to="/pedidos" className="btn-fantasma -ml-2 text-mute hover:text-ink">
         <span aria-hidden="true">←</span> Mural de pedidos
       </Link>
 
@@ -105,6 +112,54 @@ export function PedidoDetalhe() {
         {pedido.descricao}
       </p>
 
+      {/* Propostas recebidas — visíveis a quem publicou o pedido. */}
+      {ehMeuPedido && propostasDoPedido.length > 0 && (
+        <section className="mt-8">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="seccao-titulo text-xl">Propostas recebidas</h2>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-mute">
+              {propostasDoPedido.length}
+            </span>
+          </div>
+
+          <ul className="mt-3 space-y-2">
+            {propostasDoPedido.map((proposta) => (
+              <li key={proposta.id} className="cartao p-4">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-semibold">{proposta.autorNome}</span>
+                  <span className="text-[11px] text-mute">
+                    {tempoRelativo(proposta.criadoEm)}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                  {proposta.mensagem}
+                </p>
+                {(proposta.precoTexto || proposta.prazoTexto) && (
+                  <p className="mt-2 flex flex-wrap gap-x-4 text-xs text-mute">
+                    {proposta.precoTexto && <span>Valor: {proposta.precoTexto}</span>}
+                    {proposta.prazoTexto && <span>Prazo: {proposta.prazoTexto}</span>}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Formulário — visível ao profissional que ainda não propôs. */}
+      {!ehMeuPedido && !pedido.exemplo && !minhaProposta && sessao && (
+        <FormularioProposta pedidoId={pedido.id} autorNome={sessao.nome} />
+      )}
+
+      {/* Conversa — só depois de haver proposta, e nunca em pedidos de exemplo. */}
+      {!pedido.exemplo && (ehMeuPedido || minhaProposta) && (
+        <Conversa
+          pedidoId={pedido.id}
+          lado={ehMeuPedido ? 'cliente' : 'prestador'}
+          autorNome={ehMeuPedido ? pedido.autorNome : (sessao?.nome ?? 'Profissional')}
+        />
+      )}
+
       <footer className="mt-8">
         {ehMeuPedido ? (
           <div className="cartao p-5 sm:p-6">
@@ -117,8 +172,8 @@ export function PedidoDetalhe() {
 
             <p className="mt-3 text-lg font-semibold">O teu pedido está no mural.</p>
             <p className="mt-1.5 text-sm leading-relaxed text-mute">
-              Quem tiver interesse entra em contacto contigo pelo WhatsApp. O primeiro
-              passo é de quem vai resolver — não precisas de fazer mais nada.
+              Quem tiver interesse envia uma proposta ou contacta-te pelo WhatsApp. O
+              primeiro passo é de quem vai resolver.
             </p>
 
             <div className="mt-4 flex items-center justify-between rounded-xl bg-sand px-4 py-3">
@@ -152,8 +207,8 @@ export function PedidoDetalhe() {
               </p>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-              Abrimos o WhatsApp com a mensagem já escrita. Combinam preço, deslocação e
-              pagamento directamente entre vocês — o SALU não intermedeia o dinheiro.
+              Abrimos o WhatsApp com a mensagem já escrita. Combina o resto directamente —
+              o SALU não intermedeia o dinheiro.
             </p>
             <a
               href={linkWhatsApp}

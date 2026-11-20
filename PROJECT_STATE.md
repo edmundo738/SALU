@@ -18,7 +18,7 @@ demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
 | Commits | `FACT` | 3 (`d80da2b` + alterações de estabilização por commitar) |
 | Ficheiros versionados | `MEASURED` | 55 antes desta fase |
 | Ecrãs | `MEASURED` | 11 rotas |
-| Testes | `MEASURED` | 43, todos verdes |
+| Testes | `MEASURED` | 53, todos verdes |
 | Build | `MEASURED` | `tsc --noEmit` limpo |
 | Bundle inicial | `MEASURED` | 72,7 kB gzip + 73 kB de fontes woff2 (+ 61 kB Supabase lazy) |
 | Modo de dados | `OBSERVED` | local |
@@ -94,6 +94,21 @@ aplicação no telemóvel, estados de contacto iniciado a fechar o ciclo.
 Verificado a 375 px e em desktop: sem transbordo horizontal; barra inferior dentro do
 viewport; tipografia a carregar (família calculada confirmada).
 
+### E7 — Proposta e conversa `FACT`
+Ciclo completo verificado no build de produção, numa só origem:
+
+1. Cliente «Marta Kilamba» publica o pedido; a posse fica registada por nome.
+2. Prestador «Ivo Manuel» abre o pedido, envia proposta (mensagem, 15.000 Kz, amanhã) e
+   escreve na conversa.
+3. A cliente volta a entrar **com o mesmo nome**, recupera a autoria, vê a proposta, lê a
+   mensagem do prestador e responde.
+4. Ordem final dos lados: `prestador, prestador, cliente` — sem inversões.
+5. A autora continua **sem** botão de WhatsApp.
+
+**Defeito encontrado e corrigido no caminho:** trocar de sessão apagava a autoria, e o
+cliente nunca via as propostas que recebia. A posse passou a ser guardada por nome
+(`salu:v2:pertence`), fora da sessão activa.
+
 ---
 
 ## FAILED_EXPERIMENTS
@@ -111,9 +126,10 @@ protótipo; inaceitável com utilizadores reais.
 
 - **Um só dispositivo.** Sem base de dados partilhada, cada visitante vê apenas os
   exemplos e o que ele próprio criou. Limitação mais séria da demonstração.
-- **Sem autenticação.** A sessão é um nome e um lado; não há posse nem verificação.
-- **Mudar de lado perde «os meus pedidos»** da sessão anterior (consequência da regra de
-  identidade).
+- **Sem autenticação.** A sessão é um nome e um lado. A posse do que cada pessoa criou é
+  guardada **por nome** — duas pessoas com o mesmo nome colidem.
+- **A conversa é de um só dispositivo.** Os dois papéis são interpretados pela mesma
+  pessoa ao trocar de sessão; não há mensagens entre telemóveis diferentes.
 - **Migrações SQL nunca executadas.** `0001` e `0002` escritas, não corridas.
 - **Adaptador Supabase nunca testado** contra um projecto real.
 - **Fotografias** comprimidas para ~80 KB; `createImageBitmap` não testado em telemóvel.

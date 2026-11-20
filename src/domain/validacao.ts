@@ -1,5 +1,11 @@
 import { CATEGORIA_IDS, MUNICIPIOS } from './types';
-import type { CategoriaId, Municipio, PedidoEntrada, PerfilEntrada } from './types';
+import type {
+  CategoriaId,
+  Municipio,
+  PedidoEntrada,
+  PerfilEntrada,
+  PropostaEntrada,
+} from './types';
 import { normalizarTelefone } from './telefone';
 
 export type ErrosPerfil = Partial<Record<keyof PerfilEntrada, string>>;
@@ -177,6 +183,53 @@ export function validarPedido(entrada: PedidoEntrada): ResultadoValidacao<Pedido
   }
 
   return { valido: Object.keys(erros).length === 0, erros, valor };
+}
+
+// ---------------------------------------------------------------------------
+// Proposta e mensagem
+// ---------------------------------------------------------------------------
+
+export type ErrosProposta = Partial<Record<keyof PropostaEntrada, string>>;
+
+export function validarProposta(
+  entrada: PropostaEntrada,
+): ResultadoValidacao<PropostaEntrada> {
+  const valor: PropostaEntrada = {
+    pedidoId: entrada.pedidoId,
+    autorNome: limpar(entrada.autorNome),
+    mensagem: entrada.mensagem.trim(),
+    precoTexto: entrada.precoTexto.trim(),
+    prazoTexto: entrada.prazoTexto.trim(),
+  };
+  const erros: ErrosProposta = {};
+
+  if (valor.autorNome.length < LIMITES.nome.min) {
+    erros.autorNome = 'Indique o seu nome.';
+  }
+
+  if (valor.mensagem.length < 10) {
+    erros.mensagem = 'Explique em poucas palavras o que consegue fazer.';
+  } else if (valor.mensagem.length > 500) {
+    erros.mensagem = 'A proposta não pode ter mais de 500 caracteres.';
+  }
+
+  if (valor.precoTexto.length > 40) {
+    erros.precoTexto = 'O preço não pode ter mais de 40 caracteres.';
+  }
+
+  if (valor.prazoTexto.length > 40) {
+    erros.prazoTexto = 'O prazo não pode ter mais de 40 caracteres.';
+  }
+
+  return { valido: Object.keys(erros).length === 0, erros, valor };
+}
+
+/** Devolve a mensagem de erro, ou `null` se o texto for aceitável. */
+export function validarMensagem(texto: string): string | null {
+  const limpo = texto.trim();
+  if (limpo.length === 0) return 'Escreva uma mensagem.';
+  if (limpo.length > 500) return 'A mensagem não pode ter mais de 500 caracteres.';
+  return null;
 }
 
 export function pedidoVazio(): PedidoEntrada {
