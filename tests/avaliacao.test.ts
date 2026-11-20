@@ -205,7 +205,8 @@ describe('RepositorioLocal — ciclo do trabalho', () => {
     });
 
     expect(criada.nota).toBe(4);
-    expect(await repositorio.listarAvaliacoes()).toHaveLength(1);
+    const doPedido = (await repositorio.listarAvaliacoes()).filter((a) => a.pedidoId === pedido.id);
+    expect(doPedido).toHaveLength(1);
 
     await expect(
       repositorio.criarAvaliacao({

@@ -32,7 +32,9 @@ npm run build    # verificação de tipos + build de produção
 ```
 
 Sem variáveis de ambiente a aplicação arranca em **modo demonstração**: os dados ficam
-no dispositivo e a interface avisa. Para o modo partilhado, copiar `.env.example` para
+no dispositivo e a interface avisa. Nesse modo, `/entrar` oferece **personagens com
+história** (pedidos, propostas, conversas e avaliações já criados) para percorrer os dois
+lados do mercado sem começar do zero — ver [docs/DEMO.md](docs/DEMO.md). Para o modo partilhado, copiar `.env.example` para
 `.env.local`, preencher com um projecto Supabase e aplicar as migrações em
 `supabase/migrations/`.
 

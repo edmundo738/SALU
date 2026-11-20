@@ -1,4 +1,5 @@
 import { RepositorioLocal } from './repositorioLocal';
+import { semear } from './semente';
 import type { ModoDados, RepositorioSalu } from './repositorio';
 
 interface ConfiguracaoSupabase {
@@ -32,6 +33,22 @@ function configuracaoSupabase(): ConfiguracaoSupabase | null {
  */
 export function modoDados(): ModoDados {
   return configuracaoSupabase() ? 'supabase' : 'local';
+}
+
+/**
+ * Em modo local, garante a semente de demonstração **antes** do primeiro ecrã.
+ *
+ * Tem de correr no arranque e não à primeira leitura do repositório: o ecrã de
+ * entrada lê a posse por nome ao criar a sessão, e se a semente ainda não
+ * existir, «entrar como Marta» cria uma Marta sem o pedido dela.
+ */
+export function prepararArmazenamentoLocal(): void {
+  if (modoDados() !== 'local') return;
+  try {
+    semear(window.localStorage);
+  } catch {
+    // Sem armazenamento disponível a aplicação continua, apenas sem semente.
+  }
 }
 
 let promessaRepositorio: Promise<RepositorioSalu> | null = null;

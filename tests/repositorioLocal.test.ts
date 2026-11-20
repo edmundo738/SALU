@@ -55,11 +55,13 @@ function criarRepositorio(armazenamento = new ArmazenamentoFalso()): Repositorio
 const SEM_FILTRO = { texto: '', categoria: 'todas' as const, municipio: 'todos' as const };
 
 describe('RepositorioLocal — perfis', () => {
-  it('arranca com perfis de exemplo marcados como tal', async () => {
+  it('arranca com exemplos estáticos e personagens de demonstração', async () => {
     const perfis = await criarRepositorio().listarPerfis(SEM_FILTRO);
 
     expect(perfis.length).toBeGreaterThan(0);
-    expect(perfis.every((perfil) => perfil.exemplo)).toBe(true);
+    // Os exemplos de fundo são não-contactáveis; as personagens são utilizáveis.
+    expect(perfis.some((perfil) => perfil.exemplo)).toBe(true);
+    expect(perfis.some((perfil) => !perfil.exemplo)).toBe(true);
   });
 
   it('cria um perfil real e não o marca como exemplo', async () => {
@@ -72,13 +74,13 @@ describe('RepositorioLocal — perfis', () => {
 
   it('rejeita dados inválidos em vez de os guardar', async () => {
     const repositorio = criarRepositorio();
+    const antes = (await repositorio.listarPerfis(SEM_FILTRO)).length;
 
     await expect(
       repositorio.criarPerfil(entradaValida({ telefone: '123' })),
     ).rejects.toThrow();
 
-    const perfis = await repositorio.listarPerfis(SEM_FILTRO);
-    expect(perfis.every((perfil) => perfil.exemplo)).toBe(true);
+    expect((await repositorio.listarPerfis(SEM_FILTRO)).length).toBe(antes);
   });
 
   it('encontra o perfil criado por id', async () => {
@@ -91,11 +93,12 @@ describe('RepositorioLocal — perfis', () => {
 });
 
 describe('RepositorioLocal — pedidos', () => {
-  it('arranca com pedidos de exemplo abertos', async () => {
+  it('arranca com pedidos de exemplo abertos e pedidos de personagens em vários estados', async () => {
     const pedidos = await criarRepositorio().listarPedidos(SEM_FILTRO);
 
     expect(pedidos.length).toBeGreaterThan(0);
-    expect(pedidos.every((pedido) => pedido.exemplo && pedido.estado === 'aberto')).toBe(true);
+    expect(pedidos.filter((p) => p.exemplo).every((p) => p.estado === 'aberto')).toBe(true);
+    expect(new Set(pedidos.map((p) => p.estado)).size).toBeGreaterThan(1);
   });
 
   it('cria um pedido real, aberto e não marcado como exemplo', async () => {
@@ -128,7 +131,10 @@ describe('RepositorioLocal — contactos', () => {
     await repositorio.registarContacto('perfil', 'exemplo-reparacoes', 'perfil');
     await repositorio.registarContacto('pedido', 'exemplo-pedido-frigorifico', 'pedido');
 
-    const contactos = await repositorio.listarContactos();
+    // A semente já traz contactos; olhamos só para os dois que registámos.
+    const contactos = (await repositorio.listarContactos()).filter((evento) =>
+      ['exemplo-reparacoes', 'exemplo-pedido-frigorifico'].includes(evento.alvoId),
+    );
     expect(contactos).toHaveLength(2);
     expect(contactos[0]?.alvoTipo).toBe('pedido');
     expect(contactos[1]?.alvoTipo).toBe('perfil');
@@ -144,9 +150,10 @@ describe('RepositorioLocal — contactos', () => {
 
   it('tolera dados corrompidos no armazenamento', async () => {
     const armazenamento = new ArmazenamentoFalso();
+    const repositorio = criarRepositorio(armazenamento);
     armazenamento.setItem('salu:v2:perfis', '{isto não é json');
 
-    const perfis = await criarRepositorio(armazenamento).listarPerfis(SEM_FILTRO);
-    expect(perfis.length).toBeGreaterThan(0);
+    // Não rebenta; devolve lista vazia em vez de bloquear a aplicação.
+    await expect(repositorio.listarPerfis(SEM_FILTRO)).resolves.toEqual([]);
   });
 });

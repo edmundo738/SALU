@@ -1,20 +1,17 @@
 import type { Pedido, Perfil } from '../domain/types';
 
 /**
- * Dados de demonstração.
+ * Dados de fundo — estáticos e não interactivos.
  *
  * REGRA DO PROJECTO: nunca apresentar dados inventados como reais.
  *
- * Tudo aqui tem `exemplo: true`. Na interface isso significa três coisas
- * visíveis: um selo «Exemplo», um aviso na página de detalhe e o botão de
- * contacto desactivado. O telefone é um espaço reservado (`244900000000`) que
- * não pertence a ninguém — e, como o contacto está desactivado, nunca é marcado.
- *
- * O objectivo é o visitante perceber o produto num ecrã, não confundir isto com
- * uma comunidade activa.
+ * Tudo aqui tem `exemplo: true`: selo «Exemplo», aviso na página de detalhe,
+ * contacto desactivado. Servem para a listagem não parecer vazia. As
+ * personagens com que se demonstra o produto (com história, propostas e
+ * avaliações) estão em `semente.ts`.
  */
 
-const TELEFONE_RESERVADO = '244900000000';
+export const TELEFONE_RESERVADO = '244900000000';
 
 export function perfisDeExemplo(agora: string = new Date().toISOString()): Perfil[] {
   const base = {
@@ -40,18 +37,6 @@ export function perfisDeExemplo(agora: string = new Date().toISOString()): Perfi
     },
     {
       ...base,
-      id: 'exemplo-electricidade',
-      nome: 'Neusa Domingos',
-      municipio: 'Viana',
-      bairro: 'Zango 3',
-      categoria: 'electricidade',
-      oficio: 'Electricista',
-      descricao:
-        'Instalações eléctricas em casas e pequenos negócios. Quadros, tomadas, iluminação e detecção de curto-circuitos. Dez anos a trabalhar em Viana e Cacuaco.',
-      precoTexto: 'A combinar',
-    },
-    {
-      ...base,
       id: 'exemplo-canalizacao',
       nome: 'Paulo Miguel',
       municipio: 'Luanda',
@@ -60,18 +45,6 @@ export function perfisDeExemplo(agora: string = new Date().toISOString()): Perfi
       oficio: 'Canalizador',
       descricao:
         'Fugas de água, torneiras, autoclismos e sanitários. Atendo no mesmo dia em casos urgentes. Material próprio e limpeza do local no fim.',
-      precoTexto: 'A combinar',
-    },
-    {
-      ...base,
-      id: 'exemplo-design',
-      nome: 'Joana Baptista',
-      municipio: 'Talatona',
-      bairro: 'Benfica',
-      categoria: 'design',
-      oficio: 'Designer gráfica',
-      descricao:
-        'Logotipos, cartazes e conteúdos para redes sociais. Trabalho à distância com qualquer ponto do país. Entrego ficheiros prontos para impressão e para o Instagram.',
       precoTexto: 'A combinar',
     },
     {
@@ -135,17 +108,6 @@ export function pedidosDeExemplo(agora: string = new Date().toISOString()): Pedi
   };
 
   return [
-    {
-      ...base,
-      id: 'exemplo-pedido-frigorifico',
-      autorNome: 'Cliente de exemplo',
-      titulo: 'O frigorífico deixou de refrigerar',
-      categoria: 'reparacoes',
-      municipio: 'Luanda',
-      bairro: 'Maianga',
-      descricao:
-        'O frigorífico liga, faz barulho, mas não arrefece nada desde ontem. Já tentei desligar e voltar a ligar. Preciso de alguém que possa vir ver esta semana.',
-    },
     {
       ...base,
       id: 'exemplo-pedido-logotipo',

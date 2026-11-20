@@ -2,12 +2,28 @@
 
 Limite do concurso: **2 minutos**. Este roteiro tem 1 min 55 s.
 
-**Antes de gravar:** telemóvel com o URL aberto e **sem sessão iniciada**; uma fotografia
-de um electrodoméstico na galeria; WhatsApp instalado.
+## Antes de gravar
 
-**Nota sobre trocar de lado:** a demonstração decorre num só dispositivo, por isso os dois
-papéis são interpretados pela mesma pessoa. No vídeo, use **corte seco** nas trocas de
-sessão — não mostre os cliques de sair e entrar. Corte para o ecrã já com o outro papel.
+1. **Área interna → Apagar dados e repor exemplos.** Garante o estado de partida.
+2. Telemóvel com o URL aberto em `/entrar`.
+3. Se quiseres que o WhatsApp abra de verdade no teu telemóvel, troca o número da
+   **Marta** em `src/data/semente.ts` (`TELEFONES.marta`) pelo teu, antes do build.
+
+## As personagens
+
+Pessoas fictícias **com história já criada**. Entra-se por um toque em `/entrar`, sem
+escrever nome. Cada uma começa no ecrã certo para o seu momento.
+
+| Personagem | Papel | Estado em que começa |
+|---|---|---|
+| **Marta Kilamba** | cliente | Pedido aberto «frigorífico» com **2 propostas** e conversa com o Ivo |
+| **Ivo Manuel** | prestador | Técnico. **4,5 · 2 trabalhos avaliados.** Proposta pendente na Marta |
+| **Paulo Sebastião** | cliente | Trabalho **acordado** com a Neusa, por concluir; outro já avaliado |
+| **Neusa Domingos** | prestador | Electricista. 5,0 · 1 avaliado; um em curso |
+| **Joana Baptista** | prestador | Designer. Entrou há 2 dias, **sem avaliações** |
+| **Lúcia Tavares** | cliente | Dois trabalhos concluídos no histórico |
+
+Tudo isto é demonstração — a faixa no topo di-lo em todas as páginas.
 
 ---
 
@@ -18,68 +34,53 @@ sessão — não mostre os cliques de sair e entrar. Corte para o ecrã já com 
 **Diz:** «Em Angola muita gente sabe fazer alguma coisa e não consegue ser encontrada.
 Publica num grupo de WhatsApp e o pedido desaparece em duas horas.»
 
----
+## 0:12–0:25 · Quem já está cá
 
-## 0:12–0:22 · Dois lados, uma plataforma
+**Ecrã:** `/entrar`, lista de personagens.
 
-**Ecrã:** os dois cartões numerados.
+**Diz:** «Dois lados: quem precisa e quem sabe fazer. O Ivo repara frigoríficos e já tem
+dois trabalhos avaliados. A Joana é designer e entrou há dois dias — ainda ninguém a
+avaliou. As duas aparecem na pesquisa: quem está a começar não fica invisível.»
 
-**Diz:** «Um lado procura trabalho. O outro precisa de um serviço. O SALU serve os dois.»
-*(Corta para a secção seguinte.)*
+## 0:25–0:50 · A cliente decide
 
----
+**Toque:** **Marta Kilamba**. Abre o pedido dela.
 
-## 0:22–0:42 · O cliente publica
+**Diz:** «A Marta tem o frigorífico avariado. Publicou ontem à noite. Já tem duas
+propostas — e reparem: não há botão para ela ligar a ninguém. Ela pediu; o primeiro
+passo foi de quem sabe resolver.»
 
-**Acções:** *Preciso de um serviço* → nome → título «Frigorífico deixou de refrigerar» →
-Reparações → Kilamba Kiaxi → Centralidade do Kilamba → descrição → **fotografia** →
-*Publicar pedido*.
+**Mostra:** a conversa com o Ivo («o motor está quente?»). **Toque:** *Aceitar esta
+proposta* no Ivo.
 
-**Diz:** «A Marta tem um frigorífico avariado. Descreve, fotografa e diz onde está.»
+**Diz:** «Escolhe o Ivo. A outra proposta fica recusada. O pedido sai do mural: ninguém
+mais a vai incomodar.»
 
----
+## 0:50–1:15 · O trabalho fecha
 
-## 0:42–0:55 · A regra do primeiro passo
+**Toque:** sair → **Paulo Sebastião**. Abre o quadro eléctrico, acordado com a Neusa.
 
-**Ecrã:** página do pedido recém-publicado.
+**Diz:** «O Paulo já escolheu a Neusa na semana passada — ‹acordado› quer dizer
+combinado, não feito. Hoje ela veio.» **Toque:** *Marcar como concluído*.
 
-**Diz:** «Reparem no que não está aqui: nenhum botão para a Marta contactar ninguém. Ela
-está a pedir — o primeiro passo é de quem vai resolver.»
+**Diz:** «Agora, e só agora, ele pode avaliar.» **Toque:** *5 · Excelente*, escreve uma
+linha, *Enviar avaliação*.
 
----
+## 1:15–1:35 · A reputação constrói-se
 
-## 0:55–1:15 · O prestador encontra e propõe
+**Toque:** abre o perfil da **Neusa** (pelo nome na proposta, ou em Profissionais).
 
-**Corte.** Ecrã já como prestador, no mural filtrado por Reparações.
-
-**Acções:** abre o pedido → preenche *Enviar proposta* (mensagem, 15.000 Kz, amanhã) →
-*Enviar proposta*.
-
-**Diz:** «O Ivo é técnico de frigoríficos. Encontra o pedido na zona dele e envia uma
-proposta concreta: o que faz, quanto, e quando.»
-
----
-
-## 1:15–1:35 · A conversa
-
-**Acções:** escreve na conversa: «Bom dia, consigo passar às 9h. Serve?»
-**Corte.** Ecrã da Marta: vê a proposta, lê a mensagem, responde «Perfeito, às 9h. Obrigada.»
-
-**Diz:** «A conversa fica dentro do pedido. Não se perde num telefone, e nenhum dos dois
-pode mudar depois a versão do que foi combinado.»
-
----
+**Diz:** «A Neusa passou a 5,0 com dois trabalhos. Não é uma nota solta: cada avaliação
+está presa a um trabalho concluído, confirmado pelo cliente. É isso que a torna
+confiança e não opinião.»
 
 ## 1:35–1:48 · A saída para o WhatsApp
 
-**Corte.** Ecrã da Marta.
+**Toque:** sair → **Ivo Manuel** → Pedidos → abre um pedido aberto qualquer.
 
-**Diz:** «Quando quiserem, continuam no WhatsApp — o SALU não prende ninguém. O que fica
-registado é que houve contacto.»
-
-*(Mostra o botão e a mensagem já escrita. Não é preciso abrir a aplicação.)*
-
----
+**Diz:** «Quando quiserem, continuam no WhatsApp — a mensagem já vai escrita com o
+pedido. O SALU não prende ninguém nem toca no dinheiro.» *(Mostra o botão; não é preciso
+abrir.)*
 
 ## 1:48–1:55 · A prova
 
@@ -88,13 +89,10 @@ registado é que houve contacto.»
 **Diz:** «Cada contacto fica registado. É esta a métrica do piloto: quantas pessoas
 conseguem o primeiro trabalho.»
 
----
-
 ## 1:55–2:00 · Fecho
 
-**Ecrã:** *Planos*.
-
-**Diz:** «Quem procura a primeira oportunidade nunca paga para ser visto.»
+**Ecrã:** *Planos*. **Diz:** «Quem procura a primeira oportunidade nunca paga para ser
+visto.»
 
 ---
 
@@ -102,17 +100,15 @@ conseguem o primeiro trabalho.»
 
 | Situação | O que fazer |
 |---|---|
-| A fotografia não carrega | Continuar sem ela — é opcional |
-| A conversa não abre | Confirma que entraste como prestador **antes** de abrir o pedido |
-| As propostas não aparecem | Confirma que voltaste a entrar com **o mesmo nome** da cliente |
-| WhatsApp não abre | Mostrar o botão e a mensagem gerada; não insistir |
-| Rede lenta | O arranque são 75 kB; ter o vídeo de reserva |
+| A Marta abre sem propostas | Foi aberta antes de repor os dados: *Área interna → repor* e voltar a entrar |
+| Não aparece «Aceitar» | Confirma que entraste **pela lista de personagens**, não escrevendo o nome |
+| Rede lenta | Arranque de 80 kB + fontes; ter o vídeo de reserva |
 
 ## O que **não** dizer
 
-- Não dizer que há utilizadores reais, avaliações ou trabalhos concluídos.
+- Não dizer que as personagens são pessoas reais, nem que há utilizadores reais.
 - Não dizer que funciona entre dispositivos — **não funciona**.
 - Não dizer que a autenticação está feita.
-- Não dizer que o acordo é vinculativo — nesta versão é uma conversa registada.
+- Não dizer que o acordo é vinculativo.
 
 A frase certa: **«é assim que o produto vai funcionar; a comunidade é o próximo passo».**

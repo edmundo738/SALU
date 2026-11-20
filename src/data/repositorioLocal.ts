@@ -25,7 +25,8 @@ import {
   validarPerfil,
   validarProposta,
 } from '../domain/validacao';
-import { pedidosDeExemplo, perfisDeExemplo } from './exemplos';
+import { CHAVES } from './chaves';
+import { semear } from './semente';
 import type { RepositorioSalu } from './repositorio';
 
 export interface ArmazenamentoSimples {
@@ -33,12 +34,12 @@ export interface ArmazenamentoSimples {
   setItem(chave: string, valor: string): void;
 }
 
-const CHAVE_PERFIS = 'salu:v2:perfis';
-const CHAVE_PEDIDOS = 'salu:v2:pedidos';
-const CHAVE_CONTACTOS = 'salu:v2:contactos';
-const CHAVE_PROPOSTAS = 'salu:v2:propostas';
-const CHAVE_MENSAGENS = 'salu:v2:mensagens';
-const CHAVE_AVALIACOES = 'salu:v2:avaliacoes';
+const CHAVE_PERFIS = CHAVES.perfis;
+const CHAVE_PEDIDOS = CHAVES.pedidos;
+const CHAVE_CONTACTOS = CHAVES.contactos;
+const CHAVE_PROPOSTAS = CHAVES.propostas;
+const CHAVE_MENSAGENS = CHAVES.mensagens;
+const CHAVE_AVALIACOES = CHAVES.avaliacoes;
 
 function ler<T>(armazenamento: ArmazenamentoSimples, chave: string, omissao: T): T {
   const bruto = armazenamento.getItem(chave);
@@ -67,20 +68,16 @@ export class RepositorioLocal implements RepositorioSalu {
     private readonly armazenamento: ArmazenamentoSimples,
     private readonly gerarId: () => string = () => crypto.randomUUID(),
     private readonly agora: () => string = () => new Date().toISOString(),
-  ) {}
+  ) {
+    // Primeira abertura neste dispositivo: carrega as personagens e os exemplos.
+    // Idempotente — nas seguintes não toca em nada.
+    semear(armazenamento, new Date(this.agora()));
+  }
 
   // -- perfis ---------------------------------------------------------------
 
   private lerPerfis(): Perfil[] {
-    const guardados = ler<Perfil[] | null>(this.armazenamento, CHAVE_PERFIS, null);
-
-    if (guardados === null) {
-      const exemplos = perfisDeExemplo(this.agora());
-      this.gravarPerfis(exemplos);
-      return exemplos;
-    }
-
-    return guardados;
+    return ler<Perfil[]>(this.armazenamento, CHAVE_PERFIS, []);
   }
 
   private gravarPerfis(perfis: Perfil[]): void {
@@ -120,15 +117,7 @@ export class RepositorioLocal implements RepositorioSalu {
   // -- pedidos --------------------------------------------------------------
 
   private lerPedidos(): Pedido[] {
-    const guardados = ler<Pedido[] | null>(this.armazenamento, CHAVE_PEDIDOS, null);
-
-    if (guardados === null) {
-      const exemplos = pedidosDeExemplo(this.agora());
-      this.gravarPedidos(exemplos);
-      return exemplos;
-    }
-
-    return guardados;
+    return ler<Pedido[]>(this.armazenamento, CHAVE_PEDIDOS, []);
   }
 
   private gravarPedidos(pedidos: Pedido[]): void {

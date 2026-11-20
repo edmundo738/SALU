@@ -1,22 +1,11 @@
 import { create } from 'zustand';
 import type { Sessao, TipoSessao } from '../domain/types';
+import { CHAVES, chaveNome, type MapaPertence, type RegistoPertence } from '../data/chaves';
 
-const CHAVE_SESSAO = 'salu:v2:sessao';
-const CHAVE_PERTENCE = 'salu:v2:pertence';
-
-interface RegistoPertence {
-  perfilId: string | null;
-  pedidoIds: string[];
-}
-
-type MapaPertence = Record<string, RegistoPertence>;
+const CHAVE_SESSAO = CHAVES.sessao;
+const CHAVE_PERTENCE = CHAVES.pertence;
 
 const VAZIO: RegistoPertence = { perfilId: null, pedidoIds: [] };
-
-/** O nome é a identidade neste protótipo: sem autenticação, é o que existe. */
-function chaveNome(nome: string): string {
-  return nome.trim().toLowerCase();
-}
 
 function lerPertence(): MapaPertence {
   try {

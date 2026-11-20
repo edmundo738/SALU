@@ -18,9 +18,9 @@ demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
 | Commits | `FACT` | 3 (`d80da2b` + alterações de estabilização por commitar) |
 | Ficheiros versionados | `MEASURED` | 55 antes desta fase |
 | Ecrãs | `MEASURED` | 11 rotas |
-| Testes | `MEASURED` | 66, todos verdes |
+| Testes | `MEASURED` | 77, todos verdes |
 | Build | `MEASURED` | `tsc --noEmit` limpo |
-| Bundle inicial | `MEASURED` | 72,7 kB gzip + 73 kB de fontes woff2 (+ 61 kB Supabase lazy) |
+| Bundle inicial | `MEASURED` | 80,0 kB gzip + 73 kB de fontes woff2 (+ 62 kB Supabase lazy) |
 | Modo de dados | `OBSERVED` | local |
 | URL público | `UNKNOWN` | **não existe ainda** |
 
@@ -139,9 +139,28 @@ formulário de proposta. O pedido concluído não aparece no mural.
 Também adicionado: botão «Apagar dados e repor exemplos» na Área interna, para limpar o
 dispositivo antes de gravar ou apresentar.
 
+### E10 — Personagens de demonstração com história `FACT`
+Seis personagens fictícias, com atalho «Entrar como» em `/entrar` (só em modo local):
+Marta (pedido aberto com 2 propostas e conversa), Ivo (4,5 · 2 trabalhos), Paulo
+(trabalho acordado + um concluído), Neusa (5,0 · 1), Joana (sem avaliações), Lúcia (dois
+concluídos). A semente obedece às regras do produto e tem 10 testes de coerência
+(propostas → pedidos existentes; aceite ⇔ pedido não aberto; avaliação ⇔ concluído e
+prestador aceite; posse por nome consistente).
+
+Verificado em `localhost:5173`, armazenamento limpo, pelo atalho e não escrevendo nomes:
+Marta → autora, 2 propostas, conversa visível, sem WhatsApp → aceita Ivo →
+`acordado`, `Ivo:aceite`, `António:recusada`. Paulo → «Escolheste Neusa Domingos» →
+conclui → avalia 5 → perfil da Neusa mostra **5,0 · 2 trabalhos avaliados**.
+
 ---
 
 ## FAILED_EXPERIMENTS
+
+**F00 — Sessão criada antes da semente.** `FACT` A semente corria na primeira abertura
+do repositório, e `/entrar` não o abre. Com armazenamento limpo, «entrar como Marta»
+criava uma Marta sem o pedido dela (posse lida antes de existir). **Correcção:** a semente
+passa a correr no arranque da aplicação (`prepararArmazenamentoLocal()` em `main.tsx`),
+idempotente; o repositório mantém a chamada para os testes.
 
 **F0 — Pedidos concluídos desapareciam ao recarregar.** `FACT` A leitura inicial da
 camada de dados aplicava o filtro do mural («só abertos»), por isso um pedido acordado ou
@@ -167,6 +186,9 @@ protótipo; inaceitável com utilizadores reais.
   exemplos e o que ele próprio criou. Limitação mais séria da demonstração.
 - **Sem autenticação.** A sessão é um nome e um lado. A posse do que cada pessoa criou é
   guardada **por nome** — duas pessoas com o mesmo nome colidem.
+- **Personagens são fictícias.** Telefones reservados `2449000000xx`; o WhatsApp abre
+  para um número que não existe, salvo se o número da personagem for trocado em
+  `src/data/semente.ts` antes do build.
 - **A conversa é de um só dispositivo.** Os dois papéis são interpretados pela mesma
   pessoa ao trocar de sessão; não há mensagens entre telemóveis diferentes.
 - **Migrações SQL nunca executadas.** `0001` e `0002` escritas, não corridas.

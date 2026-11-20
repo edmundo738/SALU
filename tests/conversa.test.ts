@@ -81,7 +81,7 @@ describe('RepositorioLocal — conversa', () => {
       prazoTexto: '',
     });
 
-    const propostas = await repositorio.listarPropostas();
+    const propostas = (await repositorio.listarPropostas()).filter((p) => p.pedidoId === 'd1');
     expect(propostas).toHaveLength(2);
     expect(propostas[0]?.autorNome).toBe('Neusa');
   });
@@ -114,7 +114,7 @@ describe('RepositorioLocal — conversa', () => {
       texto: 'Combinado, às 9h.',
     });
 
-    const mensagens = await repositorio.listarMensagens();
+    const mensagens = (await repositorio.listarMensagens()).filter((m) => m.pedidoId === 'd1');
     expect(mensagens).toHaveLength(2);
     expect(mensagens[0]?.lado).toBe('prestador');
     expect(mensagens[1]?.lado).toBe('cliente');
