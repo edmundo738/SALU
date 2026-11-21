@@ -26,7 +26,10 @@ Não precisas de saber programar. Vais copiar e colar comandos.
 2. Escolhe um nome de conta curto, por exemplo `salu-ao`. O endereço ficará `salu-ao.alwaysdata.net`.
 3. Usa o teu e-mail e uma palavra-passe que não uses noutro sítio.
 4. Confirma o e-mail.
-5. Não escolhas nenhum plano pago. O plano **Free** é suficiente.
+5. No ecrã **Welcome / Your plan**, abre o campo **Product** e escolhe **Free** (1 GB de disco, 256 MB de RAM). **Não escolhas “Small 50GB” nem nenhum plano com preço.**
+6. Nome: escolhe o subdomínio, por exemplo `salu-ao`. Ficará `https://salu-ao.alwaysdata.net`.
+7. Palavra-passe: guarda-a bem; é usada no SSH/FTP. Não a envies a ninguém.
+8. Aceita as duas caixas e carrega em **Let's go**.
 
 > O Alwaysdata free é para uso pessoal. Se o SALU for uma empresa, o plano gratuito não serve para produção comercial.
 
