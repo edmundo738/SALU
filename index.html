@@ -1,23 +1,35 @@
 <!doctype html>
-<html lang="pt" class="dark">
+<html lang="pt">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0A0F0D" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#081C41" />
+    <script>
+      // Evita o flash de tema e mantém o idioma antes do React montar.
+      try {
+        var storedTheme = localStorage.getItem('salu_theme');
+        var dark = storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (error) {}
+      try {
+        var storedLocale = localStorage.getItem('salu_locale');
+        if (storedLocale === 'pt' || storedLocale === 'en') document.documentElement.lang = storedLocale;
+      } catch (error) {}
+    </script>
+    <meta name="description" content="SALU — plataforma de serviços em Angola. Publica pedidos, recebe propostas reais e acompanha acordos entre cliente e prestador." />
+    <meta property="og:title" content="SALU — serviços com confiança" />
+    <meta property="og:description" content="Publica pedidos, recebe propostas reais e acompanha acordos entre cliente e prestador em Angola." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_AO" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>SALU — Conectar Pessoas e Oportunidades em Angola</title>
-    <meta
-      name="description"
-      content="O SALU liga quem precisa de serviços de qualidade a especialistas e profissionais verificados em Luanda e em toda Angola. Pedidos claros, propostas estruturadas e acordos privados."
-    />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <title>SALU — Serviços, oportunidades e confiança</title>
   </head>
-  <body class="bg-[#0A0F0D] text-[#E8EDE9] antialiased selection:bg-[#CBFF4D] selection:text-[#0A0F0D]">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

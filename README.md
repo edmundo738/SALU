@@ -1,95 +1,88 @@
 # SALU
 
-Plataforma que liga quem sabe fazer a quem precisa — e que faz uma coisa que um grupo de
-WhatsApp não faz: **guarda o perfil e o pedido**, para que continuem a ser encontrados
-amanhã.
+Plataforma de serviços em Angola: uma pessoa publica um pedido, prestadores enviam propostas reais, as duas partes fecham um acordo, conversam, confirmam a conclusão e avaliam-se.
 
-> Hipótese em teste: tornar as oportunidades de serviço locais persistentes e
-> pesquisáveis aumenta o número de pessoas que conseguem o primeiro cliente.
-> **Ainda não está provado.** Prova-se com pessoas reais, não com este ficheiro.
+**Princípio central:** o SALU regista o acordo. Não processa pagamentos, não guarda dinheiro e não inventa verificações, avaliações ou números.
 
-## O que é
+- Acordo de pagamento exacto, mostrado na interface: «O SALU regista o acordo entre as partes. O pagamento é combinado directamente entre cliente e prestador e não é processado pela plataforma.»
+- Reputação só existe depois de um serviço concluído e confirmado pelos dois participantes.
+- Identidade vem sempre da sessão do servidor; nenhum ID de utilizador enviado pelo browser é aceite como identidade.
+- Divisão administrativa de 2024: Província → Município → Comuna, com IDs estáveis.
 
-Um protótipo funcional para o concurso **Africa Builds Tech — Jovens Talentos 2026**
-(28 de Novembro). Não é um serviço em produção: não há contas reais, verificação de
-identidade nem pagamentos.
+## Stack
 
-Dois lados do mercado, um percurso cada:
+| Camada | Tecnologia |
+|---|---|
+| Interface | React 18 + TypeScript + Vite 6 + Tailwind + lucide-react |
+| Rotas | react-router-dom 7 (BrowserRouter, rotas dinâmicas, 404) |
+| API | Node 22 + Express 5 + `node:sqlite` |
+| Sessões | Cookie `HttpOnly`, `SameSite=Lax`, token aleatório guardado em hash, validade de 7 dias |
+| Ficheiros | multer + validação real de assinatura + `sharp` (redimensionamento e WebP) |
+| Testes | Vitest 5 + integração HTTP real com SQLite temporário |
 
-**Prestador** — entra → cria perfil com ofício, bairro, apresentação e fotografia →
-aparece na pesquisa → recebe contactos por WhatsApp.
+## Arrancar localmente
 
-**Cliente** — entra → publica um pedido com fotografia, categoria e bairro → o pedido
-aparece no mural → um profissional encontra-o e fala por WhatsApp.
-
-## Como correr
+Requisitos: Node 22 (para `node:sqlite`).
 
 ```bash
-npm install
-npm run dev      # http://localhost:5173
-npm test         # regras de domínio e camada de dados
-npm run build    # verificação de tipos + build de produção
+npm ci
+
+# terminal 1 — API persistente
+cp .env.example .env
+npm run server
+
+# terminal 2 — interface
+npm run dev
 ```
 
-Sem variáveis de ambiente a aplicação arranca em **modo demonstração**: os dados ficam
-no dispositivo e a interface avisa. Nesse modo, `/entrar` oferece **personagens com
-história** (pedidos, propostas, conversas e avaliações já criados) para percorrer os dois
-lados do mercado sem começar do zero — ver [docs/DEMO.md](docs/DEMO.md). Para o modo partilhado, copiar `.env.example` para
-`.env.local`, preencher com um projecto Supabase e aplicar as migrações em
-`supabase/migrations/`.
+- Interface: `http://localhost:5173` (bind `0.0.0.0`, proxy `/api` → `127.0.0.1:3001`).
+- API: `http://localhost:3001/api`.
+- Dados locais: `./data/salu.db` e `./data/uploads/` (ignorados pelo Git).
 
-## Rotas
+Para apontar o frontend directamente para uma API externa:
 
-| Rota | Ecrã |
-|---|---|
-| `/` | Início: pesquisa, categorias, profissionais e pedidos recentes |
-| `/entrar` | Escolha do lado do mercado (sessão de demonstração) |
-| `/explorar` | Directório de profissionais |
-| `/perfil/novo` | Criar perfil de prestador |
-| `/perfil/:id` | Perfil público + contacto por WhatsApp |
-| `/pedidos` | Mural de pedidos abertos |
-| `/pedidos/:id` | Detalhe do pedido + contacto por WhatsApp |
-| `/publicar-pedido` | Publicar um pedido |
-| `/minha-area` | Perfil, pedidos e contactos da sessão |
-| `/planos` | Modelo de negócio proposto |
-| `/interno` | Acompanhamento do protótipo |
+```bash
+VITE_API_URL=http://localhost:3001/api npm run build
+```
+
+Sem `VITE_API_URL`, o frontend usa `/api`; no Netlify essa rota devolve **503** com `api-unavailable.json`, nunca o `index.html` em silêncio.
+
+## Verificar
+
+```bash
+npm run build      # tsc --noEmit + vite build
+npm test           # 15 testes: fluxo real, segurança, geo, render
+npm audit          # 0 vulnerabilidades conhecidas
+```
+
+Resultados medidos nesta sessão (2026-11-21):
+
+- `npm run build`: passa. Chunk inicial `303.41 kB` / `92.16 kB` gzip; 35 chunks.
+- `npm test`: 3 ficheiros, **15 testes passam**.
+- `npm audit`: **0 vulnerabilidades**.
+- Fluxo HTTP real com duas contas (Ana cliente, Bruno prestador, Carlos estranho): registo, onboarding, perfil publicado, pedido com foto, proposta, conversa com anexo privado, acordo bilateral, conclusão com prova, confirmação, avaliação recíproca, bloqueio de acessos cruzados e persistência após reinício do servidor — **tudo observado**.
 
 ## Estrutura
 
 ```
-src/domain/    regras puras (tipos, validação, telefone, filtros, WhatsApp)
-src/data/      contrato de dados + adaptador local + adaptador Supabase
-src/state/     estado da aplicação e sessão de demonstração
-src/components/  interface sem regras de negócio
-src/pages/     ecrãs
-src/lib/       compressão de imagem e formatação
-tests/         testes
-docs/          decisões de arquitectura e modelo de dados
+server/            API Express, SQLite, sessões, ficheiros, serializers
+shared/            tipos canónicos, categorias, geografia 2024, estados
+src/app/           AuthProvider, ThemeProvider, ToastProvider, ErrorBoundary, useApiData
+src/components/    Layouts, Cards, FileUpload, LocationPicker, ReportButton, Base
+src/i18n/          dicionários pt/en com chaves e formatação pt-AO
+src/lib/           cliente HTTP tipado e mensagens de erro
+src/pages/         landing, autenticação, onboarding, painel, pedidos, acordos, chat, definições
+tests/             integração real, geo, render
+docs/              auditoria, arquitectura, deploy, modelo de dados, ciclos
 ```
 
-## Decisões que moldaram o projecto
+## O que ainda não existe
 
-- **WhatsApp como canal de contacto**, não como rival. Não construímos chat.
-- **Sem pagamentos.** O SALU aproxima as partes; não gere dinheiro.
-- **Acesso gratuito para quem procura trabalho.** Nunca cobrar a quem não tem rendimento.
-- **Sem autenticação no protótipo**, e a interface di-lo em vez de o esconder.
-- **Sem dados inventados a passar por reais.** Tudo o que é exemplo tem selo e contacto
-  desactivado.
-- **Stack:** React + TypeScript + Vite + Tailwind + Supabase (importado dinamicamente).
-  Justificação e alternativas recusadas em [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
+- Deploy de produção verificado (o código de deploy está pronto; não foi executado neste ambiente).
+- Recuperação automática de palavra-passe (a interface diz isso de forma explícita; não há botão falso).
+- Confirmação de contacto por e-mail/SMS (N1).
+- Pagamentos, escrow, carteira ou integração Multicaixa — **deliberadamente ausentes**.
+- Aplicação móvel nativa.
+- Teste automatizado com browser real (não há Chromium neste ambiente); a interface é verificada por render SSR e o fluxo por HTTP real com dois cookies independentes.
 
-## Métrica
-
-**Pessoas que receberam o primeiro pagamento através do SALU.**
-
-O protótipo mede o que consegue medir sozinho — contactos iniciados, separados por lado
-do mercado — e não finge medir o resto. Trabalhos concluídos e primeiros rendimentos
-obtêm-se perguntando às pessoas.
-
-## Limitações conhecidas
-
-- **Um só dispositivo.** Perfis e pedidos criados aqui não aparecem noutro telemóvel.
-- **Sem contas.** Qualquer pessoa publica; não há posse nem edição.
-- **Adaptador Supabase nunca testado** contra um projecto real.
-- **Migrações SQL nunca executadas.**
-- **Fotografias** são comprimidas para caber no armazenamento local (~5 MB).
+Ver `PROJECT_STATE.md`, `KNOWN_ISSUES.md`, `TESTING.md`, `CHECKPOINT.md`.

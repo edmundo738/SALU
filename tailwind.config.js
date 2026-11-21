@@ -141,7 +141,7 @@ export default {
 
       fontFamily: {
         display: ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
-        sans: ['DM Sans', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
 
@@ -184,8 +184,7 @@ export default {
       },
 
       boxShadow: {
-        'salu-card':
-          '0 1px 2px rgba(28, 18, 11, 0.05), 0 8px 24px -12px rgba(196, 62, 25, 0.12)',
+        'salu-card': '0 1px 2px rgba(28, 18, 11, 0.05), 0 8px 24px -12px rgba(196, 62, 25, 0.12)',
         'salu-highlight': '0 0 0 2px rgba(253, 184, 19, 0.35)',
         'glow-green': '0 0 20px rgba(45, 76, 57, 0.35)',
         'glow-lime': '0 0 20px rgba(253, 184, 19, 0.3)',

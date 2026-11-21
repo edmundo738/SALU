@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /mensagens
+Disallow: /notificacoes
+Disallow: /definicoes
+Disallow: /acordos/
+Disallow: /inicio
+
+Sitemap: https://salu.ao/sitemap.xml

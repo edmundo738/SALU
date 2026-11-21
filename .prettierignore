@@ -1,0 +1,7 @@
+dist
+node_modules
+data
+public/uploads
+package-lock.json
+docs/AUDITORIA_COMPLETA_2026-11-21.md
+docs/AUDITORIA_BACKLOG.csv

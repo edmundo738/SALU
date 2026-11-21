@@ -1,303 +1,241 @@
-/**
- * SALU API Client
- * Comunicação direta com a API backend (porta 3001 via proxy /api)
- */
+import type {
+  Agreement,
+  Conversation,
+  FileRecord,
+  Message,
+  Notification,
+  ProviderProfile,
+  RequestDetail,
+  Review,
+  ReviewList,
+  SessionUser,
+  User,
+  UserStats,
+} from '../../shared/types';
+import type { Province } from '../../shared/geo';
 
-const BASE = '/api';
+const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '/api';
 
-export interface ApiUser {
-  id: string;
-  name: string;
-  email_or_phone: string;
-  role: 'customer' | 'provider';
-  municipality: string;
-  profession?: string;
-  avatar_url?: string;
-  bio?: string;
-  rating?: number;
-  reviews_count?: number;
+export class ApiError extends Error {
+  status: number;
+  fields?: Record<string, string>;
+
+  constructor(message: string, status: number, fields?: Record<string, string>) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.fields = fields;
+  }
 }
 
-export interface ApiRequest {
-  id: string;
-  user_id: string;
-  user_name: string;
-  title: string;
-  category: string;
-  municipality: string;
-  description: string;
-  budget_type: 'FIXED' | 'INSPECTION_NEEDED';
-  budget_amount: number;
-  urgency: 'NORMAL' | 'URGENT';
-  status: 'OPEN' | 'IN_NEGOTIATION' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
-  whatsapp_negotiated: number;
-  whatsapp_screenshot?: string;
-  proposals_count?: number;
-  created_at: string;
-}
-
-export interface ApiProposal {
-  id: string;
-  request_id: string;
-  provider_id: string;
-  provider_name: string;
-  provider_profession: string;
-  provider_avatar?: string;
-  amount: number;
-  is_inspection_needed: number;
-  estimated_days: number;
-  message: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
-  created_at: string;
-}
-
-export interface ApiConversation {
-  id: string;
-  request_id: string;
-  customer_id: string;
-  provider_id: string;
-  last_message?: string;
-  last_message_at?: string;
-  request_title?: string;
-  customer_name?: string;
-  customer_avatar?: string;
-  provider_name?: string;
-  provider_profession?: string;
-  provider_avatar?: string;
-}
-
-export interface ApiMessage {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  sender_name: string;
-  sender_role: 'customer' | 'provider';
-  recipient_id: string;
-  text: string;
-  attachment_url?: string;
-  created_at: string;
-}
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
-  });
-
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    throw new Error('Servidor backend indisponível ou rota não formatada em JSON.');
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new ApiError('NETWORK_ERROR', 0);
   }
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Erro na requisição ao servidor.');
+  const contentType = response.headers.get('content-type') || '';
+  const payload = contentType.includes('application/json') ? await response.json().catch(() => null) : null;
+
+  if (response.ok && !contentType.includes('application/json')) {
+    throw new ApiError('API_NOT_JSON', 502);
   }
-  return data;
+
+  if (!response.ok) {
+    const message = payload?.error || `HTTP_${response.status}`;
+    throw new ApiError(message, response.status, payload?.fields);
+  }
+  return payload as T;
 }
 
-export const saluApi = {
-  // 1. Auth
-  async register(data: {
-    name: string;
-    email_or_phone: string;
-    password: string;
-    role?: 'customer' | 'provider';
-    municipality?: string;
-    profession?: string;
-    bio?: string;
-  }): Promise<{ success: boolean; user: ApiUser }> {
-    return fetchJson(`${BASE}/auth/register`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+function body(data: unknown): string {
+  return JSON.stringify(data);
+}
 
-  async login(data: {
-    email_or_phone: string;
-    password: string;
-  }): Promise<{ success: boolean; user: ApiUser }> {
-    return fetchJson(`${BASE}/auth/login`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+export const api = {
+  // auth
+  me: () => request<SessionUser>('/auth/me'),
+  register: (data: { name: string; contact: string; password: string; passwordConfirm: string }) =>
+    request<SessionUser>('/auth/register', { method: 'POST', body: body(data) }),
+  login: (data: { contact: string; password: string }) =>
+    request<SessionUser>('/auth/login', { method: 'POST', body: body(data) }),
+  logout: () => request<{ success: true }>('/auth/logout', { method: 'POST' }),
 
-  async googleAuth(data: {
-    name?: string;
-    email?: string;
-    role?: 'customer' | 'provider';
-  }): Promise<{ success: boolean; user: ApiUser }> {
-    return fetchJson(`${BASE}/auth/google`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  onboarding: (data: {
+    activeMode: 'customer' | 'provider';
+    provinceId: string;
+    municipalityId: string;
+    communeId: string;
+  }) => request<{ user: User; stats: UserStats }>('/me/onboarding', { method: 'POST', body: body(data) }),
 
-  // 2. Providers
-  async getProviders(params?: {
-    municipality?: string;
-    category?: string;
-    search?: string;
-  }): Promise<{ success: boolean; providers: ApiUser[] }> {
+  updateMe: (
+    data: Partial<{
+      name: string;
+      locale: 'pt' | 'en';
+      theme: 'light' | 'dark';
+      activeMode: 'customer' | 'provider';
+      bio: string;
+      provinceId: string;
+      municipalityId: string;
+      communeId: string;
+      avatarFileId: string;
+    }>,
+  ) => request<{ user: User; stats: UserStats }>('/me', { method: 'PATCH', body: body(data) }),
+
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    request<{ success: true }>('/me/password', { method: 'POST', body: body(data) }),
+
+  exportData: () => request<Record<string, unknown>>('/me/export'),
+  deleteAccount: (password: string) =>
+    request<{ success: true }>('/me', { method: 'DELETE', body: body({ password }) }),
+
+  // geo
+  geo: () => request<{ provinces: Province[] }>('/geo'),
+
+  // providers
+  providers: (params: { category?: string; municipality?: string; q?: string } = {}) => {
     const query = new URLSearchParams();
-    if (params?.municipality) query.set('municipality', params.municipality);
-    if (params?.category) query.set('category', params.category);
-    if (params?.search) query.set('search', params.search);
-    return fetchJson(`${BASE}/providers?${query.toString()}`);
+    for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+    return request<{ providers: ProviderProfile[] }>(`/providers?${query.toString()}`);
   },
+  provider: (id: string) =>
+    request<{ provider: ProviderProfile; reviews: Review[]; reviewSummary: ReviewList; isFavorite: boolean }>(
+      `/providers/${encodeURIComponent(id)}`,
+    ),
+  myProvider: () => request<{ provider: ProviderProfile | null }>('/me/provider'),
+  saveProvider: (data: Record<string, unknown>) =>
+    request<{ provider: ProviderProfile; user: User }>('/me/provider', { method: 'PUT', body: body(data) }),
+  publishProvider: () => request<{ provider: ProviderProfile; user: User }>('/me/provider/publish', { method: 'POST' }),
+  unpublishProvider: () => request<{ provider: ProviderProfile }>('/me/provider/unpublish', { method: 'POST' }),
+  favorite: (id: string, on: boolean) =>
+    request<{ favorite: boolean }>(`/favorites/${id}`, { method: on ? 'POST' : 'DELETE' }),
 
-  // 3. Requests
-  async getRequests(params?: {
-    category?: string;
-    municipality?: string;
-    user_id?: string;
-    status?: string;
-  }): Promise<{ success: boolean; requests: ApiRequest[] }> {
+  // requests
+  requests: (
+    params: { scope?: 'mine' | 'open'; category?: string; municipality?: string; status?: string; q?: string } = {},
+  ) => {
     const query = new URLSearchParams();
-    if (params?.category) query.set('category', params.category);
-    if (params?.municipality) query.set('municipality', params.municipality);
-    if (params?.user_id) query.set('user_id', params.user_id);
-    if (params?.status) query.set('status', params.status);
-    return fetchJson(`${BASE}/requests?${query.toString()}`);
+    for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+    return request<{ requests: RequestDetail[] }>(`/requests?${query.toString()}`);
   },
+  request: (id: string) => request<{ request: RequestDetail }>(`/requests/${encodeURIComponent(id)}`),
+  createRequest: (data: Record<string, unknown>) =>
+    request<{ request: RequestDetail }>('/requests', { method: 'POST', body: body(data) }),
+  updateRequest: (id: string, data: Record<string, unknown>) =>
+    request<{ request: RequestDetail }>(`/requests/${id}`, { method: 'PATCH', body: body(data) }),
+  cancelRequest: (id: string) => request<{ request: RequestDetail }>(`/requests/${id}/cancel`, { method: 'POST' }),
 
-  async getRequestById(id: string): Promise<{
-    success: boolean;
-    request: ApiRequest;
-    proposals: ApiProposal[];
-    agreement?: any;
-  }> {
-    return fetchJson(`${BASE}/requests/${encodeURIComponent(id)}`);
-  },
-
-  async createRequest(data: {
-    user_id: string;
-    user_name: string;
-    title: string;
-    category: string;
-    municipality: string;
-    description: string;
-    budget_type: 'FIXED' | 'INSPECTION_NEEDED';
-    budget_amount: number;
-    urgency: 'NORMAL' | 'URGENT';
-  }): Promise<{ success: boolean; request: ApiRequest }> {
-    return fetchJson(`${BASE}/requests`, {
+  // proposals
+  propose: (requestId: string, data: { amount: number; estimatedDays: number; message: string }) =>
+    request<{ proposal: unknown; request: RequestDetail }>(`/requests/${requestId}/proposals`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+      body: body(data),
+    }),
+  acceptProposal: (id: string) => request<{ agreement: Agreement }>(`/proposals/${id}/accept`, { method: 'POST' }),
+  rejectProposal: (id: string) => request<{ success: true }>(`/proposals/${id}/reject`, { method: 'POST' }),
+  withdrawProposal: (id: string) => request<{ success: true }>(`/proposals/${id}/withdraw`, { method: 'POST' }),
 
-  // 4. Proposals
-  async submitProposal(
-    requestId: string,
-    data: {
-      provider_id: string;
-      provider_name: string;
-      provider_profession?: string;
-      amount: number;
-      is_inspection_needed: boolean;
-      estimated_days: number;
-      message: string;
-    }
-  ): Promise<{ success: boolean; proposal: ApiProposal }> {
-    return fetchJson(`${BASE}/requests/${encodeURIComponent(requestId)}/proposals`, {
+  // agreements
+  agreement: (id: string) => request<{ agreement: Agreement }>(`/agreements/${id}`),
+  acceptAgreement: (id: string) => request<{ agreement: Agreement }>(`/agreements/${id}/accept`, { method: 'POST' }),
+  declineAgreement: (id: string) => request<{ agreement: Agreement }>(`/agreements/${id}/decline`, { method: 'POST' }),
+  cancelAgreement: (id: string) => request<{ agreement: Agreement }>(`/agreements/${id}/cancel`, { method: 'POST' }),
+  submitCompletion: (id: string, data: { note: string; photoIds: string[] }) =>
+    request<{ agreement: Agreement }>(`/agreements/${id}/submit-completion`, { method: 'POST', body: body(data) }),
+  confirmCompletion: (id: string) => request<{ agreement: Agreement }>(`/agreements/${id}/confirm`, { method: 'POST' }),
+  requestChanges: (id: string, note: string) =>
+    request<{ agreement: Agreement }>(`/agreements/${id}/request-changes`, { method: 'POST', body: body({ note }) }),
+  dispute: (id: string, reason: string) =>
+    request<{ agreement: Agreement }>(`/agreements/${id}/dispute`, { method: 'POST', body: body({ reason }) }),
+  review: (id: string, data: { communication: number; reliability: number; deadlines: number; comment: string }) =>
+    request<{ review: Review }>(`/agreements/${id}/reviews`, { method: 'POST', body: body(data) }),
+  myReviews: () => request<{ reviews: Review[] }>('/me/reviews'),
+
+  // conversations
+  conversations: () => request<{ conversations: Conversation[]; unread: number }>('/conversations'),
+  messages: (id: string) =>
+    request<{ conversation: Conversation; messages: Message[] }>(`/conversations/${id}/messages`),
+  sendMessage: (id: string, data: { body: string; fileIds?: string[] }) =>
+    request<{ message: Message }>(`/conversations/${id}/messages`, { method: 'POST', body: body(data) }),
+  readConversation: (id: string) => request<{ success: true }>(`/conversations/${id}/read`, { method: 'POST' }),
+
+  // notifications
+  notifications: () => request<{ notifications: Notification[]; unread: number }>('/notifications'),
+  readNotification: (id: string) => request<{ success: true }>(`/notifications/${id}/read`, { method: 'POST' }),
+  readAllNotifications: () => request<{ success: true }>('/notifications/read-all', { method: 'POST' }),
+
+  // reports + verification
+  report: (data: { targetType: string; targetId: string; reason: string; details: string }) =>
+    request<{ report: { id: string; status: string } }>('/reports', { method: 'POST', body: body(data) }),
+  myReports: () =>
+    request<{
+      reports: Array<{
+        id: string;
+        target_type: string;
+        target_id: string;
+        reason: string;
+        details: string;
+        status: string;
+        appeal_status: string | null;
+        created_at: string;
+      }>;
+    }>('/reports/mine'),
+  appealReport: (id: string, message: string) =>
+    request<{ appeal: { id: string; status: string } }>(`/reports/${encodeURIComponent(id)}/appeal`, {
       method: 'POST',
-      body: JSON.stringify({
-        ...data,
-        is_inspection_needed: data.is_inspection_needed ? 1 : 0,
-      }),
-    });
+      body: body({ message }),
+    }),
+  verification: () =>
+    request<{
+      currentLevel: number;
+      historyLevel: number | null;
+      requests: Array<{
+        id: string;
+        kind: string;
+        status: string;
+        notes: string;
+        review_note: string;
+        created_at: string;
+        reviewed_at: string | null;
+      }>;
+      levels: Array<{ level: number; pt: string; en: string; available: boolean }>;
+    }>('/me/verification'),
+  requestVerification: async (file: File, kind: 'identity' | 'qualification', notes: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('kind', kind);
+    form.append('notes', notes);
+    return request<{ id: string; status: string }>('/verification/requests', { method: 'POST', body: form });
   },
 
-  async acceptProposal(proposalId: string): Promise<{
-    success: boolean;
-    message: string;
-    agreementId: string;
-  }> {
-    return fetchJson(`${BASE}/proposals/${encodeURIComponent(proposalId)}/accept`, {
-      method: 'POST',
-    });
+  // files
+  upload: async (file: File, purpose: 'avatar' | 'portfolio' | 'request' | 'message' | 'completion' | 'report') => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('purpose', purpose);
+    return request<{ file: FileRecord }>('/files', { method: 'POST', body: form });
   },
+  uploadAvatar: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{ user: User }>('/me/avatar', { method: 'POST', body: form });
+  },
+  uploadPortfolio: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{ file: FileRecord; provider: ProviderProfile }>('/me/portfolio', { method: 'POST', body: form });
+  },
+  removePortfolio: (fileId: string) =>
+    request<{ provider: ProviderProfile }>(`/me/portfolio/${fileId}`, { method: 'DELETE' }),
 
-  // 5. Escrow & Agreements
-  async releaseEscrow(agreementId: string): Promise<{
-    success: boolean;
-    message: string;
-  }> {
-    return fetchJson(`${BASE}/agreements/${encodeURIComponent(agreementId)}/release-escrow`, {
-      method: 'POST',
-    });
-  },
-
-  async confirmWhatsAppAgreement(data: {
-    request_id: string;
-    customer_id: string;
-    provider_id: string;
-    agreed_amount: number;
-    screenshot_url?: string;
-    notes?: string;
-  }): Promise<{ success: boolean; message: string; agreementId: string }> {
-    return fetchJson(`${BASE}/agreements/whatsapp-confirm`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  // 6. Messages & Conversations
-  async getConversations(userId: string): Promise<{
-    success: boolean;
-    conversations: ApiConversation[];
-  }> {
-    return fetchJson(`${BASE}/conversations?user_id=${encodeURIComponent(userId)}`);
-  },
-
-  async getMessages(
-    convId: string,
-    requesterId?: string
-  ): Promise<{ success: boolean; messages: ApiMessage[] }> {
-    const query = requesterId ? `?requester_id=${encodeURIComponent(requesterId)}` : '';
-    return fetchJson(`${BASE}/conversations/${encodeURIComponent(convId)}/messages${query}`);
-  },
-
-  async sendMessage(
-    convId: string,
-    data: {
-      sender_id: string;
-      sender_name: string;
-      sender_role: 'customer' | 'provider';
-      recipient_id?: string;
-      text: string;
-      attachment_url?: string;
-    }
-  ): Promise<{ success: boolean; messageId: string; timestamp: string }> {
-    return fetchJson(`${BASE}/conversations/${encodeURIComponent(convId)}/messages`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  // 7. Upload
-  async uploadFile(base64Data: string, filename?: string): Promise<{ success: boolean; url: string }> {
-    return fetchJson(`${BASE}/upload`, {
-      method: 'POST',
-      body: JSON.stringify({ base64Data, filename }),
-    });
-  },
-
-  // 8. Bots
-  async getBotsStatus(): Promise<{ success: boolean; enabled: boolean }> {
-    return fetchJson(`${BASE}/bots/status`);
-  },
-
-  async toggleBots(): Promise<{ success: boolean; enabled: boolean }> {
-    return fetchJson(`${BASE}/bots/toggle`, { method: 'POST' });
-  },
-
-  async triggerBotNow(): Promise<{ success: boolean; result: any }> {
-    return fetchJson(`${BASE}/bots/trigger-now`, { method: 'POST' });
-  },
+  fileUrl: (file: FileRecord | null | undefined) => (file ? `${BASE}/files/${file.id}` : ''),
 };

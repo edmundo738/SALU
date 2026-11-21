@@ -1,1 +1,6 @@
-/*  /index.html  200
+# Sem VITE_API_URL, /api não pode devolver o index.html em silêncio.
+/api/*      /api-unavailable.json  503
+# Assets em falta devolvem 404, não a aplicação.
+/assets/*   /404.html              404
+# Rotas profundas do React Router.
+/*          /index.html            200

@@ -1,55 +1,101 @@
-# Publicar na Vercel
+# DEPLOY
 
-O protótipo é um site estático com rotas do lado do cliente. Precisa de uma regra que
-devolva `index.html` em qualquer endereço — sem ela, abrir `/pedidos/abc` directamente
-dá erro 404. Essa regra está em `vercel.json`.
+> **Estado:** configuração pronta; **nenhum deploy foi executado neste ambiente**. `P0-12` continua parcial.
 
-## Antes de publicar
+## Arquitectura de produção
 
-```bash
-npm run build     # tem de terminar sem erros
-npm test          # 43 testes
+```
+Netlify (estático)                    Host persistente (API)
+salu.ao  ─── VITE_API_URL ───────────▶  https://api.salu.ao/api
+   │                                         │
+   └── index.html + assets                   ├── /data/salu.db (volume)
+                                             └── /data/uploads/ (volume)
 ```
 
-O `dist/` é o que vai para produção. Não é preciso commitá-lo.
+O SQLite **não** pode viver no Netlify: o filesystem serverless é efémero. Para várias instâncias, migrar para Postgres (não implementado).
 
-## Publicar
+## 1. API
 
-**Pela interface (recomendado, 3 minutos)**
-
-1. Em [vercel.com/new](https://vercel.com/new), escolher *Import Git Repository* e o
-   repositório `edmundo738/SALU`. Se ainda não estiver lá, é preciso primeiro
-   `git push origin main`.
-2. A Vercel detecta Vite. Confirmar:
-   - Framework preset: **Vite**
-   - Build command: `npm run build`
-   - Output directory: `dist`
-3. **Não** definir variáveis de ambiente para a demonstração. Sem elas a aplicação
-   arranca em modo demonstração, que é o comportamento pretendido no concurso.
-4. Deploy. O endereço fica do tipo `salu-xxxx.vercel.app`.
-
-**Pela linha de comandos**
+Requisitos: Node 22, volume persistente, HTTPS.
 
 ```bash
-npx vercel --prod
+npm ci --omit=dev
+PORT=3001 \
+HOST=0.0.0.0 \
+NODE_ENV=production \
+APP_ORIGIN=https://salu.ao \
+SALU_DATA_DIR=/var/lib/salu \
+SALU_ADMIN_TOKEN=<segredo-longo> \
+npm run server
 ```
 
-## Depois de publicar — verificação obrigatória
+- `SALU_ADMIN_TOKEN` é obrigatório para `/api/admin/*`; sem ele, os endpoints devolvem 404.
+- `SALU_DATA_DIR` deve ser um volume com backup.
+- O servidor escuta em `0.0.0.0` e termina graciosamente com SIGTERM.
+- Verificar `GET https://api.salu.ao/api/health` → `{"status":"ok"}`.
 
-Abrir no telemóvel, não no portátil:
+### Reverse proxy
 
-1. A página inicial abre e mostra os profissionais de exemplo.
-2. Abrir um perfil directamente pelo endereço (`/perfil/exemplo-reparacoes`) e recarregar
-   a página. Se der 404, a regra de reescrita não está a ser aplicada.
-3. Publicar um pedido e confirmar que ele aparece no mural.
-4. Confirmar que esse pedido mostra «O teu pedido está publicado» e **não** um botão de
-   WhatsApp.
+Terminar TLS no proxy e encaminhar para `127.0.0.1:3001`. O servidor já define `trust proxy 1` para ler o IP real e aplicar rate limit.
 
-## O que a Vercel não resolve
+## 2. Frontend
 
-O protótipo guarda os dados no `localStorage` do visitante. Cada pessoa que abre o
-endereço vê os dados de exemplo e as suas próprias criações — **não vê o que outra pessoa
-criou**. Publicar na Vercel torna o produto acessível, não partilhado.
+No painel Netlify:
 
-Para haver dados entre dispositivos é preciso Supabase e autenticação, que estão fora do
-âmbito desta fase.
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Variável: `VITE_API_URL=https://api.salu.ao/api`
+
+Ou localmente:
+
+```bash
+VITE_API_URL=https://api.salu.ao/api npm run build
+```
+
+Sem `VITE_API_URL`, o cliente usa `/api`; o Netlify devolve **503 + `api-unavailable.json`**, nunca HTML disfarçado de API.
+
+## 3. CORS
+
+`server/app.ts` aceita:
+
+- `http://localhost:5173`, `http://127.0.0.1:5173`;
+- `http://localhost:4173`, `http://127.0.0.1:4173`;
+- origens em `APP_ORIGIN` (lista separada por vírgulas);
+- `*.e2b.app` e `*.netlify.app` (previews).
+
+Adicionar o domínio final em `APP_ORIGIN`. Não usar `*`.
+
+## 4. Verificação pós-deploy (obrigatória)
+
+```bash
+curl -i https://api.salu.ao/api/health
+curl -i https://salu.ao/pedidos/req_inexistente     # 200 HTML (SPA)
+curl -i https://salu.ao/api/health                  # 503 JSON, não HTML
+curl -I https://salu.ao/assets/nao-existe.js        # 404
+```
+
+No browser:
+
+1. Criar duas contas em janelas separadas.
+2. Ana publica pedido; Bruno envia proposta; Ana aceita; ambos confirmam.
+3. Conversa com anexo; Bruno submete prova; Ana confirma.
+4. Avaliação recíproca; média real.
+5. Recarregar, voltar atrás, abrir link directo.
+6. Confirmar que um terceiro não vê a conversa.
+
+Só depois actualizar `P0-12` para **Corrigido** e registar a evidência em `PROJECT_STATE.md`.
+
+## 5. Segurança
+
+- Cookies `Secure` em `NODE_ENV=production`.
+- HSTS no servidor e no host; CSP no Netlify.
+- Backups do volume e teste de restauro.
+- Nunca commitar `.env`, `data/` ou `public/uploads/`.
+- Rotação de `SALU_ADMIN_TOKEN`.
+
+## 6. Limitações
+
+- Sem deploy automático neste repositório (sem CI).
+- Sem migração para Postgres.
+- Sem e-mail/SMS.
+- Sem CDN para uploads; servidos pela API com `Cache-Control` público/privado.

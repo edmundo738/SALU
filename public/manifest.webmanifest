@@ -1,0 +1,13 @@
+{
+  "name": "SALU — Serviços, oportunidades e confiança",
+  "short_name": "SALU",
+  "description": "Publica pedidos, recebe propostas reais e acompanha acordos entre cliente e prestador em Angola.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#081C41",
+  "lang": "pt-AO",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
