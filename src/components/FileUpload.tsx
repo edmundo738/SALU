@@ -5,13 +5,17 @@ import { api, ApiError } from '../lib/api';
 import { useToast } from '../app/ToastProvider';
 import { useI18n } from '../i18n';
 
-const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf';
+const IMAGES = 'image/jpeg,image/png,image/webp';
+const ACCEPT = `${IMAGES},application/pdf`;
 const MAX = 6 * 1024 * 1024;
 
 type TFn = ReturnType<typeof useI18n>['t'];
-function validate(file: File, t: TFn): string | null {
+function validate(file: File, t: TFn, purpose: string): string | null {
   if (file.size > MAX) return t('validation.fileSize');
   if (!ACCEPT.split(',').includes(file.type)) return t('validation.fileType');
+  if (file.type === 'application/pdf' && !['message', 'completion', 'report'].includes(purpose)) {
+    return t('validation.fileType');
+  }
   return null;
 }
 
@@ -19,7 +23,7 @@ export function FileUpload({
   purpose,
   label,
   onUploaded,
-  accept = ACCEPT,
+  accept,
   compact = false,
 }: {
   purpose: 'avatar' | 'portfolio' | 'request' | 'message' | 'completion' | 'report';
@@ -36,7 +40,7 @@ export function FileUpload({
 
   async function handle(file: File | undefined) {
     if (!file) return;
-    const problem = validate(file, t);
+    const problem = validate(file, t, purpose);
     if (problem) {
       setError(problem);
       return;
@@ -62,7 +66,7 @@ export function FileUpload({
       <input
         ref={inputRef}
         type="file"
-        accept={accept}
+        accept={accept ?? (purpose === 'avatar' || purpose === 'portfolio' || purpose === 'request' ? IMAGES : ACCEPT)}
         className="sr-only"
         onChange={(event) => void handle(event.target.files?.[0])}
         aria-label={label}
