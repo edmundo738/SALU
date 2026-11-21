@@ -1,12 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SALU">
-  <rect width="64" height="64" rx="14" fill="#14120F"/>
-  <text
-    x="32"
-    y="45"
-    text-anchor="middle"
-    font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    font-size="38"
-    font-weight="900"
-    fill="#D89B2C"
-  >S</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="64" height="64" role="img" aria-label="SALU">
+  <defs>
+    <linearGradient id="g" x1="6" y1="2" x2="34" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#143A78" />
+      <stop offset="1" stop-color="#081C41" />
+    </linearGradient>
+  </defs>
+  <rect x="0.75" y="0.75" width="38.5" height="38.5" rx="11.5" fill="url(#g)" stroke="#1D6FE5" stroke-opacity="0.45" stroke-width="1.5" />
+  <path
+    d="M26.4 13.9c0-2.6-2.9-4.1-6.4-4.1-3.7 0-6.4 1.6-6.4 4.4 0 2.7 2.4 3.8 6.4 4.6 4 .8 6.4 1.9 6.4 4.7 0 3-2.8 4.8-6.6 4.8-3.6 0-6.4-1.5-6.4-4.1"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="3.3"
+    stroke-linecap="round"
+  />
+  <circle cx="32" cy="8" r="2.5" fill="#F97316" />
 </svg>

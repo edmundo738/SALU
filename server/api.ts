@@ -379,6 +379,9 @@ apiRouter.get('/files/:id', optionalAuth, (req, res) => {
   if (!file || !canAccessFile(req.params.id, viewerId || null)) return res.status(404).end();
   res.setHeader('Content-Type', file.mime);
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  // O frontend vive noutro domínio (ex.: Netlify). Sem isto o browser recusa
+  // mostrar a imagem já carregada: o upload corre bem, mas a foto "não aparece".
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
   res.setHeader('Cache-Control', file.visibility === 'public' ? 'public, max-age=3600' : 'private, no-store');
   res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`);
