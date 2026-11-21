@@ -1,6 +1,6 @@
 # PROJECT_STATE — SALU
 
-**Actualizado:** 20 de novembro de 2026 · **Concurso:** 28 de novembro (8 dias)
+**Actualizado:** 21 de novembro de 2026 · **Concurso:** 28 de novembro (8 dias)
 **Modo:** Application · **Fase:** estabilização e demonstração (funcionalidades congeladas)
 
 Fonte de verdade única. Os ficheiros `SALU_PROJECT_STATE.md` e `SALU_CHECKPOINT_*.md`
@@ -11,18 +11,17 @@ na pasta de sessão são históricos e ficam substituídos por este documento.
 ## PROJECT_STATE
 
 Protótipo funcional com dois lados do mercado, a correr no build de produção em modo
-demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
+demonstração (dados locais). 14 ecrãs, 101 testes, 91 kB gzip no arranque.
 
 | Propriedade | Evidência | Valor |
 |---|---|---|
-| Commits | `FACT` | 3 (`d80da2b` + alterações de estabilização por commitar) |
-| Ficheiros versionados | `MEASURED` | 55 antes desta fase |
-| Ecrãs | `MEASURED` | 11 rotas |
-| Testes | `MEASURED` | 97, todos verdes |
+| Commits | `FACT` | ver `git log` (último antes da auditoria: `6165528`) |
+| Ecrãs | `MEASURED` | 14 rotas (+ 1 redirecção e a página 404) |
+| Testes | `MEASURED` | 101, todos verdes (21/11) |
 | Build | `MEASURED` | `tsc --noEmit` limpo |
-| Bundle inicial | `MEASURED` | 90,0 kB gzip + 73 kB de fontes woff2 (+ 62 kB Supabase lazy) |
+| Bundle inicial | `MEASURED` | 90,9 kB gzip + 73 kB de fontes woff2 (+ 62 kB Supabase lazy) |
 | Modo de dados | `OBSERVED` | local |
-| URL público | `UNKNOWN` | **não existe ainda** |
+| URL público | `OBSERVED` | `salu-ao.netlify.app` (indicado pelo dono). **Não verificado nesta auditoria**: a rede da sessão bloqueia o domínio. Confirmar que corresponde ao último commit |
 
 ---
 
@@ -36,8 +35,8 @@ demonstração (dados locais). 11 ecrãs, 43 testes, 71 kB gzip no arranque.
 
 ## CURRENT_TASK
 
-`FACT` — Estabilização concluída. Falta: publicar na Vercel (depende da conta do dono),
-testar num telemóvel físico, e gravar a demonstração.
+`FACT` — Estabilização concluída e auditada a 21/11. Falta: confirmar que o Netlify serve o
+último commit, testar num telemóvel físico, e gravar a demonstração (limite de 2 minutos).
 
 ---
 
@@ -91,10 +90,11 @@ Serif nas manchetes e Instrument Sans no corpo, ambas servidas do próprio síti
 (73 kB woff2, sem pedidos a terceiros). Paleta de argila e ocre; verde reduzido a
 contacto. Grão sobre o papel, numeração editorial em «Como funciona», barra inferior de
 aplicação no telemóvel, estados de contacto iniciado a fechar o ciclo.
-Verificado a 375 px e em desktop: sem transbordo horizontal; barra inferior dentro do
-viewport; tipografia a carregar (família calculada confirmada).
+Verificado a 375 px e em desktop na página inicial e nos formulários: sem transbordo
+horizontal; barra inferior dentro do viewport; tipografia a carregar. **Correcção (21/11):**
+as listas `/explorar` e `/pedidos` transbordavam — ver F3.
 
-### E7 — Proposta e conversa `FACT`
+### E6 — Proposta e conversa `FACT`
 Ciclo completo verificado no build de produção, numa só origem:
 
 1. Cliente «Marta Kilamba» publica o pedido; a posse fica registada por nome.
@@ -109,7 +109,7 @@ Ciclo completo verificado no build de produção, numa só origem:
 cliente nunca via as propostas que recebia. A posse passou a ser guardada por nome
 (`salu:v2:pertence`), fora da sessão activa.
 
-### E8 — Ciclo do trabalho e avaliação `FACT`
+### E7 — Ciclo do trabalho e avaliação `FACT`
 Estados do pedido: `aberto → acordado → concluido` (mais `cancelado`, sem interface
 ainda). Verificado no build de produção, num pedido criado de raiz para o teste:
 
@@ -127,7 +127,7 @@ autor e por pedido. O mural só mostra pedidos `aberto`.
 que o dono estava a interagir ao vivo durante a verificação automática. Causa não
 atribuível com certeza (interacção concorrente); o teste isolado acima é a evidência.
 
-### E9 — Ciclo completo em origem limpa, com recarga `FACT`
+### E8 — Ciclo completo em origem limpa, com recarga `FACT`
 Repetido em `localhost:5173` com `localStorage` apagado, sem interacção concorrente:
 «Ana Cliente» publica → «Bruno Técnico» propõe → Ana aceita (`acordado`) → conclui
 (`concluido`, conversa fechada) → avalia 5 com comentário, `alvoNome: "Bruno Técnico"`.
@@ -139,7 +139,7 @@ formulário de proposta. O pedido concluído não aparece no mural.
 Também adicionado: botão «Apagar dados e repor exemplos» na Área interna, para limpar o
 dispositivo antes de gravar ou apresentar.
 
-### E10 — Personagens de demonstração com história `FACT`
+### E9 — Personagens de demonstração com história `FACT`
 Seis personagens fictícias, com atalho «Entrar como» em `/entrar` (só em modo local):
 Marta (pedido aberto com 2 propostas e conversa), Ivo (4,5 · 2 trabalhos), Paulo
 (trabalho acordado + um concluído), Neusa (5,0 · 1), Joana (sem avaliações), Lúcia (dois
@@ -152,7 +152,7 @@ Marta → autora, 2 propostas, conversa visível, sem WhatsApp → aceita Ivo �
 `acordado`, `Ivo:aceite`, `António:recusada`. Paulo → «Escolheste Neusa Domingos» →
 conclui → avalia 5 → perfil da Neusa mostra **5,0 · 2 trabalhos avaliados**.
 
-### E11 — Fusão com a arquitectura do protótipo externo (zip) `FACT`
+### E10 — Fusão com a arquitectura do protótipo externo (zip) `FACT`
 Analisado um segundo protótipo do SALU (Google AI Studio/Gemini, inglês, sem rotas nem
 persistência nem testes, 3,5 MB de imagens geradas). **Importadas as ideias de
 organização, recusados os materiais:**
@@ -178,9 +178,29 @@ landing com «Quem começa aparece» e «Confiança, sem atalhos»; sem transbor
 
 **Defeito apanhado:** nenhum novo. 97 testes.
 
+### E11 — Auditoria de 21/11 `FACT`
+Código (`6165528`): `tsc --noEmit` limpo, 101 testes verdes, build de produção sem erros.
+Percorridas as 14 rotas a 375 px e 1280 px em `vite preview`, sem erros de consola nem
+pedidos falhados. Dois defeitos corrigidos (F3, F4); documentação alinhada com o código
+(contagem de testes, rotas, migrações, Netlify). Regra de direcção verificada: o pedido
+da Marta não mostra `wa.me`; pedidos de exemplo mostram contacto desactivado.
+
 ---
 
 ## FAILED_EXPERIMENTS
+
+**F3 — Transbordo horizontal a 375 px em `/explorar` e `/pedidos`.** `FACT` Os cartões
+saíam cortados e a página tinha scroll lateral (largura 466 e 449 px em 375). Causa: a
+lista era `grid` sem coluna explícita; a coluna implícita `auto` cresce com o conteúdo
+e o `truncate` nunca actua. Correcção: `grid-cols-1` (`minmax(0,1fr)`). **Como passou
+despercebido:** a verificação anterior («sem transbordo a 375 px», E5) mediu a página
+inicial e os formulários, não as listas. Verificado agora em todas as rotas.
+
+**F4 — «Profissionais interessados» somava propostas e cliques de WhatsApp.** `FACT`
+O pedido da Marta mostrava «Tens 2 propostas» e «3 interessados»; o evento de contacto
+não guarda quem contactou, logo uma pessoa podia contar duas vezes. Correcção: o
+cartão passa a dizer «Interesse no pedido» e discrimina «2 propostas · 1 contacto por
+WhatsApp». Não se deduplica: o dado não existe.
 
 **F00 — Sessão criada antes da semente.** `FACT` A semente corria na primeira abertura
 do repositório, e `/entrar` não o abre. Com armazenamento limpo, «entrar como Marta»
@@ -221,11 +241,11 @@ protótipo; inaceitável com utilizadores reais.
   `src/data/semente.ts` antes do build.
 - **A conversa é de um só dispositivo.** Os dois papéis são interpretados pela mesma
   pessoa ao trocar de sessão; não há mensagens entre telemóveis diferentes.
-- **Migrações SQL nunca executadas.** `0001` e `0002` escritas, não corridas.
+- **Migrações SQL nunca executadas.** `0001` a `0005` escritas, não corridas.
 - **Adaptador Supabase nunca testado** contra um projecto real.
 - **Fotografias** comprimidas para ~80 KB; `createImageBitmap` não testado em telemóvel.
-- **Sem avaliações, propostas formais, notificações, mapas ou pagamentos** — fora do
-  âmbito desta fase.
+- **Sem pagamentos, mapas, autenticação real nem chat entre dispositivos** — fora do âmbito
+  desta fase. Propostas, avaliações e notificações existem no protótipo, em modo local.
 
 ---
 
@@ -233,7 +253,7 @@ protótipo; inaceitável com utilizadores reais.
 
 | # | Decisão | Dono |
 |---|---|---|
-| D1 | Publicar na Vercel (requer conta do dono) | Edmundo |
+| D1 | Confirmar que o Netlify (`salu-ao.netlify.app`) serve o último commit | Edmundo |
 | D2 | Ensaio em telemóvel físico antes de gravar | Edmundo |
 | D3 | Gravar vídeo de reserva | Edmundo |
 | D4 | Enviar `git push` para o GitHub | Edmundo |
@@ -253,7 +273,7 @@ arquitectura:
 ## NEXT_ACTION
 
 1. `git push origin main` (valida o acesso de escrita ao GitHub).
-2. Importar o repositório na Vercel — ver `docs/DEPLOY.md`.
+2. Confirmar o deploy no Netlify (ou Vercel) — ver `docs/DEPLOY.md`.
 3. Abrir o URL no telemóvel e repetir os passos de E1.
 4. Ensaiar com `docs/DEMO.md`, cronometrado.
 5. Parar. Não acrescentar funcionalidades.

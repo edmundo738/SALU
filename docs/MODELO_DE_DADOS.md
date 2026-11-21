@@ -94,7 +94,7 @@ Regra do projecto: nada é apresentado como funcional sem teste.
 
 | Item | Estado |
 |---|---|
-| Regras de domínio (validação, telefone, filtros, WhatsApp) | **Testadas** — 43 testes |
+| Regras de domínio (validação, telefone, filtros, WhatsApp) | **Testadas** — suite de testes automáticos (`npm test`) |
 | Adaptador local (perfis, pedidos, contactos, persistência) | **Testado** |
 | Build de produção | **Verificado** — `tsc --noEmit` + `vite build` |
 | Publicar perfil com validação | **Verificado no browser** |

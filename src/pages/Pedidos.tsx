@@ -56,7 +56,7 @@ export function Pedidos() {
               })
             }
           >
-            <option value="todas">Todas as categorias</option>
+            <option value="todas">Categorias</option>
             {CATEGORIAS.map((categoria) => (
               <option key={categoria.id} value={categoria.id}>
                 {categoria.rotulo}
@@ -72,7 +72,7 @@ export function Pedidos() {
               definirFiltroPedidos({ municipio: evento.target.value as Municipio | 'todos' })
             }
           >
-            <option value="todos">Todo o município</option>
+            <option value="todos">Municípios</option>
             {MUNICIPIOS.map((municipio) => (
               <option key={municipio} value={municipio}>
                 {municipio}
@@ -103,7 +103,7 @@ export function Pedidos() {
           </Link>
         </div>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {pedidos.map((pedido) => (
             <li key={pedido.id}>
               <PedidoCartao pedido={pedido} />

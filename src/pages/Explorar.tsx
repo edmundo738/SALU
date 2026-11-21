@@ -53,7 +53,7 @@ export function Explorar() {
                 definirFiltro({ categoria: evento.target.value as CategoriaId | 'todas' })
               }
             >
-              <option value="todas">Todas as categorias</option>
+              <option value="todas">Categorias</option>
               {CATEGORIAS.map((categoria) => (
                 <option key={categoria.id} value={categoria.id}>
                   {categoria.rotulo}
@@ -74,7 +74,7 @@ export function Explorar() {
                 definirFiltro({ municipio: evento.target.value as Municipio | 'todos' })
               }
             >
-              <option value="todos">Todo o município</option>
+              <option value="todos">Municípios</option>
               {MUNICIPIOS.map((municipio) => (
                 <option key={municipio} value={municipio}>
                   {municipio}
@@ -104,7 +104,7 @@ export function Explorar() {
           </Link>
         </div>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {perfis.map((perfil) => (
             <li key={perfil.id}>
               <PerfilCartao perfil={perfil} />
