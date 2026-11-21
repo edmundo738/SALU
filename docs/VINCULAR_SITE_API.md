@@ -174,3 +174,35 @@ Se o build falhar por causa de `VITE_API_URL`, confirma que a variável existe e
 ## Coisa importante
 
 O Netlify só publica o que está na branch **`main`**. Alterações em branches abertas (como a `arena/a3cf2ae7-salu`) não aparecem no site até serem merged.
+
+# Se as fotografias não aparecerem
+
+Sintoma: escolhes uma foto, o upload termina com sucesso ("feito"), mas a imagem
+nunca aparece — fica o espaço vazio ou as iniciais.
+
+Causa: a foto fica guardada no servidor da API (`edmundo.alwaysdata.net`) e é
+mostrada dentro da página do Netlify (`salu-ao.netlify.app`). São dois domínios
+diferentes, e por defeito o browser recusa mostrar imagens vindas de outro
+domínio. O upload está certo; o que falha é a permissão de exibição.
+
+Há dois sítios onde essa permissão é dada:
+
+1. **Netlify** — `netlify.toml`, cabeçalho `Content-Security-Policy`, campo
+   `img-src`. Tem de incluir `https:`.
+2. **API** — `server/api.ts`, rota `GET /files/:id`, cabeçalho
+   `Cross-Origin-Resource-Policy: cross-origin`.
+
+O primeiro aplica-se num redeploy normal no Netlify. O segundo obriga a
+actualizar o código que corre no alwaysdata:
+
+```bash
+cd ~/salu
+git pull
+```
+
+Depois, no painel do alwaysdata, **Web → Sites → ⚙ → Restart** (ou reiniciar o
+site). Não é preciso `npm ci` porque não entraram dependências novas.
+
+Para confirmar que ficou bem, abre a consola do browser (F12 → Console) e
+recarrega a página com a foto: não deve aparecer nenhum erro a mencionar
+`Content Security Policy` ou `Cross-Origin-Resource-Policy`.

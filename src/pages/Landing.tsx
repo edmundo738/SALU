@@ -8,132 +8,56 @@ import {
   MessageSquare,
   Search,
   ShieldCheck,
-  Sparkles,
   XCircle,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { PublicLayout } from '../components/Layouts';
 import { ButtonLink, Button } from '../components/ui/Base';
 
-function HeroVisual() {
-  const { t } = useI18n();
-  return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#081C41] p-5 sm:p-7 shadow-2xl">
-      <div className="absolute inset-0 opacity-70" aria-hidden="true">
-        <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-[#1D6FE5]/40 blur-3xl" />
-        <div className="absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-[#F97316]/30 blur-3xl" />
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 420" fill="none" aria-hidden="true">
-          <path d="M-20 340 Q180 300 300 390 T540 300" stroke="#F97316" strokeOpacity=".55" strokeWidth="2" />
-          <path d="M-20 80 Q130 20 280 80 T540 30" stroke="#60A5FA" strokeOpacity=".45" strokeWidth="1.5" />
-          <g stroke="#93C5FD" strokeOpacity=".2">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <line key={index} x1={40 + index * 60} y1="0" x2={-40 + index * 60} y2="420" />
-            ))}
-          </g>
-        </svg>
-      </div>
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur">
-            <Sparkles className="w-3.5 h-3.5 text-[#FDBA74]" aria-hidden="true" />
-            {t('landing.eyebrow')}
-          </div>
-          <span className="text-[10px] font-mono text-white/50">LUANDA · 2024</span>
-        </div>
-        <div className="mt-6 space-y-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#F97316] flex items-center justify-center">
-                <FileText className="w-4 h-4 text-white" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white">{t('landing.step1.title')}</p>
-                <p className="text-xs text-white/60 truncate">{t('landing.mock1')}</p>
-              </div>
-              <span className="ml-auto text-[10px] font-bold text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2 py-0.5">
-                {t('status.request.OPEN')}
-              </span>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-[#1D6FE5]/30 bg-[#1D6FE5]/15 p-4 backdrop-blur sm:ml-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#1D6FE5] flex items-center justify-center">
-                <Handshake className="w-4 h-4 text-white" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white">{t('landing.step2.title')}</p>
-                <p className="text-xs text-white/60 truncate">{t('landing.mock2')}</p>
-              </div>
-              <span className="ml-auto text-[10px] font-bold text-[#93C5FD] bg-[#1D6FE5]/20 border border-[#93C5FD]/20 rounded-full px-2 py-0.5">
-                {t('status.proposal.ACCEPTED')}
-              </span>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 backdrop-blur sm:ml-12">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-white" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white">{t('landing.step3.title')}</p>
-                <p className="text-xs text-white/60 truncate">{t('landing.mock3')}</p>
-              </div>
-              <span className="ml-auto text-[10px] font-bold text-emerald-200 bg-emerald-400/15 border border-emerald-300/20 rounded-full px-2 py-0.5">
-                {t('status.agreement.COMPLETED')}
-              </span>
-            </div>
-          </div>
-        </div>
-        <p className="mt-5 text-[11px] leading-relaxed text-white/50">
-          {t('landing.mockLabel')} · {t('agreement.paymentNote')}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function LandingPage() {
   const { t } = useI18n();
   return (
     <PublicLayout>
       {/* 1. Hero */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden border-b border-[#E2E8F0] dark:border-[#1E325C]">
         <div
-          className="absolute inset-0 bg-gradient-to-br from-[#F8FAFC] via-[#EFF6FF] to-[#FFF7ED] dark:from-[#060E20] dark:via-[#081C41] dark:to-[#0C1833]"
+          className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC] via-[#F2F7FF] to-white dark:from-[#060E20] dark:via-[#081C41] dark:to-[#060E20]"
           aria-hidden="true"
         />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-16 sm:pb-24 grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#FED7AA] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#C2410C] dark:border-[#F97316]/30 dark:bg-[#0C1833] dark:text-[#FDBA74]">
-              <ShieldCheck className="w-4 h-4" aria-hidden="true" />
-              {t('landing.eyebrow')}
-            </p>
-            <h1 className="mt-5 text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.05] text-[#081C41] dark:text-white">
-              {t('landing.title')}
-            </h1>
-            <p className="mt-5 text-base sm:text-lg leading-relaxed text-[#475569] dark:text-[#CBD5E1] max-w-xl">
-              {t('landing.subtitle')}
-            </p>
-            <div className="mt-7 flex flex-col sm:flex-row gap-3">
-              <ButtonLink to="/criar-conta" size="lg" className="w-full sm:w-auto">
-                {t('landing.ctaPrimary')}
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </ButtonLink>
-              <ButtonLink to="/entrar" size="lg" variant="secondary" className="w-full sm:w-auto">
-                {t('landing.ctaSecondary')}
-              </ButtonLink>
-            </div>
-            <p className="mt-4 text-xs text-[#64748B] dark:text-[#94A3B8]">
-              <Link
-                to="/explorar"
-                className="font-semibold underline underline-offset-4 hover:text-[#C2410C] dark:hover:text-[#FDBA74]"
-              >
-                {t('landing.ctaBrowse')}
-              </Link>{' '}
-              · {t('landing.honesty.dont3')}
-            </p>
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-40 dark:opacity-25"
+          aria-hidden="true"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(29,111,229,0.30), transparent 62%)',
+          }}
+        />
+        <div className="relative mx-auto max-w-4xl px-4 sm:px-6 pt-16 sm:pt-24 pb-16 sm:pb-24 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#C2410C] dark:text-[#FDBA74]">
+            {t('landing.eyebrow')}
+          </p>
+          <h1 className="mx-auto mt-5 max-w-3xl font-display text-[2.5rem] font-extrabold leading-[1.04] tracking-[-0.03em] text-[#081C41] dark:text-white sm:text-6xl">
+            {t('landing.title')}
+          </h1>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[#475569] dark:text-[#CBD5E1] sm:text-lg">
+            {t('landing.subtitle')}
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <ButtonLink to="/criar-conta" size="lg" className="w-full sm:w-auto">
+              {t('landing.ctaPrimary')}
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </ButtonLink>
+            <ButtonLink to="/entrar" size="lg" variant="secondary" className="w-full sm:w-auto">
+              {t('landing.ctaSecondary')}
+            </ButtonLink>
           </div>
-          <HeroVisual />
+          <p className="mt-7 text-sm">
+            <Link
+              to="/explorar"
+              className="font-semibold text-[#081C41] underline decoration-[#F97316] decoration-2 underline-offset-4 hover:text-[#C2410C] dark:text-white dark:hover:text-[#FDBA74]"
+            >
+              {t('landing.ctaBrowse')}
+            </Link>
+          </p>
         </div>
       </section>
 
