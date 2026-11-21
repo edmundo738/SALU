@@ -242,8 +242,14 @@ export function PedidoDetalhe() {
           <p className="mt-1 text-sm leading-relaxed text-mute">{passo.detalhe}</p>
 
           {ehMeuPedido && pedido.estado === 'aberto' && (
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-sand px-4 py-3">
-              <span className="text-xs font-medium uppercase tracking-[0.1em] text-mute">Profissionais interessados</span>
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-sand px-4 py-3">
+              <span className="text-xs font-medium uppercase tracking-[0.1em] text-mute">
+                Interesse no pedido
+                <span className="mt-0.5 block text-[11px] font-normal normal-case tracking-normal">
+                  {propostasDoPedido.length} {propostasDoPedido.length === 1 ? 'proposta' : 'propostas'} ·{' '}
+                  {contactosRecebidos} {contactosRecebidos === 1 ? 'contacto' : 'contactos'} por WhatsApp
+                </span>
+              </span>
               <span className="numeral text-2xl leading-none">{propostasDoPedido.length + contactosRecebidos}</span>
             </div>
           )}

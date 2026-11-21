@@ -1,19 +1,27 @@
-# Publicar na Vercel
+# Publicar (Netlify ou Vercel)
 
 O protótipo é um site estático com rotas do lado do cliente. Precisa de uma regra que
 devolva `index.html` em qualquer endereço — sem ela, abrir `/pedidos/abc` directamente
-dá erro 404. Essa regra está em `vercel.json`.
+dá erro 404. Essa regra está em `vercel.json` (Vercel) e em `netlify.toml` e
+`public/_redirects` (Netlify).
 
 ## Antes de publicar
 
 ```bash
 npm run build     # tem de terminar sem erros
-npm test          # 43 testes
+npm test          # todos os testes têm de passar
 ```
 
 O `dist/` é o que vai para produção. Não é preciso commitá-lo.
 
-## Publicar
+## Netlify
+
+O ficheiro `netlify.toml` já define o comando de build (`npm run build`), a pasta
+(`dist`) e a reescrita para `index.html`. Em *Add new site → Import from Git*, escolher o
+repositório; não são precisas variáveis de ambiente para a demonstração. Também funciona
+arrastando a pasta `dist/` para o Netlify Drop (o `_redirects` vai dentro do `dist`).
+
+## Vercel
 
 **Pela interface (recomendado, 3 minutos)**
 
@@ -45,11 +53,11 @@ Abrir no telemóvel, não no portátil:
 4. Confirmar que esse pedido mostra «O teu pedido está publicado» e **não** um botão de
    WhatsApp.
 
-## O que a Vercel não resolve
+## O que a publicação não resolve
 
 O protótipo guarda os dados no `localStorage` do visitante. Cada pessoa que abre o
 endereço vê os dados de exemplo e as suas próprias criações — **não vê o que outra pessoa
-criou**. Publicar na Vercel torna o produto acessível, não partilhado.
+criou**. Publicar torna o produto acessível, não partilhado.
 
 Para haver dados entre dispositivos é preciso Supabase e autenticação, que estão fora do
 âmbito desta fase.

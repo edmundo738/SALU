@@ -17,10 +17,16 @@ identidade nem pagamentos.
 Dois lados do mercado, um percurso cada:
 
 **Prestador** — entra → cria perfil com ofício, bairro, apresentação e fotografia →
-aparece na pesquisa → recebe contactos por WhatsApp.
+aparece na pesquisa → encontra pedidos no mural, envia propostas e fala por WhatsApp →
+quando o trabalho termina, recebe avaliação.
 
-**Cliente** — entra → publica um pedido com fotografia, categoria e bairro → o pedido
-aparece no mural → um profissional encontra-o e fala por WhatsApp.
+**Cliente** — entra → publica um pedido com fotografia, categoria e bairro → recebe
+propostas e conversa com quem as enviou → aceita uma proposta → marca o trabalho como
+concluído → avalia o profissional.
+
+Regra de direcção: **quem publica o pedido não contacta ninguém — o primeiro passo é de
+quem vai resolver.** O autor de um pedido (ou o dono de um perfil) não vê o botão de
+WhatsApp para si próprio.
 
 ## Como correr
 
@@ -48,9 +54,13 @@ lados do mercado sem começar do zero — ver [docs/DEMO.md](docs/DEMO.md). Para
 | `/perfil/novo` | Criar perfil de prestador |
 | `/perfil/:id` | Perfil público + contacto por WhatsApp |
 | `/pedidos` | Mural de pedidos abertos |
-| `/pedidos/:id` | Detalhe do pedido + contacto por WhatsApp |
+| `/pedidos/:id` | Detalhe do pedido: propostas, conversa, estado, contacto por WhatsApp |
 | `/publicar-pedido` | Publicar um pedido |
-| `/minha-area` | Perfil, pedidos e contactos da sessão |
+| `/painel` | Painel por papel (cliente ou prestador) com os próximos passos |
+| `/notificacoes` | Notificações calculadas a partir dos dados da sessão |
+| `/confianca` | Profissionais guardados como de confiança |
+| `/seguranca` | Orientações de segurança e denúncia |
+| `/minha-area` | Redirecciona para `/painel` |
 | `/planos` | Modelo de negócio proposto |
 | `/interno` | Acompanhamento do protótipo |
 
@@ -89,7 +99,8 @@ obtêm-se perguntando às pessoas.
 ## Limitações conhecidas
 
 - **Um só dispositivo.** Perfis e pedidos criados aqui não aparecem noutro telemóvel.
-- **Sem contas.** Qualquer pessoa publica; não há posse nem edição.
+- **Sem contas.** Qualquer pessoa publica. A posse do que cada pessoa criou é guardada
+  por nome, no dispositivo: duas pessoas com o mesmo nome colidem.
 - **Adaptador Supabase nunca testado** contra um projecto real.
-- **Migrações SQL nunca executadas.**
+- **Migrações SQL (`0001` a `0005`) nunca executadas.**
 - **Fotografias** são comprimidas para caber no armazenamento local (~5 MB).
