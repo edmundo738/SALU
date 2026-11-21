@@ -46,7 +46,7 @@ Para apontar o frontend directamente para uma API externa:
 VITE_API_URL=http://localhost:3001/api npm run build
 ```
 
-Para publicar a API **sem pagar nem usar cartão**, segue `docs/DEPLOY_GRATIS.md` (Alwaysdata Free).
+Para publicar a API **sem pagar nem usar cartão**, segue `docs/DEPLOY_GRATIS.md` (Alwaysdata Free). Depois, liga o site com `docs/VINCULAR_SITE_API.md`.
 
 Sem `VITE_API_URL`, o frontend usa `/api`; no Netlify essa rota devolve **503** com `api-unavailable.json`, nunca o `index.html` em silêncio. O site público `salu-ao.netlify.app` está neste estado até a API ser publicada — ver `docs/DEPLOY.md`.
 

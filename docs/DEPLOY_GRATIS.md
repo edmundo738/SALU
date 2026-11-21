@@ -1,5 +1,7 @@
 # Publicar a API de graça (Alwaysdata)
 
+> Depois de a API responder, a ligação ao site está explicada em **`docs/VINCULAR_SITE_API.md`** (só uma variável no Netlify).
+
 > **Não precisas de cartão nem de pagar nada.** O Alwaysdata tem um plano gratuito para uso pessoal: 1 GB de disco, 256 MB de RAM e Node.js. A API e a base de dados SQLite ficam no mesmo sítio, por isso as contas não desaparecem quando o site é actualizado.
 
 ## O que é a API, em uma frase
