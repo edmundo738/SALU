@@ -54,7 +54,7 @@ A antiga aplicação de demonstração foi substituída por **um único sistema*
 
 ```
 npm run build   → OK
-                  dist/assets/index-*.js  303.85 kB │ gzip: 92.29 kB
+                  dist/assets/index-*.js  304.48 kB │ gzip: 92.52 kB
                   35 chunks; imagem do logo 16.35 kB
 
 npm test        → 3 ficheiros, 16 testes, 16 pass

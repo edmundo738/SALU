@@ -45,6 +45,7 @@ No painel Netlify:
 - Build command: `npm run build`
 - Publish directory: `dist`
 - Variável: `VITE_API_URL=https://api.salu.ao/api`
+- Opcional: `VITE_SUPPORT_EMAIL=suporte@teu-dominio.ao`; sem ela a UI diz que o canal ainda não está configurado, em vez de inventar um endereço.
 
 Ou localmente:
 

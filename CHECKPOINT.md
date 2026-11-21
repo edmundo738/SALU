@@ -27,7 +27,7 @@ Cada transição de acordo é decidida no servidor. Identidade vem da sessão. N
 ## LATEST_EVIDENCE
 
 - `npm test`: 16/16.
-- `npm run build`: OK; `303.85 kB` / `92.29 kB` gzip.
+- `npm run build`: OK; `304.48 kB` / `92.52 kB` gzip.
 - `npm audit`: 0.
 - Fluxo HTTP com Ana (cliente), Bruno (prestador) e Carlos (terceiro): todos os passos essenciais observados; acessos cruzados 403/404/409 conforme o caso.
 - Reinício do servidor: pedido concluído continua presente.

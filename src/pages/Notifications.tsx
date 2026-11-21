@@ -13,6 +13,62 @@ const icons: Record<string, typeof Bell> = {
   verification: ShieldCheck,
 };
 
+const titlesEn: Record<string, string> = {
+  'Nova proposta recebida': 'New proposal received',
+  'Proposta aceite': 'Proposal accepted',
+  'Proposta não aceite': 'Proposal not accepted',
+  'Acordo confirmado': 'Agreement confirmed',
+  'Acordo recusado': 'Agreement declined',
+  'Trabalho concluído — confirma': 'Work completed — confirm',
+  'Serviço confirmado': 'Service confirmed',
+  'Correcção pedida': 'Changes requested',
+  'Disputa aberta': 'Dispute opened',
+  'Acordo cancelado': 'Agreement cancelled',
+  'Recebeste uma avaliação': 'You received a review',
+  'Nova mensagem': 'New message',
+  'Pedido recebido': 'Request received',
+  'Verificação aprovada': 'Verification approved',
+  'Verificação recusada': 'Verification declined',
+  'Recurso aceite': 'Appeal accepted',
+  'Recurso recusado': 'Appeal declined',
+};
+
+const bodiesEn: Record<string, string> = {
+  'O prestador confirmou o acordo. O trabalho pode começar.': 'The provider confirmed the agreement. Work can start.',
+  'O cliente confirmou o acordo.': 'The customer confirmed the agreement.',
+  'O prestador recusou o acordo. O pedido voltou a estar aberto.':
+    'The provider declined the agreement. The request is open again.',
+  'O prestador submeteu a conclusão. Revê e confirma ou pede correcções.':
+    'The provider submitted completion. Review it and confirm or request changes.',
+  'O cliente confirmou a conclusão. Já podem avaliar-se.':
+    'The customer confirmed completion. You can now review each other.',
+  'A outra parte abriu uma disputa. A equipa SALU vai analisar.':
+    'The other party opened a dispute. The SALU team will review it.',
+  'O acordo foi cancelado antes do início.': 'The agreement was cancelled before it started.',
+  'Uma avaliação foi publicada no teu perfil.': 'A review was published on your profile.',
+  'Recebeste um anexo.': 'You received an attachment.',
+  'A equipa SALU vai rever o documento. Não é uma verificação automática.':
+    'The SALU team will review the document. This is not an automatic verification.',
+  'O teu documento foi revisto e aprovado pela equipa SALU.':
+    'Your document was reviewed and approved by the SALU team.',
+  'O documento não foi aceite.': 'The document was not accepted.',
+  'A denúncia vai ser revista novamente pela equipa SALU.': 'The report will be reviewed again by the SALU team.',
+  'O recurso não foi aceite.': 'The appeal was not accepted.',
+};
+
+function localizeNotification(title: string, body: string, lang: 'pt' | 'en') {
+  if (lang === 'pt') return { title, body };
+  let nextBody = bodiesEn[body] || body;
+  nextBody = nextBody
+    .replace(/^Recebeste uma proposta para “(.+)”.$/, 'You received a proposal for “$1”.')
+    .replace(
+      /^O cliente aceitou a tua proposta para “(.+)”. Falta a tua confirmação.$/,
+      'The customer accepted your proposal for “$1”. Your confirmation is pending.',
+    )
+    .replace(/^A proposta para “(.+)” não foi aceite.$/, 'The proposal for “$1” was not accepted.');
+  return { title: titlesEn[title] || title, body: nextBody };
+}
+
 export function NotificationsPage() {
   const { t, lang } = useI18n();
   const toast = useToast();
@@ -74,6 +130,7 @@ export function NotificationsPage() {
         <Card className="divide-y divide-[#E2E8F0] dark:divide-[#1E325C]">
           {data.data.notifications.map((item) => {
             const Icon = icons[item.kind] || Bell;
+            const copy = localizeNotification(item.title, item.body, lang);
             return (
               <button
                 key={item.id}
@@ -88,7 +145,7 @@ export function NotificationsPage() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-[#0F172A] dark:text-white">{item.title}</span>
+                    <span className="text-sm font-bold text-[#0F172A] dark:text-white">{copy.title}</span>
                     {!item.read && (
                       <span
                         className="w-2 h-2 rounded-full bg-[#F97316]"
@@ -96,7 +153,7 @@ export function NotificationsPage() {
                       />
                     )}
                   </span>
-                  <span className="block mt-0.5 text-sm text-[#475569] dark:text-[#CBD5E1]">{item.body}</span>
+                  <span className="block mt-0.5 text-sm text-[#475569] dark:text-[#CBD5E1]">{copy.body}</span>
                   <span className="block mt-1 text-[10px] text-[#94A3B8]">{relativeTime(item.createdAt, lang)}</span>
                 </span>
               </button>

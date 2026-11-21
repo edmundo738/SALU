@@ -386,7 +386,7 @@ export function AppLayout() {
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E2E8F0] bg-white/95 backdrop-blur dark:border-[#1E325C] dark:bg-[#060E20]/95"
         aria-label={t('nav.main')}
       >
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-5 pb-[env(safe-area-inset-bottom)]">
           {nav.map((item) => {
             const Icon = item.icon;
             return (

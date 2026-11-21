@@ -10,7 +10,7 @@
 - Ciclo completo: pedido → proposta → acordo bilateral → chat → prova → confirmação → avaliação.
 - Denúncias, moderação e recurso; verificação manual; exportação/eliminação.
 - Geografia 2024: 16 municípios de Luanda e 7 de Icolo e Bengo.
-- Testes de integração real, geo e render (15).
+- Testes de integração real, geo e render (16).
 - Docs: `ARCHITECTURE.md`, `AGENTS.md`, `PROJECT_STATE.md`, `DECISIONS.md`, `KNOWN_ISSUES.md`, `TESTING.md`, `ROADMAP.md`, `CHECKPOINT.md`.
 - `robots.txt`, `sitemap.xml`, `manifest.webmanifest`, `404.html`, `api-unavailable.json`.
 
@@ -19,7 +19,7 @@
 - `react-router-dom` 7.18.6; `sharp` 0.35.5; `vitest` 5.1.1.
 - `vite.config.ts` em `0.0.0.0` com proxy `/api`.
 - `netlify.toml` e `_redirects` sem engolir `/api` e com segurança.
-- Build com chunks por rota; inicial ~92 kB gzip.
+- Build com chunks por rota; inicial ~92,5 kB gzip.
 
 ### Removido
 

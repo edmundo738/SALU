@@ -470,7 +470,9 @@ const pt = {
   'help.a6':
     'Nas definições, em “Verificação e confiança”. A revisão é manual. Não é uma integração automática com o Estado.',
   'help.contact': 'Falar com o suporte',
-  'help.contactBody': 'Escreve para suporte@salu.ao. Não prometemos tempos de resposta que não conseguimos cumprir.',
+  'help.contactBody':
+    'A recuperação automática de conta ainda não existe. Se o canal de suporte estiver configurado, usa-o abaixo; não prometemos tempos de resposta que não conseguimos cumprir.',
+  'help.supportUnavailable': 'O canal de suporte ainda não está configurado neste ambiente.',
   'notFound.title': 'Página não encontrada',
   'notFound.body': 'O endereço não existe ou o conteúdo foi removido.',
   'notFound.home': 'Voltar ao início',
@@ -979,7 +981,9 @@ const en: Record<keyof typeof pt, string> = {
   'help.a6':
     'In settings, under “Verification and trust”. Review is manual. It is not an automatic government integration.',
   'help.contact': 'Talk to support',
-  'help.contactBody': 'Write to suporte@salu.ao. We do not promise response times we cannot meet.',
+  'help.contactBody':
+    'Automatic account recovery is not available yet. If a support channel is configured, use it below; we do not promise response times we cannot meet.',
+  'help.supportUnavailable': 'The support channel is not configured in this environment yet.',
   'notFound.title': 'Page not found',
   'notFound.body': 'The address does not exist or the content was removed.',
   'notFound.home': 'Back to home',

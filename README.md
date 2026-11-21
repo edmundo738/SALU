@@ -11,14 +11,14 @@ Plataforma de serviços em Angola: uma pessoa publica um pedido, prestadores env
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Interface | React 18 + TypeScript + Vite 6 + Tailwind + lucide-react |
-| Rotas | react-router-dom 7 (BrowserRouter, rotas dinâmicas, 404) |
-| API | Node 22 + Express 5 + `node:sqlite` |
-| Sessões | Cookie `HttpOnly`, `SameSite=Lax`, token aleatório guardado em hash, validade de 7 dias |
-| Ficheiros | multer + validação real de assinatura + `sharp` (redimensionamento e WebP) |
-| Testes | Vitest 5 + integração HTTP real com SQLite temporário |
+| Camada    | Tecnologia                                                                              |
+| --------- | --------------------------------------------------------------------------------------- |
+| Interface | React 18 + TypeScript + Vite 6 + Tailwind + lucide-react                                |
+| Rotas     | react-router-dom 7 (BrowserRouter, rotas dinâmicas, 404)                                |
+| API       | Node 22 + Express 5 + `node:sqlite`                                                     |
+| Sessões   | Cookie `HttpOnly`, `SameSite=Lax`, token aleatório guardado em hash, validade de 7 dias |
+| Ficheiros | multer + validação real de assinatura + `sharp` (redimensionamento e WebP)              |
+| Testes    | Vitest 5 + integração HTTP real com SQLite temporário                                   |
 
 ## Arrancar localmente
 
@@ -38,6 +38,7 @@ npm run dev
 - Interface: `http://localhost:5173` (bind `0.0.0.0`, proxy `/api` → `127.0.0.1:3001`).
 - API: `http://localhost:3001/api`.
 - Dados locais: `./data/salu.db` e `./data/uploads/` (ignorados pelo Git).
+- `npm run server` lê `.env` com `--env-file-if-exists`; define `VITE_SUPPORT_EMAIL` só se existir um canal real.
 
 Para apontar o frontend directamente para uma API externa:
 
@@ -57,7 +58,7 @@ npm audit          # 0 vulnerabilidades conhecidas
 
 Resultados medidos nesta sessão (2026-11-21):
 
-- `npm run build`: passa. Chunk inicial `303.85 kB` / `92.29 kB` gzip; 35 chunks.
+- `npm run build`: passa. Chunk inicial `304.48 kB` / `92.52 kB` gzip; 35 chunks.
 - `npm test`: 3 ficheiros, **16 testes passam**.
 - `npm audit`: **0 vulnerabilidades**.
 - Fluxo HTTP real com duas contas (Ana cliente, Bruno prestador, Carlos estranho): registo, onboarding, perfil publicado, pedido com foto, proposta, conversa com anexo privado, acordo bilateral, conclusão com prova, confirmação, avaliação recíproca, bloqueio de acessos cruzados e persistência após reinício do servidor — **tudo observado**.

@@ -20,7 +20,8 @@ Legenda: **P0** bloqueia o ciclo real; **P1** importante; **P2** melhoria.
 | K-12 | P2 | Sem PWA offline | Manifest existe; service worker não | `public/manifest.webmanifest` |
 | K-13 | P2 | Categorias fixas em código | Sem gestão editorial | `shared/categories.ts` |
 | K-14 | P2 | CSP permite `https:` em `connect-src` | Necessário para API configurável; menos restritivo | `netlify.toml` |
-| K-15 | P2 | Sem CI configurado | Testes correm localmente | `.github/` ausente |
+| K-15 | P2 | CI criado, execução no GitHub não observada | O workflow existe, mas não há run verificado neste ambiente | `.github/workflows/ci.yml` |
+| K-16 | P1 | Canal de suporte público não configurado por defeito | `VITE_SUPPORT_EMAIL` vazio; a UI diz que o canal não está configurado, em vez de inventar um e-mail | `src/lib/config.ts`; `docs/DEPLOY.md` |
 
 ## Corrigido nesta execução (amostra verificável)
 

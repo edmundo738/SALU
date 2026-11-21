@@ -7,6 +7,7 @@ import { useApiData } from '../app/useApiData';
 import { useToast } from '../app/ToastProvider';
 import { api } from '../lib/api';
 import { friendlyError } from '../lib/errors';
+import { SUPPORT_EMAIL } from '../lib/config';
 import { Alert, Button, Card, Field, Modal, PageHeader, Textarea } from '../components/ui/Base';
 
 export function SafetyPage() {
@@ -169,12 +170,16 @@ export function HelpPage() {
       <Card className="mt-6 p-5">
         <h2 className="text-base font-bold text-[#0F172A] dark:text-white">{t('help.contact')}</h2>
         <p className="mt-1 text-sm text-[#475569] dark:text-[#CBD5E1]">{t('help.contactBody')}</p>
-        <a
-          href="mailto:suporte@salu.ao"
-          className="mt-2 inline-block text-sm font-bold text-[#1558B8] underline underline-offset-4 dark:text-[#93C5FD]"
-        >
-          suporte@salu.ao
-        </a>
+        {SUPPORT_EMAIL ? (
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="mt-2 inline-block text-sm font-bold text-[#1558B8] underline underline-offset-4 dark:text-[#93C5FD]"
+          >
+            {SUPPORT_EMAIL}
+          </a>
+        ) : (
+          <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8]">{t('help.supportUnavailable')}</p>
+        )}
       </Card>
       <Link
         to="/"
@@ -202,9 +207,13 @@ export function LegalPage({ kind }: { kind: 'terms' | 'privacy' | 'cookies' }) {
         </div>
         <p className="mt-6 text-xs text-[#64748B] dark:text-[#94A3B8]">
           {t('help.contactBody')}{' '}
-          <a href="mailto:suporte@salu.ao" className="font-semibold underline">
-            suporte@salu.ao
-          </a>
+          {SUPPORT_EMAIL ? (
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold underline">
+              {SUPPORT_EMAIL}
+            </a>
+          ) : (
+            <span>{t('help.supportUnavailable')}</span>
+          )}
         </p>
       </Card>
       <div className="mt-4 flex gap-4 text-xs font-semibold">
