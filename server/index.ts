@@ -9,7 +9,7 @@ initDatabase();
 const app = createApp();
 const server = app.listen(PORT, HOST, () => {
   console.log(`SALU API em http://${HOST}:${PORT}`);
-  console.log('Autenticação por sessão em cookie HttpOnly; sem bots; sem escrow simulado.');
+  console.log('Autenticação por sessão em cookie HttpOnly; sem bots; sem pagamentos processados.');
 });
 
 function shutdown(signal: string) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, MapPin, MessageSquare, ShieldCheck, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, CalendarDays, MapPin, MessageSquare, ShieldCheck, Users, Banknote } from 'lucide-react';
 import { useAuth } from '../app/AuthProvider';
 import { useI18n, formatKz, relativeTime } from '../i18n';
 import { api } from '../lib/api';
@@ -144,7 +144,7 @@ export function RequestDetailPage() {
             )}
             <div className="mt-4 grid sm:grid-cols-2 gap-3 text-sm">
               <div className="flex items-start gap-2">
-                <Wallet className="w-4 h-4 mt-0.5 text-[#1D6FE5]" aria-hidden="true" />
+                <Banknote className="w-4 h-4 mt-0.5 text-[#1D6FE5]" aria-hidden="true" />
                 <div>
                   <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{t('request.budget')}</p>
                   <p className="font-bold">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, CheckCircle2, MessageSquare, ShieldAlert, Star, Wallet } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CheckCircle2, MessageSquare, ShieldAlert, Star, Banknote } from 'lucide-react';
 import type { FileRecord } from '../../shared/types';
 import { api } from '../lib/api';
 import { useApiData } from '../app/useApiData';
@@ -140,7 +140,7 @@ export function AgreementDetailPage() {
           <Card className="p-5">
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="flex items-start gap-2">
-                <Wallet className="w-4 h-4 mt-0.5 text-[#1D6FE5]" aria-hidden="true" />
+                <Banknote className="w-4 h-4 mt-0.5 text-[#1D6FE5]" aria-hidden="true" />
                 <div>
                   <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{t('agreement.amount')}</p>
                   <p className="font-extrabold">{formatKz(agreement.amount)}</p>
