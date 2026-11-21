@@ -12,27 +12,27 @@ A antiga aplicação de demonstração foi substituída por **um único sistema*
 
 ## 2. O que está implementado e verificado
 
-| Área | Estado | Evidência |
-|---|---|---|
-| Sessões (cookie HttpOnly, hash, validade 7 dias, logout) | FEITO / OBSERVADO | `server/auth.ts`; teste de logout → `/auth/me` 401 |
-| Registo/login com normalização de telefone angolano | FEITO / OBSERVADO | `923000111` → `+244923000111` |
-| Onboarding com localização validada no servidor | FEITO / OBSERVADO | `AO-LUA-CAMAMA-CAMAMA`; teste de localização inválida 400 |
-| Perfil de prestador com publicação/despublicação | FEITO / OBSERVADO | `PUT /me/provider`, `POST /me/provider/publish` |
-| Pedido com fotos reais | FEITO / OBSERVADO | `POST /requests` com `photoIds`; fotos no serializer |
-| Proposta + conversa automática | FEITO / OBSERVADO | `conversationId` na proposta |
-| Acordo bilateral | FEITO / OBSERVADO | `PENDING_PROVIDER` → `ACTIVE`; segundo aceite do mesmo lado 409 |
-| Chat com anexo privado | FEITO / OBSERVADO | anexo `visibility: private`; terceiro recebe 404 |
-| Conclusão com prova | FEITO / OBSERVADO | `WORK_SUBMITTED`; confirmar lado errado 403 |
-| Confirmação bilateral e conclusão | FEITO / OBSERVADO | `COMPLETED` |
-| Avaliações recíprocas, 3 critérios, sem duplicados | FEITO / OBSERVADO | média 4.7 com uma avaliação real |
-| Denúncias persistentes, moderação e recurso | FEITO / OBSERVADO | `reports`, `report_appeals`; teste com admin |
-| Exportação e eliminação de conta | FEITO / TESTADO (API) | `/me/export`, `DELETE /me` |
-| Uploads validados, comprimidos, privacidade | FEITO / OBSERVADO | `sharp`; HTML rejeitado 400; 7 MB rejeitado 413 |
-| Geo 2024 (16 municípios em Luanda; Icolo e Bengo) | FEITO / TESTADO | `tests/geo.test.ts` |
-| Tema/idioma persistidos, sem flash | FEITO / OBSERVADO no código | script inline + `/me` |
-| Rotas dinâmicas, 404, deep links | FEITO / OBSERVADO | `vite preview`: `/pedidos/req_123` devolve app |
-| Build, testes, audit | FEITO / MEDIDO | ver §5 |
-| Deploy Netlify + API externa | CONFIGURADO / **NÃO EXECUTADO** | `netlify.toml`, `.env.example` |
+| Área                                                     | Estado                          | Evidência                                                       |
+| -------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------- |
+| Sessões (cookie HttpOnly, hash, validade 7 dias, logout) | FEITO / OBSERVADO               | `server/auth.ts`; teste de logout → `/auth/me` 401              |
+| Registo/login com normalização de telefone angolano      | FEITO / OBSERVADO               | `923000111` → `+244923000111`                                   |
+| Onboarding com localização validada no servidor          | FEITO / OBSERVADO               | `AO-LUA-CAMAMA-CAMAMA`; teste de localização inválida 400       |
+| Perfil de prestador com publicação/despublicação         | FEITO / OBSERVADO               | `PUT /me/provider`, `POST /me/provider/publish`                 |
+| Pedido com fotos reais                                   | FEITO / OBSERVADO               | `POST /requests` com `photoIds`; fotos no serializer            |
+| Proposta + conversa automática                           | FEITO / OBSERVADO               | `conversationId` na proposta                                    |
+| Acordo bilateral                                         | FEITO / OBSERVADO               | `PENDING_PROVIDER` → `ACTIVE`; segundo aceite do mesmo lado 409 |
+| Chat com anexo privado                                   | FEITO / OBSERVADO               | anexo `visibility: private`; terceiro recebe 404                |
+| Conclusão com prova                                      | FEITO / OBSERVADO               | `WORK_SUBMITTED`; confirmar lado errado 403                     |
+| Confirmação bilateral e conclusão                        | FEITO / OBSERVADO               | `COMPLETED`                                                     |
+| Avaliações recíprocas, 3 critérios, sem duplicados       | FEITO / OBSERVADO               | média 4.7 com uma avaliação real                                |
+| Denúncias persistentes, moderação e recurso              | FEITO / OBSERVADO               | `reports`, `report_appeals`; teste com admin                    |
+| Exportação e eliminação de conta                         | FEITO / TESTADO (API)           | `/me/export`, `DELETE /me`                                      |
+| Uploads validados, comprimidos, privacidade              | FEITO / OBSERVADO               | `sharp`; HTML rejeitado 400; 7 MB rejeitado 413                 |
+| Geo 2024 (16 municípios em Luanda; Icolo e Bengo)        | FEITO / TESTADO                 | `tests/geo.test.ts`                                             |
+| Tema/idioma persistidos, sem flash                       | FEITO / OBSERVADO no código     | script inline + `/me`                                           |
+| Rotas dinâmicas, 404, deep links                         | FEITO / OBSERVADO               | `vite preview`: `/pedidos/req_123` devolve app                  |
+| Build, testes, audit                                     | FEITO / MEDIDO                  | ver §5                                                          |
+| Deploy Netlify + API externa                             | CONFIGURADO / **NÃO EXECUTADO** | `netlify.toml`, `.env.example`                                  |
 
 ## 3. O que mudou nesta execução
 
@@ -74,6 +74,6 @@ Ver `KNOWN_ISSUES.md`. Resumo: deploy real, recuperação de senha, verificaçã
 
 ## 7. Próxima acção
 
-1. Fazer deploy do frontend no Netlify com `VITE_API_URL` e da API num host persistente com volume.
+1. Publicar a API num host persistente; para 0 € e sem cartão, seguir `docs/DEPLOY_GRATIS.md`.
 2. Executar o runbook de `docs/DEPLOY.md` e repetir o teste de duas contas em produção.
 3. Só depois declarar P0-12 corrigido.

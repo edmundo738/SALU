@@ -1,5 +1,7 @@
 # DEPLOY
 
+> **Sem dinheiro?** Segue `docs/DEPLOY_GRATIS.md` (Alwaysdata Free, 0 €, sem cartão).
+>
 > **Estado (2026-11-21):** o frontend está publicado em `https://salu-ao.netlify.app`, mas a **API persistente ainda não está publicada**. O registo falha com erro de configuração; `P0-12` continua **parcial**. Não declares produção pronta antes de completar o passo 1.
 
 ## Arquitectura de produção
