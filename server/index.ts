@@ -1,48 +1,22 @@
-import express from 'express';
-import cors from 'cors';
-import * as path from 'node:path';
 import { initDatabase } from './db.ts';
-import { apiRouter } from './api.ts';
-import { startBotScheduler } from './bots.ts';
+import { createApp } from './app.ts';
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT || 3001);
+const HOST = process.env.HOST || '0.0.0.0';
 
-// Middlewares
-app.use(cors());
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+initDatabase();
 
-// Serve static uploaded files (screenshots, avatars)
-const uploadsPath = path.resolve(process.cwd(), 'public', 'uploads');
-app.use('/uploads', express.static(uploadsPath));
-
-// API Routes
-app.use('/api', apiRouter);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ONLINE',
-    project: 'SALU — Serviços, Oportunidades, Confiança',
-    timestamp: new Date().toISOString(),
-    database: 'SQLite (Nativo Node.js)',
-  });
+const app = createApp();
+const server = app.listen(PORT, HOST, () => {
+  console.log(`SALU API em http://${HOST}:${PORT}`);
+  console.log('Autenticação por sessão em cookie HttpOnly; sem bots; sem pagamentos processados.');
 });
 
-// Initialize DB and start listening
-try {
-  initDatabase();
-  startBotScheduler(240); // Runs a bot simulated action every 4 minutes
-
-  app.listen(PORT, () => {
-    console.log(`=======================================================`);
-    console.log(`  SALU BACKEND API OPERACIONAL EM http://127.0.0.1:${PORT}`);
-    console.log(`  Base de Dados: SQLite (Nativo Node 24, Zero Dependências)`);
-    console.log(`  Ficheiro: data/salu.db`);
-    console.log(`=======================================================`);
-  });
-} catch (err: any) {
-  console.error('[SALU BACKEND] Erro ao iniciar:', err);
-  process.exit(1);
+function shutdown(signal: string) {
+  console.log(`A encerrar (${signal})...`);
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 5000).unref();
 }
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -1,556 +1,1399 @@
 import { Router } from 'express';
-import { db, hashPassword, verifyPassword } from './db.ts';
-import { runBotSimulationAction, startBotScheduler, stopBotScheduler } from './bots.ts';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
+import * as crypto from 'node:crypto';
+import { db, audit, hashPassword, newId, nowIso, verifyPassword } from './db.ts';
+import {
+  createSession,
+  currentUserId,
+  destroySession,
+  optionalAuth,
+  requireAdmin,
+  requireAuth,
+  SESSION_COOKIE,
+  parseCookies,
+} from './auth.ts';
+import { canAccessFile, fileOnDisk, saveUploadedFile, upload } from './files.ts';
+import {
+  fileRecord,
+  providerProfileFor,
+  reviewAggregate,
+  serializeAgreement,
+  serializeConversation,
+  serializeMessage,
+  serializeNotification,
+  serializeProposal,
+  serializeRequest,
+  serializeReview,
+  serializeUser,
+  userStats,
+} from './serializers.ts';
+import { isValidCategory } from '../shared/categories.ts';
+import { AVAILABLE_PROVINCES, isValidLocation, locationLabel } from '../shared/geo.ts';
+import type { RequestDetail } from '../shared/types.ts';
 
 export const apiRouter = Router();
 
-// Ensure upload directory exists
-const uploadDir = path.resolve(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+type Row = Record<string, any>;
+
+function bad(res: any, status: number, error: string, fields?: Record<string, string>) {
+  return res.status(status).json({ error, ...(fields ? { fields } : {}) });
 }
 
-// -------------------------------------------------------------
-// 1. AUTENTICAÇÃO E UTILIZADORES
-// -------------------------------------------------------------
-apiRouter.post('/auth/register', (req, res) => {
-  try {
-    const { name, email_or_phone, password, role, municipality, profession, bio } = req.body;
-    if (!name || !email_or_phone || !password) {
-      return res.status(400).json({ error: 'Nome, contacto e palavra-passe são obrigatórios.' });
-    }
+function text(value: unknown, min: number, max: number): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed.length < min || trimmed.length > max) return null;
+  return trimmed;
+}
 
-    const cleanContact = email_or_phone.trim();
-    const existing = db.prepare('SELECT id FROM users WHERE email_or_phone = ?').get(cleanContact);
-    if (existing) {
-      return res.status(409).json({ error: 'Já existe uma conta associada a este número ou e-mail.' });
-    }
+function int(value: unknown, min: number, max: number): number | null {
+  const n = typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < min || n > max) return null;
+  return n;
+}
 
-    const id = `usr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    const passHash = hashPassword(password);
-    const now = new Date().toISOString();
-
-    db.prepare(`
-      INSERT INTO users (id, name, email_or_phone, password_hash, role, municipality, profession, avatar_url, bio, verified, rating, reviews_count, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 5.0, 0, ?)
-    `).run(
-      id,
-      name.trim(),
-      cleanContact,
-      passHash,
-      role || 'customer',
-      municipality || 'Talatona, Luanda',
-      profession || (role === 'provider' ? 'Prestador Independente' : null),
-      '/assets/sprites/salu-mark.png',
-      bio || 'Novo membro na plataforma SALU.',
-      now
-    );
-
-    const user = db.prepare('SELECT id, name, email_or_phone, role, municipality, profession, avatar_url, bio FROM users WHERE id = ?').get(id);
-    return res.json({ success: true, user });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+function normalizeContact(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw) return null;
+  if (raw.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(raw)) return null;
+    return raw.toLowerCase();
   }
+  const digits = raw.replace(/[\s().-]/g, '');
+  if (/^\+244(9|2)\d{8}$/.test(digits)) return digits;
+  if (/^(9|2)\d{8}$/.test(digits)) return `+244${digits}`;
+  return null;
+}
+
+function validPassword(value: unknown): boolean {
+  return (
+    typeof value === 'string' && value.length >= 8 && value.length <= 128 && /[A-Za-z]/.test(value) && /\d/.test(value)
+  );
+}
+
+function currentUser(req: any): Row {
+  return db.prepare('SELECT * FROM users WHERE id = ?').get(currentUserId(req)) as Row;
+}
+
+function notify(userId: string, kind: string, title: string, body: string, link: string) {
+  db.prepare(
+    'INSERT INTO notifications (id, user_id, kind, title, body, link, read, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)',
+  ).run(newId('not'), userId, kind, title.slice(0, 140), body.slice(0, 600), link, nowIso());
+}
+
+function transaction<T>(fn: () => T): T {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const result = fn();
+    db.exec('COMMIT');
+    return result;
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+function requestRow(id: string): Row | undefined {
+  return db.prepare('SELECT * FROM requests WHERE id = ?').get(id) as Row | undefined;
+}
+
+function canViewRequest(row: Row, userId: string | null): boolean {
+  if (!userId) return false;
+  if (row.customer_id === userId) return true;
+  const proposal = db.prepare('SELECT 1 FROM proposals WHERE request_id = ? AND provider_id = ?').get(row.id, userId);
+  if (proposal) return true;
+  const conversation = db
+    .prepare('SELECT 1 FROM conversations WHERE request_id = ? AND (customer_id = ? OR provider_id = ?)')
+    .get(row.id, userId, userId);
+  if (conversation) return true;
+  if (row.status === 'OPEN') {
+    const provider = db.prepare('SELECT 1 FROM provider_profiles WHERE user_id = ? AND published = 1').get(userId);
+    return Boolean(provider);
+  }
+  return false;
+}
+
+function ownFileIds(value: unknown, userId: string, max = 6): string[] {
+  if (value == null) return [];
+  if (!Array.isArray(value)) return [];
+  const ids = [...new Set(value.filter((v): v is string => typeof v === 'string'))].slice(0, max);
+  const valid = ids.filter((id) => {
+    const file = db.prepare('SELECT owner_id FROM files WHERE id = ?').get(id) as { owner_id: string } | undefined;
+    return file?.owner_id === userId;
+  });
+  return valid;
+}
+
+function addPhotos(
+  table: 'request_photos' | 'completion_photos',
+  ownerColumn: string,
+  ownerId: string,
+  fileIds: string[],
+) {
+  const sql =
+    table === 'request_photos'
+      ? 'INSERT OR IGNORE INTO request_photos (request_id, file_id, position) VALUES (?, ?, ?)'
+      : 'INSERT OR IGNORE INTO completion_photos (agreement_id, file_id, position) VALUES (?, ?, ?)';
+  const stmt = db.prepare(sql);
+  fileIds.forEach((fileId, index) => stmt.run(ownerId, fileId, index));
+}
+
+// =============================================================
+// GEO + META
+// =============================================================
+apiRouter.get('/geo', (_req, res) => {
+  res.json({ provinces: AVAILABLE_PROVINCES });
+});
+
+// =============================================================
+// AUTENTICAÇÃO
+// =============================================================
+apiRouter.post('/auth/register', (req, res) => {
+  const name = text(req.body?.name, 2, 80);
+  const contact = normalizeContact(req.body?.contact);
+  const password = req.body?.password;
+  const confirm = req.body?.passwordConfirm;
+
+  if (!name) return bad(res, 400, 'Indica o teu nome completo.', { name: 'Nome inválido.' });
+  if (!contact)
+    return bad(res, 400, 'Indica um e-mail válido ou um número angolano (9 dígitos).', {
+      contact: 'Contacto inválido.',
+    });
+  if (!validPassword(password))
+    return bad(res, 400, 'A palavra-passe precisa de 8 caracteres, com letras e números.', {
+      password: 'Palavra-passe fraca.',
+    });
+  if (confirm != null && confirm !== password)
+    return bad(res, 400, 'As palavras-passe não coincidem.', { passwordConfirm: 'Não coincidem.' });
+
+  const existing = db.prepare('SELECT id FROM users WHERE contact = ? AND deleted_at IS NULL').get(contact);
+  if (existing) return bad(res, 409, 'Já existe uma conta com este contacto.');
+
+  const id = newId('usr');
+  const now = nowIso();
+  db.prepare(
+    `INSERT INTO users (id, name, contact, password_hash, active_mode, locale, theme, bio, verification_level, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'customer', 'pt', 'light', '', 0, ?, ?)`,
+  ).run(id, name, contact, hashPassword(password), now, now);
+  createSession(id, res);
+  audit(id, 'account.register', 'user', id);
+  return res.status(201).json({ user: serializeUser(id), stats: userStats(id) });
 });
 
 apiRouter.post('/auth/login', (req, res) => {
-  try {
-    const { email_or_phone, password } = req.body;
-    if (!email_or_phone || !password) {
-      return res.status(400).json({ error: 'Contacto e palavra-passe são obrigatórios.' });
-    }
-
-    const cleanContact = email_or_phone.trim();
-    const user = db.prepare(`
-      SELECT id, name, email_or_phone, password_hash, role, municipality, profession, avatar_url, bio, rating, reviews_count
-      FROM users
-      WHERE email_or_phone = ?
-    `).get(cleanContact) as any;
-
-    if (!user || !verifyPassword(password, user.password_hash)) {
-      return res.status(401).json({ error: 'Contacto ou palavra-passe incorretos.' });
-    }
-
-    // Nunca expor o hash de palavra-passe no retorno
-    const { password_hash, ...safeUser } = user;
-    return res.json({ success: true, user: safeUser });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  const contact = normalizeContact(req.body?.contact);
+  const password = req.body?.password;
+  if (!contact || typeof password !== 'string') return bad(res, 400, 'Contacto e palavra-passe são obrigatórios.');
+  const user = db.prepare('SELECT id, password_hash, deleted_at FROM users WHERE contact = ?').get(contact) as
+    Row | undefined;
+  if (!user || user.deleted_at || !verifyPassword(password, user.password_hash)) {
+    return bad(res, 401, 'Contacto ou palavra-passe incorretos.');
   }
+  createSession(user.id, res);
+  audit(user.id, 'account.login', 'user', user.id);
+  return res.json({ user: serializeUser(user.id), stats: userStats(user.id) });
 });
 
-// Google mock login
-apiRouter.post('/auth/google', (req, res) => {
-  try {
-    const { email, name, role } = req.body;
-    const cleanEmail = (email || 'google.user@salu.ao').trim();
-    let user = db.prepare('SELECT id, name, email_or_phone, role, municipality, profession, avatar_url, bio FROM users WHERE email_or_phone = ?').get(cleanEmail) as any;
+apiRouter.post('/auth/logout', optionalAuth, (req, res) => {
+  const userId = (req as any).userId as string | undefined;
+  destroySession(req, res);
+  if (userId) audit(userId, 'account.logout', 'user', userId);
+  return res.json({ success: true });
+});
 
-    if (!user) {
-      const id = `usr-g-${Date.now().toString(36)}`;
-      const now = new Date().toISOString();
-      db.prepare(`
-        INSERT INTO users (id, name, email_or_phone, password_hash, role, municipality, profession, avatar_url, bio, verified, rating, reviews_count, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 5.0, 0, ?)
-      `).run(
+apiRouter.get('/auth/me', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  return res.json({ user: serializeUser(id), stats: userStats(id) });
+});
+
+apiRouter.post('/me/onboarding', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const activeMode =
+    req.body?.activeMode === 'provider' ? 'provider' : req.body?.activeMode === 'customer' ? 'customer' : null;
+  const provinceId = req.body?.provinceId;
+  const municipalityId = req.body?.municipalityId;
+  const communeId = req.body?.communeId;
+  if (!activeMode) return bad(res, 400, 'Escolhe como queres usar o SALU.');
+  if (!isValidLocation(provinceId, municipalityId, communeId))
+    return bad(res, 400, 'Escolhe província, município e comuna.');
+  db.prepare(
+    'UPDATE users SET active_mode = ?, province_id = ?, municipality_id = ?, commune_id = ?, updated_at = ? WHERE id = ?',
+  ).run(activeMode, provinceId, municipalityId, communeId, nowIso(), id);
+  audit(id, 'account.onboarding', 'user', id);
+  return res.json({ user: serializeUser(id), stats: userStats(id) });
+});
+
+apiRouter.patch('/me', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const user = currentUser(req);
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (req.body?.name != null) {
+    const name = text(req.body.name, 2, 80);
+    if (!name) return bad(res, 400, 'Nome inválido.', { name: 'Nome inválido.' });
+    updates.push('name = ?');
+    values.push(name);
+    const profile = db.prepare('SELECT display_name FROM provider_profiles WHERE user_id = ?').get(id) as
+      Row | undefined;
+    if (profile && profile.display_name === user.name) {
+      db.prepare('UPDATE provider_profiles SET display_name = ?, updated_at = ? WHERE user_id = ?').run(
+        name,
+        nowIso(),
         id,
-        name || 'Utilizador Google',
-        cleanEmail,
-        hashPassword('google_oauth_auto'),
-        role || 'customer',
-        'Talatona, Luanda',
-        role === 'provider' ? 'Profissional Verificado' : null,
-        '/assets/sprites/salu-mark.png',
-        'Conta autenticada com segurança.',
-        now
       );
-      user = db.prepare('SELECT id, name, email_or_phone, role, municipality, profession, avatar_url, bio FROM users WHERE id = ?').get(id);
     }
+  }
 
-    return res.json({ success: true, user });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  if (req.body?.locale != null) {
+    if (!['pt', 'en'].includes(req.body.locale)) return bad(res, 400, 'Idioma inválido.');
+    updates.push('locale = ?');
+    values.push(req.body.locale);
+  }
+  if (req.body?.theme != null) {
+    if (!['light', 'dark'].includes(req.body.theme)) return bad(res, 400, 'Tema inválido.');
+    updates.push('theme = ?');
+    values.push(req.body.theme);
+  }
+  if (req.body?.activeMode != null) {
+    if (!['customer', 'provider'].includes(req.body.activeMode)) return bad(res, 400, 'Modo inválido.');
+    updates.push('active_mode = ?');
+    values.push(req.body.activeMode);
+  }
+  if (req.body?.bio != null) {
+    const bio = text(req.body.bio, 0, 600);
+    if (bio == null) return bad(res, 400, 'Biografia demasiado longa.');
+    updates.push('bio = ?');
+    values.push(bio);
+  }
+  if (req.body?.provinceId != null || req.body?.municipalityId != null || req.body?.communeId != null) {
+    const provinceId = req.body?.provinceId;
+    const municipalityId = req.body?.municipalityId;
+    const communeId = req.body?.communeId;
+    if (!isValidLocation(provinceId, municipalityId, communeId))
+      return bad(res, 400, 'Localização inválida. Escolhe província, município e comuna.');
+    updates.push('province_id = ?', 'municipality_id = ?', 'commune_id = ?');
+    values.push(provinceId, municipalityId, communeId);
+    db.prepare(
+      'UPDATE provider_profiles SET province_id = ?, municipality_id = ?, commune_id = ?, updated_at = ? WHERE user_id = ?',
+    ).run(provinceId, municipalityId, communeId, nowIso(), id);
+  }
+  if (req.body?.avatarFileId != null) {
+    const file = db.prepare('SELECT owner_id FROM files WHERE id = ?').get(req.body.avatarFileId) as Row | undefined;
+    if (!file || file.owner_id !== id) return bad(res, 400, 'Fotografia inválida.');
+    updates.push('avatar_file_id = ?');
+    values.push(req.body.avatarFileId);
+  }
+
+  if (!updates.length) return bad(res, 400, 'Nada para actualizar.');
+  values.push(nowIso(), id);
+  db.prepare(`UPDATE users SET ${updates.join(', ')}, updated_at = ? WHERE id = ?`).run(...values);
+  audit(id, 'account.update', 'user', id);
+  return res.json({ user: serializeUser(id), stats: userStats(id) });
+});
+
+apiRouter.post('/me/password', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(id) as Row;
+  if (!verifyPassword(String(req.body?.currentPassword || ''), user.password_hash))
+    return bad(res, 400, 'Palavra-passe actual incorrecta.');
+  if (!validPassword(req.body?.newPassword))
+    return bad(res, 400, 'A nova palavra-passe precisa de 8 caracteres, com letras e números.');
+  db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(
+    hashPassword(req.body.newPassword),
+    nowIso(),
+    id,
+  );
+  const token = parseCookies(req.headers.cookie)[SESSION_COOKIE] || '';
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash != ?').run(id, tokenHash);
+  audit(id, 'account.password_change', 'user', id);
+  return res.json({ success: true });
+});
+
+apiRouter.get('/me/export', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const exportData = {
+    exportedAt: nowIso(),
+    user: serializeUser(id),
+    requests: db.prepare('SELECT * FROM requests WHERE customer_id = ?').all(id),
+    proposals: db.prepare('SELECT * FROM proposals WHERE provider_id = ?').all(id),
+    agreements: db.prepare('SELECT * FROM agreements WHERE customer_id = ? OR provider_id = ?').all(id, id),
+    messages: db
+      .prepare(
+        `SELECT m.* FROM messages m JOIN conversations c ON c.id = m.conversation_id
+         WHERE c.customer_id = ? OR c.provider_id = ?`,
+      )
+      .all(id, id),
+    reviews: db.prepare('SELECT * FROM reviews WHERE author_id = ? OR target_id = ?').all(id, id),
+    notifications: db.prepare('SELECT * FROM notifications WHERE user_id = ?').all(id),
+  };
+  res.setHeader('Content-Disposition', `attachment; filename="salu-dados-${id}.json"`);
+  return res.json(exportData);
+});
+
+apiRouter.delete('/me', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(id) as Row;
+  if (!verifyPassword(String(req.body?.password || ''), user.password_hash))
+    return bad(res, 400, 'Confirma a tua palavra-passe para eliminar a conta.');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare(
+      `UPDATE users SET name = 'Conta eliminada', contact = ?, password_hash = ?, bio = '', avatar_file_id = NULL,
+       deleted_at = ?, updated_at = ? WHERE id = ?`,
+    ).run(`deleted-${id}@invalid.local`, hashPassword(newId('gone')), now, now, id);
+    db.prepare('UPDATE provider_profiles SET published = 0, updated_at = ? WHERE user_id = ?').run(now, id);
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+    audit(id, 'account.delete', 'user', id);
+  });
+  destroySession(req, res);
+  return res.json({ success: true });
+});
+
+// =============================================================
+// FICHEIROS
+// =============================================================
+apiRouter.post('/files', requireAuth, upload.single('file'), async (req, res) => {
+  if (!req.file) return bad(res, 400, 'Escolhe um ficheiro.');
+  const purpose = String(req.body?.purpose || '');
+  if (!['avatar', 'portfolio', 'request', 'message', 'completion', 'report'].includes(purpose))
+    return bad(res, 400, 'Tipo de ficheiro inválido.');
+  try {
+    const file = await saveUploadedFile({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      purpose,
+      ownerId: currentUserId(req),
+    });
+    return res.status(201).json({ file });
+  } catch (error: any) {
+    return bad(res, 400, error.message || 'Não foi possível guardar o ficheiro.');
   }
 });
 
-// -------------------------------------------------------------
-// 2. PROFISSIONAIS (DIRECTÓRIO ACTIVO)
-// -------------------------------------------------------------
+apiRouter.get('/files/:id', optionalAuth, (req, res) => {
+  const viewerId = (req as any).userId as string | undefined;
+  const file = fileOnDisk(req.params.id);
+  if (!file || !canAccessFile(req.params.id, viewerId || null)) return res.status(404).end();
+  res.setHeader('Content-Type', file.mime);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+  res.setHeader('Cache-Control', file.visibility === 'public' ? 'public, max-age=3600' : 'private, no-store');
+  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`);
+  return res.sendFile(file.path);
+});
+
+apiRouter.post('/me/avatar', requireAuth, upload.single('file'), async (req, res) => {
+  if (!req.file) return bad(res, 400, 'Escolhe uma fotografia.');
+  try {
+    const file = await saveUploadedFile({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      purpose: 'avatar',
+      ownerId: currentUserId(req),
+    });
+    db.prepare('UPDATE users SET avatar_file_id = ?, updated_at = ? WHERE id = ?').run(
+      file.id,
+      nowIso(),
+      currentUserId(req),
+    );
+    return res.json({ user: serializeUser(currentUserId(req)) });
+  } catch (error: any) {
+    return bad(res, 400, error.message || 'Fotografia inválida.');
+  }
+});
+
+// =============================================================
+// PERFIL DE PRESTADOR
+// =============================================================
 apiRouter.get('/providers', (req, res) => {
-  try {
-    const { municipality, category, search } = req.query as any;
-    let query = `SELECT id, name, municipality, profession, avatar_url, bio, whatsapp, verified, rating, reviews_count FROM users WHERE role = 'provider'`;
-    const params: any[] = [];
-
-    if (municipality && municipality !== 'ALL' && municipality !== 'todos') {
-      query += ` AND municipality LIKE ?`;
-      params.push(`%${municipality}%`);
-    }
-
-    if (search) {
-      query += ` AND (name LIKE ? OR profession LIKE ? OR bio LIKE ?)`;
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-    }
-
-    query += ` ORDER BY rating DESC, reviews_count DESC`;
-    const providers = db.prepare(query).all(...params);
-    return res.json({ success: true, providers });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  const { category, municipality, q } = req.query as Record<string, string | undefined>;
+  let sql = `SELECT u.id FROM users u JOIN provider_profiles p ON p.user_id = u.id
+             WHERE p.published = 1 AND u.deleted_at IS NULL`;
+  const params: any[] = [];
+  if (category) {
+    sql += ' AND p.category_id = ?';
+    params.push(category);
   }
+  if (municipality) {
+    sql += ' AND u.municipality_id = ?';
+    params.push(municipality);
+  }
+  if (q) {
+    sql += ' AND (p.display_name LIKE ? OR p.headline LIKE ? OR p.bio LIKE ?)';
+    const term = `%${q.slice(0, 80)}%`;
+    params.push(term, term, term);
+  }
+  sql += ' ORDER BY p.updated_at DESC LIMIT 60';
+  const ids = db.prepare(sql).all(...params) as Array<{ id: string }>;
+  const providers = ids.map((row) => providerProfileFor(row.id)).filter(Boolean);
+  providers.sort((a: any, b: any) => b.completedJobs - a.completedJobs || (b.rating || 0) - (a.rating || 0));
+  return res.json({ providers });
 });
 
-// -------------------------------------------------------------
-// 3. PEDIDOS DE SERVIÇO (OPORTUNIDADES)
-// -------------------------------------------------------------
-apiRouter.get('/requests', (req, res) => {
-  try {
-    const { category, municipality, user_id, status } = req.query as any;
-    let query = `
-      SELECT r.*, COUNT(p.id) as proposals_count
-      FROM requests r
-      LEFT JOIN proposals p ON r.id = p.request_id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-
-    if (user_id) {
-      query += ` AND r.user_id = ?`;
-      params.push(user_id);
-    }
-
-    if (status) {
-      query += ` AND r.status = ?`;
-      params.push(status);
-    }
-
-    if (category && category !== 'ALL' && category !== 'todas') {
-      query += ` AND r.category = ?`;
-      params.push(category);
-    }
-
-    if (municipality && municipality !== 'ALL' && municipality !== 'todos') {
-      query += ` AND r.municipality LIKE ?`;
-      params.push(`%${municipality}%`);
-    }
-
-    query += ` GROUP BY r.id ORDER BY r.created_at DESC`;
-    const requests = db.prepare(query).all(...params);
-    return res.json({ success: true, requests });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+apiRouter.get('/providers/:id', optionalAuth, (req, res) => {
+  const profile = providerProfileFor(req.params.id);
+  const viewerId = (req as any).userId as string | undefined;
+  if (!profile) return bad(res, 404, 'Perfil não encontrado.');
+  if (!profile.published && viewerId !== req.params.id) return bad(res, 404, 'Perfil não encontrado.');
+  const rows = db
+    .prepare('SELECT * FROM reviews WHERE target_id = ? ORDER BY created_at DESC LIMIT 30')
+    .all(req.params.id) as Row[];
+  return res.json({
+    provider: profile,
+    reviews: rows.map(serializeReview),
+    reviewSummary: reviewAggregate(req.params.id, 'customer'),
+    isFavorite: viewerId
+      ? Boolean(
+          db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND provider_id = ?').get(viewerId, req.params.id),
+        )
+      : false,
+  });
 });
 
-apiRouter.post('/requests', (req, res) => {
-  try {
-    const { user_id, user_name, title, category, municipality, description, budget_type, budget_amount, urgency } = req.body;
-    if (!title || !category || !municipality || !description) {
-      return res.status(400).json({ error: 'Título, categoria, município e descrição são obrigatórios.' });
-    }
+apiRouter.get('/me/provider', requireAuth, (req, res) => {
+  return res.json({ provider: providerProfileFor(currentUserId(req)) });
+});
 
-    const id = `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
-    const now = new Date().toISOString();
+apiRouter.put('/me/provider', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const user = currentUser(req);
+  const displayName = text(req.body?.displayName, 2, 80) || user.name;
+  const headline = text(req.body?.headline, 5, 120);
+  const categoryId = req.body?.categoryId;
+  const bio = text(req.body?.bio, 20, 1200);
+  const years = int(req.body?.yearsExperience, 0, 70);
+  const whatsapp = req.body?.whatsapp == null || req.body.whatsapp === '' ? null : normalizeContact(req.body.whatsapp);
+  if (!headline)
+    return bad(res, 400, 'Escreve um título profissional (5–120 caracteres).', { headline: 'Obrigatório.' });
+  if (!isValidCategory(categoryId))
+    return bad(res, 400, 'Escolhe uma categoria válida.', { categoryId: 'Obrigatório.' });
+  if (!bio) return bad(res, 400, 'Escreve uma apresentação com pelo menos 20 caracteres.', { bio: 'Obrigatório.' });
+  if (years == null) return bad(res, 400, 'Indica os anos de experiência (0–70).', { yearsExperience: 'Inválido.' });
+  if (whatsapp && !whatsapp.startsWith('+244')) return bad(res, 400, 'WhatsApp deve ser um número angolano.');
+  if (!isValidLocation(user.province_id, user.municipality_id, user.commune_id))
+    return bad(res, 400, 'Define primeiro a tua localização nas definições.');
 
-    db.prepare(`
-      INSERT INTO requests (id, user_id, user_name, title, category, municipality, description, budget_type, budget_amount, urgency, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?)
-    `).run(
+  const now = nowIso();
+  const existing = db.prepare('SELECT user_id FROM provider_profiles WHERE user_id = ?').get(id);
+  if (existing) {
+    db.prepare(
+      `UPDATE provider_profiles SET display_name = ?, headline = ?, category_id = ?, bio = ?, years_experience = ?,
+       whatsapp = ?, province_id = ?, municipality_id = ?, commune_id = ?, updated_at = ? WHERE user_id = ?`,
+    ).run(
+      displayName,
+      headline,
+      categoryId,
+      bio,
+      years,
+      whatsapp,
+      user.province_id,
+      user.municipality_id,
+      user.commune_id,
+      now,
       id,
-      user_id || 'usr-anon',
-      user_name || 'Cliente SALU',
-      title.trim(),
-      category,
-      municipality,
-      description.trim(),
-      budget_type || 'INSPECTION_NEEDED',
-      parseInt(budget_amount) || 0,
-      urgency || 'NORMAL',
-      now
     );
+  } else {
+    db.prepare(
+      `INSERT INTO provider_profiles (user_id, display_name, headline, category_id, bio, years_experience, whatsapp,
+       published, province_id, municipality_id, commune_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+    ).run(
+      id,
+      displayName,
+      headline,
+      categoryId,
+      bio,
+      years,
+      whatsapp,
+      user.province_id,
+      user.municipality_id,
+      user.commune_id,
+      now,
+      now,
+    );
+  }
+  if (req.body?.publish === true) {
+    db.prepare('UPDATE provider_profiles SET published = 1, updated_at = ? WHERE user_id = ?').run(now, id);
+    db.prepare("UPDATE users SET active_mode = 'provider', updated_at = ? WHERE id = ?").run(now, id);
+  }
+  audit(id, 'provider.profile_save', 'provider_profile', id);
+  return res.json({ provider: providerProfileFor(id), user: serializeUser(id) });
+});
 
-    const request = db.prepare('SELECT * FROM requests WHERE id = ?').get(id);
-    return res.json({ success: true, request });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+apiRouter.post('/me/provider/publish', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const profile = providerProfileFor(id);
+  if (!profile) return bad(res, 400, 'Cria o teu perfil profissional antes de publicar.');
+  if (!profile.headline || !profile.bio || !profile.categoryId || !profile.locationLabel)
+    return bad(res, 400, 'Completa o perfil antes de publicar.');
+  db.prepare('UPDATE provider_profiles SET published = 1, updated_at = ? WHERE user_id = ?').run(nowIso(), id);
+  db.prepare("UPDATE users SET active_mode = 'provider', updated_at = ? WHERE id = ?").run(nowIso(), id);
+  audit(id, 'provider.publish', 'provider_profile', id);
+  return res.json({ provider: providerProfileFor(id), user: serializeUser(id) });
+});
+
+apiRouter.post('/me/provider/unpublish', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  db.prepare('UPDATE provider_profiles SET published = 0, updated_at = ? WHERE user_id = ?').run(nowIso(), id);
+  return res.json({ provider: providerProfileFor(id), user: serializeUser(id) });
+});
+
+apiRouter.post('/me/portfolio', requireAuth, upload.single('file'), async (req, res) => {
+  const id = currentUserId(req);
+  const profile = db.prepare('SELECT user_id FROM provider_profiles WHERE user_id = ?').get(id);
+  if (!profile) return bad(res, 400, 'Cria o perfil profissional antes de adicionar trabalhos.');
+  if (!req.file) return bad(res, 400, 'Escolhe uma imagem.');
+  const count = db.prepare('SELECT COUNT(*) as c FROM provider_portfolio WHERE user_id = ?').get(id) as Row;
+  if (Number(count.c) >= 8) return bad(res, 400, 'O portefólio aceita no máximo 8 imagens.');
+  try {
+    const file = await saveUploadedFile({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      purpose: 'portfolio',
+      ownerId: id,
+    });
+    db.prepare('INSERT INTO provider_portfolio (user_id, file_id, position) VALUES (?, ?, ?)').run(
+      id,
+      file.id,
+      Number(count.c),
+    );
+    return res.status(201).json({ file, provider: providerProfileFor(id) });
+  } catch (error: any) {
+    return bad(res, 400, error.message || 'Imagem inválida.');
   }
 });
 
-apiRouter.get('/requests/:id', (req, res) => {
-  try {
-    const reqId = req.params.id;
-    const request = db.prepare('SELECT * FROM requests WHERE id = ?').get(reqId);
-    if (!request) {
-      return res.status(404).json({ error: 'Pedido não encontrado.' });
-    }
-
-    const proposals = db.prepare('SELECT * FROM proposals WHERE request_id = ? ORDER BY created_at DESC').all(reqId);
-    const agreement = db.prepare('SELECT * FROM agreements WHERE request_id = ?').get(reqId);
-
-    return res.json({ success: true, request, proposals, agreement });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+apiRouter.delete('/me/portfolio/:fileId', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  db.prepare('DELETE FROM provider_portfolio WHERE user_id = ? AND file_id = ?').run(id, req.params.fileId);
+  return res.json({ provider: providerProfileFor(id) });
 });
 
-// -------------------------------------------------------------
-// 4. PROPOSTAS & VISTORIA TÉCNICA
-// -------------------------------------------------------------
-apiRouter.post('/requests/:id/proposals', (req, res) => {
-  try {
-    const requestId = req.params.id;
-    const { provider_id, provider_name, provider_profession, amount, is_inspection_needed, estimated_days, message } = req.body;
+apiRouter.post('/favorites/:providerId', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  db.prepare('INSERT OR IGNORE INTO favorites (user_id, provider_id, created_at) VALUES (?, ?, ?)').run(
+    id,
+    req.params.providerId,
+    nowIso(),
+  );
+  return res.json({ favorite: true });
+});
 
-    if (!provider_id || !message) {
-      return res.status(400).json({ error: 'Identificação do profissional e mensagem de proposta são obrigatórios.' });
-    }
+apiRouter.delete('/favorites/:providerId', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM favorites WHERE user_id = ? AND provider_id = ?').run(
+    currentUserId(req),
+    req.params.providerId,
+  );
+  return res.json({ favorite: false });
+});
 
-    // Check if provider already submitted
-    const existing = db.prepare('SELECT id FROM proposals WHERE request_id = ? AND provider_id = ?').get(requestId, provider_id);
-    if (existing) {
-      return res.status(409).json({ error: 'Já enviou uma proposta para este pedido.' });
-    }
+// =============================================================
+// PEDIDOS
+// =============================================================
+apiRouter.get('/requests', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const scope = String(req.query.scope || 'mine');
+  const { category, municipality, status, q } = req.query as Record<string, string | undefined>;
+  let sql = '';
+  const params: any[] = [];
+  if (scope === 'open') {
+    sql = `SELECT DISTINCT r.id FROM requests r WHERE r.status = 'OPEN' AND r.customer_id != ?`;
+    params.push(id);
+  } else {
+    sql = `SELECT DISTINCT r.id FROM requests r
+           LEFT JOIN proposals p ON p.request_id = r.id
+           WHERE r.customer_id = ? OR p.provider_id = ?`;
+    params.push(id, id);
+  }
+  if (category) {
+    sql += ' AND r.category_id = ?';
+    params.push(category);
+  }
+  if (municipality) {
+    sql += ' AND r.municipality_id = ?';
+    params.push(municipality);
+  }
+  if (status && ['OPEN', 'ASSIGNED', 'COMPLETED', 'CANCELLED', 'DISPUTED'].includes(status)) {
+    sql += ' AND r.status = ?';
+    params.push(status);
+  }
+  if (q) {
+    sql += ' AND (r.title LIKE ? OR r.description LIKE ?)';
+    const term = `%${q.slice(0, 80)}%`;
+    params.push(term, term);
+  }
+  sql += ' ORDER BY r.created_at DESC LIMIT 80';
+  const rows = db.prepare(sql).all(...params) as Array<{ id: string }>;
+  const requests = rows.map((row) => serializeRequest(row.id, id)).filter((r): r is RequestDetail => Boolean(r));
+  return res.json({ requests });
+});
 
-    const propId = `prop-${Date.now().toString(36)}`;
-    const now = new Date().toISOString();
+apiRouter.post('/requests', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const title = text(req.body?.title, 6, 140);
+  const description = text(req.body?.description, 20, 3000);
+  const categoryId = req.body?.categoryId;
+  const provinceId = req.body?.provinceId;
+  const municipalityId = req.body?.municipalityId;
+  const communeId = req.body?.communeId;
+  const budgetType = req.body?.budgetType === 'FIXED' ? 'FIXED' : 'INSPECTION_NEEDED';
+  const budgetAmount = budgetType === 'FIXED' ? int(req.body?.budgetAmount, 1, 100_000_000) : 0;
+  const urgency = req.body?.urgency === 'URGENT' ? 'URGENT' : 'NORMAL';
+  if (!title) return bad(res, 400, 'O título precisa de 6 a 140 caracteres.', { title: 'Inválido.' });
+  if (!description) return bad(res, 400, 'A descrição precisa de pelo menos 20 caracteres.', { description: 'Curta.' });
+  if (!isValidCategory(categoryId)) return bad(res, 400, 'Escolhe uma categoria.', { categoryId: 'Obrigatório.' });
+  if (!isValidLocation(provinceId, municipalityId, communeId))
+    return bad(res, 400, 'Escolhe província, município e comuna.', { location: 'Obrigatório.' });
+  if (budgetType === 'FIXED' && budgetAmount == null)
+    return bad(res, 400, 'Indica um orçamento válido em kwanzas.', { budgetAmount: 'Inválido.' });
 
-    db.prepare(`
-      INSERT INTO proposals (id, request_id, provider_id, provider_name, provider_profession, provider_avatar, amount, is_inspection_needed, estimated_days, message, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
-    `).run(
-      propId,
+  const requestId = newId('req');
+  const now = nowIso();
+  const photos = ownFileIds(req.body?.photoIds, id, 6);
+  transaction(() => {
+    db.prepare(
+      `INSERT INTO requests (id, customer_id, title, category_id, description, province_id, municipality_id,
+       commune_id, budget_type, budget_amount, urgency, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)`,
+    ).run(
       requestId,
-      provider_id,
-      provider_name || 'Profissional',
-      provider_profession || 'Especialista',
-      '/assets/sprites/salu-mark.png',
-      parseInt(amount) || 0,
-      is_inspection_needed ? 1 : 0,
-      parseInt(estimated_days) || 1,
-      message.trim(),
-      now
+      id,
+      title,
+      categoryId,
+      description,
+      provinceId,
+      municipalityId,
+      communeId,
+      budgetType,
+      budgetAmount || 0,
+      urgency,
+      now,
+      now,
     );
-
-    // Notify request owner
-    const request = db.prepare('SELECT user_id, title FROM requests WHERE id = ?').get(requestId) as any;
-    if (request) {
-      db.prepare(`
-        INSERT INTO notifications (id, user_id, title, message, link, read, created_at)
-        VALUES (?, ?, 'Nova Proposta Recebida', ?, ?, 0, ?)
-      `).run(
-        `notif-${Date.now()}`,
-        request.user_id,
-        `${provider_name} enviou proposta para "${request.title}".`,
-        `/pedidos/${requestId}`,
-        now
-      );
-    }
-
-    const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(propId);
-    return res.json({ success: true, proposal });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+    addPhotos('request_photos', 'request_id', requestId, photos);
+  });
+  audit(id, 'request.create', 'request', requestId);
+  return res.status(201).json({ request: serializeRequest(requestId, id) });
 });
 
-apiRouter.post('/proposals/:id/accept', (req, res) => {
-  try {
-    const proposalId = req.params.id;
-    const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(proposalId) as any;
-    if (!proposal) {
-      return res.status(404).json({ error: 'Proposta não encontrada.' });
+apiRouter.get('/requests/:id', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = requestRow(req.params.id);
+  if (!row) return bad(res, 404, 'Pedido não encontrado.');
+  if (!canViewRequest(row, id)) return bad(res, 403, 'Não tens acesso a este pedido.');
+  return res.json({ request: serializeRequest(row.id, id) });
+});
+
+apiRouter.patch('/requests/:id', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = requestRow(req.params.id);
+  if (!row) return bad(res, 404, 'Pedido não encontrado.');
+  if (row.customer_id !== id) return bad(res, 403, 'Só o autor pode editar o pedido.');
+  if (row.status !== 'OPEN') return bad(res, 409, 'Só podes editar pedidos ainda abertos.');
+  const title = req.body?.title != null ? text(req.body.title, 6, 140) : row.title;
+  const description = req.body?.description != null ? text(req.body.description, 20, 3000) : row.description;
+  const categoryId = req.body?.categoryId ?? row.category_id;
+  if (!title || !description || !isValidCategory(categoryId)) return bad(res, 400, 'Dados inválidos.');
+  db.prepare('UPDATE requests SET title = ?, description = ?, category_id = ?, updated_at = ? WHERE id = ?').run(
+    title,
+    description,
+    categoryId,
+    nowIso(),
+    row.id,
+  );
+  if (Array.isArray(req.body?.photoIds)) {
+    db.prepare('DELETE FROM request_photos WHERE request_id = ?').run(row.id);
+    addPhotos('request_photos', 'request_id', row.id, ownFileIds(req.body.photoIds, id, 6));
+  }
+  return res.json({ request: serializeRequest(row.id, id) });
+});
+
+apiRouter.post('/requests/:id/cancel', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = requestRow(req.params.id);
+  if (!row) return bad(res, 404, 'Pedido não encontrado.');
+  if (row.customer_id !== id) return bad(res, 403, 'Só o autor pode cancelar o pedido.');
+  if (!['OPEN', 'CANCELLED'].includes(row.status)) return bad(res, 409, 'Este pedido já tem um acordo.');
+  db.prepare("UPDATE requests SET status = 'CANCELLED', updated_at = ? WHERE id = ?").run(nowIso(), row.id);
+  audit(id, 'request.cancel', 'request', row.id);
+  return res.json({ request: serializeRequest(row.id, id) });
+});
+
+// =============================================================
+// PROPOSTAS E ACORDOS
+// =============================================================
+apiRouter.post('/requests/:id/proposals', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = requestRow(req.params.id);
+  if (!row) return bad(res, 404, 'Pedido não encontrado.');
+  if (row.customer_id === id) return bad(res, 400, 'Não podes propor ao teu próprio pedido.');
+  if (row.status !== 'OPEN') return bad(res, 409, 'Este pedido já não está aberto.');
+  const profile = db.prepare('SELECT published FROM provider_profiles WHERE user_id = ?').get(id) as Row | undefined;
+  if (!profile?.published) return bad(res, 403, 'Publica o teu perfil profissional antes de enviar propostas.');
+  const amount = int(req.body?.amount, 1, 100_000_000);
+  const days = int(req.body?.estimatedDays, 1, 365);
+  const message = text(req.body?.message, 10, 2000);
+  if (amount == null) return bad(res, 400, 'Indica um valor em kwanzas.', { amount: 'Inválido.' });
+  if (days == null) return bad(res, 400, 'Indica um prazo entre 1 e 365 dias.', { estimatedDays: 'Inválido.' });
+  if (!message) return bad(res, 400, 'Escreve uma mensagem com pelo menos 10 caracteres.', { message: 'Curta.' });
+  const existing = db.prepare('SELECT id FROM proposals WHERE request_id = ? AND provider_id = ?').get(row.id, id) as
+    Row | undefined;
+  if (existing) return bad(res, 409, 'Já enviaste uma proposta para este pedido.');
+
+  const proposalId = newId('prop');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare(
+      `INSERT INTO proposals (id, request_id, provider_id, amount, estimated_days, message, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)`,
+    ).run(proposalId, row.id, id, amount, days, message, now, now);
+    const conv = db.prepare('SELECT id FROM conversations WHERE request_id = ? AND provider_id = ?').get(row.id, id) as
+      Row | undefined;
+    if (!conv) {
+      db.prepare(
+        'INSERT INTO conversations (id, request_id, customer_id, provider_id, created_at, last_message_at) VALUES (?, ?, ?, ?, ?, ?)',
+      ).run(newId('conv'), row.id, row.customer_id, id, now, now);
     }
+  });
+  notify(
+    row.customer_id,
+    'proposal',
+    'Nova proposta recebida',
+    `Recebeste uma proposta para “${row.title}”.`,
+    `/pedidos/${row.id}`,
+  );
+  audit(id, 'proposal.create', 'proposal', proposalId);
+  const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(proposalId) as Row;
+  return res.status(201).json({ proposal: serializeProposal(proposal), request: serializeRequest(row.id, id) });
+});
 
-    const now = new Date().toISOString();
+apiRouter.post('/proposals/:id/accept', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!proposal) return bad(res, 404, 'Proposta não encontrada.');
+  const row = requestRow(proposal.request_id);
+  if (!row) return bad(res, 404, 'Pedido não encontrado.');
+  if (row.customer_id !== id) return bad(res, 403, 'Só o autor do pedido pode aceitar propostas.');
+  if (row.status !== 'OPEN') return bad(res, 409, 'Este pedido já não está aberto.');
+  if (proposal.status !== 'PENDING') return bad(res, 409, 'Esta proposta já não está pendente.');
 
-    // Mark proposal accepted, others rejected
-    db.prepare(`UPDATE proposals SET status = 'ACCEPTED' WHERE id = ?`).run(proposalId);
-    db.prepare(`UPDATE proposals SET status = 'REJECTED' WHERE request_id = ? AND id != ?`).run(proposal.request_id, proposalId);
-
-    // Update request state
-    db.prepare(`UPDATE requests SET status = 'ASSIGNED' WHERE id = ?`).run(proposal.request_id);
-
-    // Create escrow agreement
-    const agreementId = `agr-${Date.now().toString(36)}`;
-    const request = db.prepare('SELECT user_id, title FROM requests WHERE id = ?').get(proposal.request_id) as any;
-
-    db.prepare(`
-      INSERT INTO agreements (id, request_id, customer_id, provider_id, amount, terms, escrow_status, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'HOLDING', 'IN_PROGRESS', ?)
-    `).run(
+  const agreementId = newId('agr');
+  const now = nowIso();
+  const deadline = new Date(Date.now() + proposal.estimated_days * 86400000).toISOString();
+  transaction(() => {
+    db.prepare("UPDATE proposals SET status = 'ACCEPTED', updated_at = ? WHERE id = ?").run(now, proposal.id);
+    db.prepare("UPDATE proposals SET status = 'REJECTED', updated_at = ? WHERE request_id = ? AND id != ?").run(
+      now,
+      row.id,
+      proposal.id,
+    );
+    db.prepare("UPDATE requests SET status = 'ASSIGNED', updated_at = ? WHERE id = ?").run(now, row.id);
+    db.prepare(
+      `INSERT INTO agreements (id, request_id, customer_id, provider_id, amount, scope, deadline, status,
+       customer_accepted, provider_accepted, provider_completed, customer_completed, completion_note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING_PROVIDER', 1, 0, 0, 0, '', ?, ?)`,
+    ).run(
       agreementId,
-      proposal.request_id,
-      request.user_id,
+      row.id,
+      row.customer_id,
       proposal.provider_id,
       proposal.amount,
-      `Acordo formalizado na SALU: ${request.title}. Pagamento seguro retido sob custódia da plataforma.`,
-      now
+      row.description,
+      deadline,
+      now,
+      now,
     );
-
-    // Create conversation between the two if doesn't exist
-    const convId = `conv-${proposal.request_id}-${proposal.provider_id}`;
-    const existingConv = db.prepare('SELECT id FROM conversations WHERE id = ?').get(convId);
-    if (!existingConv) {
-      db.prepare(`
-        INSERT INTO conversations (id, request_id, customer_id, provider_id, last_message, last_message_at)
-        VALUES (?, ?, ?, ?, 'Proposta aceite. Acordo em progresso.', ?)
-      `).run(convId, proposal.request_id, request.user_id, proposal.provider_id, now);
-    }
-
-    return res.json({ success: true, message: 'Proposta aceite e acordo de garantia ativado.', agreementId });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+  });
+  notify(
+    proposal.provider_id,
+    'agreement',
+    'Proposta aceite',
+    `O cliente aceitou a tua proposta para “${row.title}”. Falta a tua confirmação.`,
+    `/acordos/${agreementId}`,
+  );
+  audit(id, 'proposal.accept', 'agreement', agreementId);
+  return res.json({ agreement: serializeAgreement(agreementId, id) });
 });
 
-// -------------------------------------------------------------
-// 5. ESCROW & CONFIRMAÇÃO DE CONCLUSÃO DO SERVIÇO
-// -------------------------------------------------------------
-apiRouter.post('/agreements/:id/release-escrow', (req, res) => {
-  try {
-    const agreementId = req.params.id;
-    const now = new Date().toISOString();
-
-    const agreement = db.prepare('SELECT * FROM agreements WHERE id = ?').get(agreementId) as any;
-    if (!agreement) {
-      return res.status(404).json({ error: 'Acordo não encontrado.' });
-    }
-
-    db.prepare(`
-      UPDATE agreements
-      SET escrow_status = 'RELEASED', status = 'COMPLETED', released_at = ?
-      WHERE id = ?
-    `).run(now, agreementId);
-
-    db.prepare(`UPDATE requests SET status = 'COMPLETED' WHERE id = ?`).run(agreement.request_id);
-
-    return res.json({ success: true, message: 'Serviço confirmado! O valor do pagamento foi transferido com sucesso ao prestador.' });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+apiRouter.post('/proposals/:id/reject', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!proposal) return bad(res, 404, 'Proposta não encontrada.');
+  const row = requestRow(proposal.request_id);
+  if (!row || row.customer_id !== id) return bad(res, 403, 'Só o autor do pedido pode recusar propostas.');
+  if (proposal.status !== 'PENDING') return bad(res, 409, 'Esta proposta já não está pendente.');
+  db.prepare("UPDATE proposals SET status = 'REJECTED', updated_at = ? WHERE id = ?").run(nowIso(), proposal.id);
+  notify(
+    proposal.provider_id,
+    'proposal',
+    'Proposta não aceite',
+    `A proposta para “${row.title}” não foi aceite.`,
+    `/pedidos/${row.id}`,
+  );
+  return res.json({ success: true });
 });
 
-// Confirmação de acordo negociado via WhatsApp com anexo
-apiRouter.post('/agreements/whatsapp-confirm', (req, res) => {
-  try {
-    const { request_id, customer_id, provider_id, agreed_amount, screenshot_url, notes } = req.body;
-    const now = new Date().toISOString();
+apiRouter.post('/proposals/:id/withdraw', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!proposal) return bad(res, 404, 'Proposta não encontrada.');
+  if (proposal.provider_id !== id) return bad(res, 403, 'Só o autor pode retirar a proposta.');
+  if (proposal.status !== 'PENDING') return bad(res, 409, 'Esta proposta já não está pendente.');
+  db.prepare("UPDATE proposals SET status = 'WITHDRAWN', updated_at = ? WHERE id = ?").run(nowIso(), proposal.id);
+  return res.json({ success: true });
+});
 
-    const agreementId = `agr-wa-${Date.now().toString(36)}`;
-    db.prepare(`
-      INSERT INTO agreements (id, request_id, customer_id, provider_id, amount, terms, escrow_status, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'HOLDING', 'IN_PROGRESS', ?)
-    `).run(
-      agreementId,
-      request_id,
-      customer_id,
-      provider_id,
-      parseInt(agreed_amount) || 0,
-      `Acordo alinhado via WhatsApp e registrado no SALU com comprovação de captura de tela. Notas: ${notes || 'N/A'}`,
-      now
+apiRouter.get('/agreements/:id', requireAuth, (req, res) => {
+  const agreement = serializeAgreement(req.params.id, currentUserId(req));
+  if (!agreement) return bad(res, 404, 'Acordo não encontrado.');
+  return res.json({ agreement });
+});
+
+apiRouter.post('/agreements/:id/accept', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.status !== 'PENDING_PROVIDER' && row.status !== 'PENDING_CUSTOMER')
+    return bad(res, 409, 'Este acordo já não está pendente de aceitação.');
+  const now = nowIso();
+  if (row.provider_id === id) {
+    if (row.provider_accepted) return bad(res, 409, 'Já confirmaste este acordo.');
+    db.prepare("UPDATE agreements SET provider_accepted = 1, status = 'ACTIVE', updated_at = ? WHERE id = ?").run(
+      now,
+      row.id,
     );
-
-    db.prepare(`
-      UPDATE requests
-      SET status = 'IN_NEGOTIATION', whatsapp_negotiated = 1, whatsapp_screenshot = ?
-      WHERE id = ?
-    `).run(screenshot_url || null, request_id);
-
-    return res.json({ success: true, message: 'Negociação do WhatsApp confirmada e protegida no SALU.', agreementId });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// -------------------------------------------------------------
-// 6. MENSAGENS E CHAT PRIVADO
-// -------------------------------------------------------------
-apiRouter.get('/conversations', (req, res) => {
-  try {
-    const { user_id } = req.query as any;
-    if (!user_id) {
-      return res.status(400).json({ error: 'user_id é obrigatório.' });
-    }
-
-    const convs = db.prepare(`
-      SELECT c.*, r.title as request_title,
-             cust.name as customer_name, cust.avatar_url as customer_avatar,
-             prov.name as provider_name, prov.profession as provider_profession, prov.avatar_url as provider_avatar
-      FROM conversations c
-      JOIN requests r ON c.request_id = r.id
-      JOIN users cust ON c.customer_id = cust.id
-      JOIN users prov ON c.provider_id = prov.id
-      WHERE c.customer_id = ? OR c.provider_id = ?
-      ORDER BY c.last_message_at DESC
-    `).all(user_id, user_id);
-
-    return res.json({ success: true, conversations: convs });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-apiRouter.get('/conversations/:id/messages', (req, res) => {
-  try {
-    const convId = req.params.id;
-    const { requester_id } = req.query as any;
-
-    // Strict privacy verification: only the 2 participants can see messages!
-    const conv = db.prepare('SELECT customer_id, provider_id FROM conversations WHERE id = ?').get(convId) as any;
-    if (conv && requester_id && requester_id !== conv.customer_id && requester_id !== conv.provider_id) {
-      return res.status(403).json({ error: 'Acesso não autorizado: conversa privada entre o cliente e o profissional contratado.' });
-    }
-
-    const messages = db.prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC').all(convId);
-    return res.json({ success: true, messages });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-apiRouter.post('/conversations/:id/messages', (req, res) => {
-  try {
-    const convId = req.params.id;
-    const { sender_id, sender_name, sender_role, recipient_id, text, attachment_url } = req.body;
-
-    if (!sender_id || !text) {
-      return res.status(400).json({ error: 'Remetente e mensagem são obrigatórios.' });
-    }
-
-    const msgId = `msg-${Date.now().toString(36)}`;
-    const now = new Date().toISOString();
-
-    db.prepare(`
-      INSERT INTO messages (id, conversation_id, sender_id, sender_name, sender_role, recipient_id, text, attachment_url, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      msgId,
-      convId,
-      sender_id,
-      sender_name || 'Utilizador',
-      sender_role || 'customer',
-      recipient_id || 'other',
-      text.trim(),
-      attachment_url || null,
-      now
+    notify(
+      row.customer_id,
+      'agreement',
+      'Acordo confirmado',
+      'O prestador confirmou o acordo. O trabalho pode começar.',
+      `/acordos/${row.id}`,
     );
-
-    db.prepare(`
-      UPDATE conversations
-      SET last_message = ?, last_message_at = ?
-      WHERE id = ?
-    `).run(text.trim(), now, convId);
-
-    return res.json({ success: true, messageId: msgId, timestamp: now });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  } else if (row.customer_id === id) {
+    if (row.customer_accepted) return bad(res, 409, 'Já confirmaste este acordo.');
+    db.prepare(
+      "UPDATE agreements SET customer_accepted = 1, status = CASE WHEN provider_accepted = 1 THEN 'ACTIVE' ELSE 'PENDING_PROVIDER' END, updated_at = ? WHERE id = ?",
+    ).run(now, row.id);
+    notify(row.provider_id, 'agreement', 'Acordo confirmado', 'O cliente confirmou o acordo.', `/acordos/${row.id}`);
+  } else {
+    return bad(res, 403, 'Não participas neste acordo.');
   }
+  audit(id, 'agreement.accept', 'agreement', row.id);
+  return res.json({ agreement: serializeAgreement(row.id, id) });
 });
 
-// -------------------------------------------------------------
-// 7. UPLOAD DE FICHEIROS & CAPTURAS DE ECRÃ
-// -------------------------------------------------------------
-apiRouter.post('/upload', (req, res) => {
-  try {
-    const { base64Data, filename } = req.body;
-    if (!base64Data) {
-      return res.status(400).json({ error: 'Dados base64 são obrigatórios.' });
+apiRouter.post('/agreements/:id/decline', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.provider_id !== id) return bad(res, 403, 'Só o prestador pode recusar este acordo.');
+  if (row.status !== 'PENDING_PROVIDER') return bad(res, 409, 'Este acordo já não está pendente.');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare("UPDATE agreements SET status = 'CANCELLED', updated_at = ? WHERE id = ?").run(now, row.id);
+    db.prepare("UPDATE requests SET status = 'OPEN', updated_at = ? WHERE id = ?").run(now, row.request_id);
+    db.prepare("UPDATE proposals SET status = 'REJECTED', updated_at = ? WHERE request_id = ? AND provider_id = ?").run(
+      now,
+      row.request_id,
+      row.provider_id,
+    );
+  });
+  notify(
+    row.customer_id,
+    'agreement',
+    'Acordo recusado',
+    'O prestador recusou o acordo. O pedido voltou a estar aberto.',
+    `/pedidos/${row.request_id}`,
+  );
+  return res.json({ agreement: serializeAgreement(row.id, id) });
+});
+
+apiRouter.post('/agreements/:id/submit-completion', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.provider_id !== id) return bad(res, 403, 'Só o prestador pode submeter a conclusão.');
+  if (row.status !== 'ACTIVE') return bad(res, 409, 'O acordo não está activo.');
+  const note = text(req.body?.note, 10, 1500);
+  if (!note) return bad(res, 400, 'Descreve o trabalho concluído (mínimo 10 caracteres).', { note: 'Curta.' });
+  const photos = ownFileIds(req.body?.photoIds, id, 6);
+  const now = nowIso();
+  transaction(() => {
+    db.prepare(
+      "UPDATE agreements SET status = 'WORK_SUBMITTED', provider_completed = 1, completion_note = ?, updated_at = ? WHERE id = ?",
+    ).run(note, now, row.id);
+    db.prepare('DELETE FROM completion_photos WHERE agreement_id = ?').run(row.id);
+    addPhotos('completion_photos', 'agreement_id', row.id, photos);
+  });
+  notify(
+    row.customer_id,
+    'completion',
+    'Trabalho concluído — confirma',
+    'O prestador submeteu a conclusão. Revê e confirma ou pede correcções.',
+    `/acordos/${row.id}`,
+  );
+  audit(id, 'agreement.submit_completion', 'agreement', row.id);
+  return res.json({ agreement: serializeAgreement(row.id, id) });
+});
+
+apiRouter.post('/agreements/:id/confirm', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.customer_id !== id) return bad(res, 403, 'Só o cliente pode confirmar a conclusão.');
+  if (row.status !== 'WORK_SUBMITTED') return bad(res, 409, 'O prestador ainda não submeteu a conclusão.');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare("UPDATE agreements SET status = 'COMPLETED', customer_completed = 1, updated_at = ? WHERE id = ?").run(
+      now,
+      row.id,
+    );
+    db.prepare("UPDATE requests SET status = 'COMPLETED', updated_at = ? WHERE id = ?").run(now, row.request_id);
+  });
+  notify(
+    row.provider_id,
+    'completion',
+    'Serviço confirmado',
+    'O cliente confirmou a conclusão. Já podem avaliar-se.',
+    `/acordos/${row.id}`,
+  );
+  audit(id, 'agreement.confirm', 'agreement', row.id);
+  return res.json({ agreement: serializeAgreement(row.id, id) });
+});
+
+apiRouter.post('/agreements/:id/request-changes', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.customer_id !== id) return bad(res, 403, 'Só o cliente pode pedir correcções.');
+  if (row.status !== 'WORK_SUBMITTED') return bad(res, 409, 'Não há conclusão por confirmar.');
+  const note = text(req.body?.note, 5, 1000);
+  if (!note) return bad(res, 400, 'Explica o que precisa de ser corrigido.');
+  db.prepare(
+    "UPDATE agreements SET status = 'ACTIVE', provider_completed = 0, completion_note = ?, updated_at = ? WHERE id = ?",
+  ).run(`Correcção pedida: ${note}`, nowIso(), row.id);
+  notify(row.provider_id, 'completion', 'Correcção pedida', note, `/acordos/${row.id}`);
+  return res.json({ agreement: serializeAgreement(row.id, id) });
+});
+
+apiRouter.post('/agreements/:id/dispute', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.customer_id !== id && row.provider_id !== id) return bad(res, 403, 'Não participas neste acordo.');
+  if (!['ACTIVE', 'WORK_SUBMITTED'].includes(row.status))
+    return bad(res, 409, 'Este acordo não pode entrar em disputa.');
+  const reason = text(req.body?.reason, 10, 1500);
+  if (!reason) return bad(res, 400, 'Explica o motivo da disputa.');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare("UPDATE agreements SET status = 'DISPUTED', updated_at = ? WHERE id = ?").run(now, row.id);
+    db.prepare("UPDATE requests SET status = 'DISPUTED', updated_at = ? WHERE id = ?").run(now, row.request_id);
+    db.prepare(
+      `INSERT INTO reports (id, reporter_id, target_type, target_id, reason, details, status, created_at)
+       VALUES (?, ?, 'agreement', ?, 'dispute', ?, 'OPEN', ?)`,
+    ).run(newId('rep'), id, row.id, reason, now);
+  });
+  const other = row.customer_id === id ? row.provider_id : row.customer_id;
+  notify(
+    other,
+    'dispute',
+    'Disputa aberta',
+    'A outra parte abriu uma disputa. A equipa SALU vai analisar.',
+    `/acordos/${row.id}`,
+  );
+  return res.json({ agreement: serializeAgreement(row.id, id) });
+});
+
+apiRouter.post('/agreements/:id/cancel', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.customer_id !== id && row.provider_id !== id) return bad(res, 403, 'Não participas neste acordo.');
+  if (!['PENDING_PROVIDER', 'PENDING_CUSTOMER'].includes(row.status))
+    return bad(res, 409, 'Só podes cancelar um acordo antes de começar.');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare("UPDATE agreements SET status = 'CANCELLED', updated_at = ? WHERE id = ?").run(now, row.id);
+    db.prepare("UPDATE requests SET status = 'OPEN', updated_at = ? WHERE id = ?").run(now, row.request_id);
+    db.prepare("UPDATE proposals SET status = 'REJECTED', updated_at = ? WHERE request_id = ? AND provider_id = ?").run(
+      now,
+      row.request_id,
+      row.provider_id,
+    );
+  });
+  const other = row.customer_id === id ? row.provider_id : row.customer_id;
+  notify(
+    other,
+    'agreement',
+    'Acordo cancelado',
+    'O acordo foi cancelado antes do início.',
+    `/pedidos/${row.request_id}`,
+  );
+  return res.json({ agreement: serializeAgreement(row.id, id) });
+});
+
+// =============================================================
+// AVALIAÇÕES
+// =============================================================
+apiRouter.post('/agreements/:id/reviews', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const row = db.prepare('SELECT * FROM agreements WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Acordo não encontrado.');
+  if (row.customer_id !== id && row.provider_id !== id) return bad(res, 403, 'Não participas neste acordo.');
+  if (row.status !== 'COMPLETED') return bad(res, 409, 'Só podes avaliar depois da conclusão confirmada.');
+  const existing = db.prepare('SELECT id FROM reviews WHERE request_id = ? AND author_id = ?').get(row.request_id, id);
+  if (existing) return bad(res, 409, 'Já avaliaste este serviço.');
+  const targetId = row.customer_id === id ? row.provider_id : row.customer_id;
+  if (targetId === id) return bad(res, 400, 'Não podes avaliar-te a ti próprio.');
+  const communication = int(req.body?.communication, 1, 5);
+  const reliability = int(req.body?.reliability, 1, 5);
+  const deadlines = int(req.body?.deadlines, 1, 5);
+  const comment = text(req.body?.comment, 0, 1000) || '';
+  if (communication == null || reliability == null || deadlines == null)
+    return bad(res, 400, 'As três notas são obrigatórias (1 a 5).');
+  const reviewId = newId('rev');
+  db.prepare(
+    `INSERT INTO reviews (id, request_id, author_id, target_id, author_role, communication, reliability, deadlines, comment, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    reviewId,
+    row.request_id,
+    id,
+    targetId,
+    row.customer_id === id ? 'customer' : 'provider',
+    communication,
+    reliability,
+    deadlines,
+    comment,
+    nowIso(),
+  );
+  notify(
+    targetId,
+    'review',
+    'Recebeste uma avaliação',
+    'Uma avaliação foi publicada no teu perfil.',
+    `/prestadores/${targetId}`,
+  );
+  audit(id, 'review.create', 'review', reviewId);
+  return res
+    .status(201)
+    .json({ review: serializeReview(db.prepare('SELECT * FROM reviews WHERE id = ?').get(reviewId) as Row) });
+});
+
+apiRouter.get('/me/reviews', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const rows = db
+    .prepare('SELECT * FROM reviews WHERE author_id = ? OR target_id = ? ORDER BY created_at DESC LIMIT 100')
+    .all(id, id) as Row[];
+  return res.json({ reviews: rows.map(serializeReview) });
+});
+
+// =============================================================
+// CONVERSAS
+// =============================================================
+apiRouter.get('/conversations', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const rows = db
+    .prepare(
+      `SELECT c.*, r.title as request_title FROM conversations c JOIN requests r ON r.id = c.request_id
+       WHERE c.customer_id = ? OR c.provider_id = ? ORDER BY c.last_message_at DESC LIMIT 80`,
+    )
+    .all(id, id) as Row[];
+  return res.json({
+    conversations: rows.map((row) => serializeConversation(row, id)),
+    unread: rows.reduce((sum, row) => sum + serializeConversation(row, id).unreadCount, 0),
+  });
+});
+
+apiRouter.get('/conversations/:id/messages', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const conv = db.prepare('SELECT * FROM conversations WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!conv) return bad(res, 404, 'Conversa não encontrada.');
+  if (conv.customer_id !== id && conv.provider_id !== id) return bad(res, 403, 'Conversa privada.');
+  const rows = db
+    .prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 500')
+    .all(conv.id) as Row[];
+  db.prepare(
+    `INSERT INTO conversation_reads (conversation_id, user_id, last_read_at) VALUES (?, ?, ?)
+     ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read_at = excluded.last_read_at`,
+  ).run(conv.id, id, nowIso());
+  return res.json({
+    conversation: serializeConversation(
+      {
+        ...conv,
+        request_title: (db.prepare('SELECT title FROM requests WHERE id = ?').get(conv.request_id) as Row)?.title,
+      },
+      id,
+    ),
+    messages: rows.map((row) => serializeMessage(row, id)),
+  });
+});
+
+apiRouter.post('/conversations/:id/messages', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const conv = db.prepare('SELECT * FROM conversations WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!conv) return bad(res, 404, 'Conversa não encontrada.');
+  if (conv.customer_id !== id && conv.provider_id !== id) return bad(res, 403, 'Conversa privada.');
+  const body = text(req.body?.body, 0, 4000) || '';
+  const fileIds = ownFileIds(req.body?.fileIds, id, 1);
+  if (!body && !fileIds.length) return bad(res, 400, 'Escreve uma mensagem ou anexa um ficheiro.');
+  const messageId = newId('msg');
+  const now = nowIso();
+  transaction(() => {
+    db.prepare('INSERT INTO messages (id, conversation_id, sender_id, body, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      messageId,
+      conv.id,
+      id,
+      body,
+      now,
+    );
+    for (const fileId of fileIds) {
+      db.prepare('INSERT OR IGNORE INTO message_attachments (message_id, file_id) VALUES (?, ?)').run(
+        messageId,
+        fileId,
+      );
     }
+    db.prepare('UPDATE conversations SET last_message_at = ? WHERE id = ?').run(now, conv.id);
+  });
+  const other = conv.customer_id === id ? conv.provider_id : conv.customer_id;
+  notify(other, 'message', 'Nova mensagem', body ? body.slice(0, 120) : 'Recebeste um anexo.', `/mensagens/${conv.id}`);
+  const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId) as Row;
+  return res.status(201).json({ message: serializeMessage(message, id) });
+});
 
-    const ext = path.extname(filename || 'anexo.png') || '.png';
-    const cleanFilename = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${ext}`;
-    const filePath = path.join(uploadDir, cleanFilename);
+apiRouter.post('/conversations/:id/read', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const conv = db.prepare('SELECT * FROM conversations WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!conv) return bad(res, 404, 'Conversa não encontrada.');
+  if (conv.customer_id !== id && conv.provider_id !== id) return bad(res, 403, 'Conversa privada.');
+  db.prepare(
+    `INSERT INTO conversation_reads (conversation_id, user_id, last_read_at) VALUES (?, ?, ?)
+     ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read_at = excluded.last_read_at`,
+  ).run(conv.id, id, nowIso());
+  return res.json({ success: true });
+});
 
-    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    const buffer = matches && matches[2]
-      ? Buffer.from(matches[2], 'base64')
-      : Buffer.from(base64Data, 'base64');
+// =============================================================
+// NOTIFICAÇÕES
+// =============================================================
+apiRouter.get('/notifications', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const rows = db
+    .prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 60')
+    .all(id) as Row[];
+  return res.json({
+    notifications: rows.map(serializeNotification),
+    unread: rows.filter((row) => !row.read).length,
+  });
+});
 
-    fs.writeFileSync(filePath, buffer);
-    const publicUrl = `/uploads/${cleanFilename}`;
-    return res.json({ success: true, url: publicUrl });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+apiRouter.post('/notifications/:id/read', requireAuth, (req, res) => {
+  db.prepare('UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?').run(req.params.id, currentUserId(req));
+  return res.json({ success: true });
+});
+
+apiRouter.post('/notifications/read-all', requireAuth, (req, res) => {
+  db.prepare('UPDATE notifications SET read = 1 WHERE user_id = ?').run(currentUserId(req));
+  return res.json({ success: true });
+});
+
+// =============================================================
+// DENÚNCIAS E VERIFICAÇÃO
+// =============================================================
+apiRouter.post('/reports', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const targetType = String(req.body?.targetType || '');
+  if (!['user', 'request', 'message', 'review', 'agreement'].includes(targetType))
+    return bad(res, 400, 'Tipo de denúncia inválido.');
+  const targetId = text(req.body?.targetId, 1, 80);
+  const reason = String(req.body?.reason || '');
+  if (!targetId || !['abuse', 'fraud', 'impersonation', 'spam', 'safety', 'other'].includes(reason))
+    return bad(res, 400, 'Indica o alvo e o motivo da denúncia.');
+  const details = text(req.body?.details, 10, 2000);
+  if (!details) return bad(res, 400, 'Descreve o que aconteceu (mínimo 10 caracteres).');
+  const reportId = newId('rep');
+  db.prepare(
+    `INSERT INTO reports (id, reporter_id, target_type, target_id, reason, details, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?)`,
+  ).run(reportId, id, targetType, targetId, reason, details, nowIso());
+  audit(id, 'report.create', 'report', reportId);
+  return res.status(201).json({ report: { id: reportId, status: 'OPEN' } });
+});
+
+apiRouter.get('/reports/mine', requireAuth, (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT r.*, (SELECT a.status FROM report_appeals a WHERE a.report_id = r.id ORDER BY a.created_at DESC LIMIT 1) as appeal_status
+       FROM reports r WHERE r.reporter_id = ? ORDER BY r.created_at DESC`,
+    )
+    .all(currentUserId(req)) as Row[];
+  return res.json({ reports: rows });
+});
+
+apiRouter.post('/reports/:id/appeal', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!report || report.reporter_id !== id) return bad(res, 404, 'Denúncia não encontrada.');
+  if (report.status !== 'RESOLVED') return bad(res, 409, 'Só podes recorrer depois de a denúncia ser resolvida.');
+  const message = text(req.body?.message, 20, 2000);
+  if (!message) return bad(res, 400, 'Explica porque queres recorrer (mínimo 20 caracteres).');
+  const pending = db.prepare("SELECT id FROM report_appeals WHERE report_id = ? AND status = 'PENDING'").get(report.id);
+  if (pending) return bad(res, 409, 'Já tens um recurso em análise.');
+  const appealId = newId('apl');
+  db.prepare(
+    "INSERT INTO report_appeals (id, report_id, user_id, message, status, created_at) VALUES (?, ?, ?, ?, 'PENDING', ?)",
+  ).run(appealId, report.id, id, message, nowIso());
+  db.prepare("UPDATE reports SET status = 'REVIEWING' WHERE id = ?").run(report.id);
+  audit(id, 'report.appeal', 'report', report.id);
+  return res.status(201).json({ appeal: { id: appealId, status: 'PENDING' } });
+});
+
+apiRouter.get('/me/verification', requireAuth, (req, res) => {
+  const id = currentUserId(req);
+  const user = currentUser(req);
+  const rows = db
+    .prepare(
+      'SELECT id, kind, status, notes, review_note, created_at, reviewed_at FROM verification_requests WHERE user_id = ? ORDER BY created_at DESC',
+    )
+    .all(id) as Row[];
+  const completed = db
+    .prepare("SELECT COUNT(*) as c FROM agreements WHERE provider_id = ? AND status = 'COMPLETED'")
+    .get(id) as Row;
+  return res.json({
+    currentLevel: user.verification_level,
+    historyLevel: Number(completed.c || 0) > 0 ? 4 : null,
+    requests: rows,
+    levels: [
+      { level: 0, pt: 'Conta criada', en: 'Account created', available: true },
+      { level: 1, pt: 'Contacto confirmado', en: 'Contact confirmed', available: false },
+      { level: 2, pt: 'Identidade revista pela SALU', en: 'Identity reviewed by SALU', available: true },
+      { level: 3, pt: 'Qualificações revistas pela SALU', en: 'Qualifications reviewed by SALU', available: true },
+      { level: 4, pt: 'Histórico real de serviços', en: 'Real service history', available: true },
+    ],
+  });
+});
+
+apiRouter.post('/verification/requests', requireAuth, upload.single('file'), async (req, res) => {
+  const id = currentUserId(req);
+  if (!req.file) return bad(res, 400, 'Anexa um documento.');
+  const kind = req.body?.kind === 'qualification' ? 'qualification' : req.body?.kind === 'identity' ? 'identity' : null;
+  if (!kind) return bad(res, 400, 'Escolhe o tipo de verificação.');
+  const notes = text(req.body?.notes, 0, 800) || '';
+  const pending = db.prepare("SELECT id FROM verification_requests WHERE user_id = ? AND status = 'PENDING'").get(id);
+  if (pending) return bad(res, 409, 'Já tens um pedido de verificação em análise.');
+  try {
+    const file = await saveUploadedFile({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      purpose: 'report',
+      ownerId: id,
+    });
+    const verificationId = newId('ver');
+    db.prepare(
+      `INSERT INTO verification_requests (id, user_id, kind, document_file_id, notes, status, created_at)
+       VALUES (?, ?, ?, ?, ?, 'PENDING', ?)`,
+    ).run(verificationId, id, kind, file.id, notes, nowIso());
+    notify(
+      id,
+      'verification',
+      'Pedido recebido',
+      'A equipa SALU vai rever o documento. Não é uma verificação automática.',
+      '/definicoes',
+    );
+    return res.status(201).json({ id: verificationId, status: 'PENDING' });
+  } catch (error: any) {
+    return bad(res, 400, error.message || 'Documento inválido.');
   }
 });
 
-// -------------------------------------------------------------
-// 8. SIMULAÇÃO DE PERSONAGENS BOTS
-// -------------------------------------------------------------
-apiRouter.get('/bots/status', (req, res) => {
-  try {
-    const enabled = (db.prepare(`SELECT value FROM bot_config WHERE key = 'enabled'`).get() as any)?.value === '1';
-    return res.json({ success: true, enabled });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+// =============================================================
+// ADMINISTRAÇÃO MÍNIMA (token próprio; sem UI pública)
+// =============================================================
+apiRouter.get('/admin/reports', requireAdmin, (_req, res) => {
+  const rows = db.prepare('SELECT * FROM reports ORDER BY created_at DESC LIMIT 200').all();
+  return res.json({ reports: rows });
 });
 
-apiRouter.post('/bots/toggle', (req, res) => {
-  try {
-    const current = (db.prepare(`SELECT value FROM bot_config WHERE key = 'enabled'`).get() as any)?.value === '1';
-    const next = current ? '0' : '1';
-    db.prepare(`UPDATE bot_config SET value = ? WHERE key = 'enabled'`).run(next);
+apiRouter.get('/admin/verifications', requireAdmin, (_req, res) => {
+  const rows = db.prepare('SELECT * FROM verification_requests ORDER BY created_at DESC LIMIT 200').all();
+  return res.json({ verifications: rows });
+});
 
-    if (next === '1') {
-      startBotScheduler(180);
-    } else {
-      stopBotScheduler();
+apiRouter.post('/admin/verifications/:id', requireAdmin, (req, res) => {
+  const row = db.prepare('SELECT * FROM verification_requests WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Pedido não encontrado.');
+  if (row.status !== 'PENDING') return bad(res, 409, 'Este pedido já foi revisto.');
+  const approve = req.body?.approve === true;
+  const note = text(req.body?.note, 0, 800) || '';
+  const now = nowIso();
+  transaction(() => {
+    db.prepare(
+      'UPDATE verification_requests SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?',
+    ).run(approve ? 'APPROVED' : 'REJECTED', note, 'admin', now, row.id);
+    if (approve) {
+      const target = row.kind === 'identity' ? 2 : 3;
+      db.prepare('UPDATE users SET verification_level = MAX(verification_level, ?), updated_at = ? WHERE id = ?').run(
+        target,
+        now,
+        row.user_id,
+      );
     }
-
-    return res.json({ success: true, enabled: next === '1' });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+  });
+  notify(
+    row.user_id,
+    'verification',
+    approve ? 'Verificação aprovada' : 'Verificação recusada',
+    approve ? 'O teu documento foi revisto e aprovado pela equipa SALU.' : note || 'O documento não foi aceite.',
+    '/definicoes',
+  );
+  return res.json({ success: true });
 });
 
-apiRouter.post('/bots/trigger-now', (req, res) => {
-  try {
-    const result = runBotSimulationAction();
-    return res.json({ success: true, result });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+apiRouter.get('/admin/reports/:id', requireAdmin, (req, res) => {
+  const row = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id);
+  return row ? res.json({ report: row }) : bad(res, 404, 'Denúncia não encontrada.');
+});
+
+apiRouter.post('/admin/reports/:id', requireAdmin, (req, res) => {
+  const status = req.body?.status;
+  if (!['OPEN', 'REVIEWING', 'RESOLVED'].includes(status)) return bad(res, 400, 'Estado inválido.');
+  const row = db.prepare('SELECT id FROM reports WHERE id = ?').get(req.params.id);
+  if (!row) return bad(res, 404, 'Denúncia não encontrada.');
+  db.prepare('UPDATE reports SET status = ? WHERE id = ?').run(status, req.params.id);
+  return res.json({ success: true });
+});
+
+apiRouter.get('/admin/appeals', requireAdmin, (_req, res) => {
+  const rows = db.prepare('SELECT * FROM report_appeals ORDER BY created_at DESC LIMIT 200').all();
+  return res.json({ appeals: rows });
+});
+
+apiRouter.post('/admin/appeals/:id', requireAdmin, (req, res) => {
+  const row = db.prepare('SELECT * FROM report_appeals WHERE id = ?').get(req.params.id) as Row | undefined;
+  if (!row) return bad(res, 404, 'Recurso não encontrado.');
+  if (row.status !== 'PENDING') return bad(res, 409, 'Este recurso já foi revisto.');
+  const approve = req.body?.approve === true;
+  const note = text(req.body?.note, 0, 800) || '';
+  const now = nowIso();
+  transaction(() => {
+    db.prepare('UPDATE report_appeals SET status = ?, review_note = ?, reviewed_at = ? WHERE id = ?').run(
+      approve ? 'ACCEPTED' : 'REJECTED',
+      note,
+      now,
+      row.id,
+    );
+    db.prepare('UPDATE reports SET status = ? WHERE id = ?').run(approve ? 'REVIEWING' : 'RESOLVED', row.report_id);
+  });
+  notify(
+    row.user_id,
+    'verification',
+    approve ? 'Recurso aceite' : 'Recurso recusado',
+    approve ? 'A denúncia vai ser revista novamente pela equipa SALU.' : note || 'O recurso não foi aceite.',
+    '/seguranca',
+  );
+  return res.json({ success: true });
 });

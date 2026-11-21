@@ -5,35 +5,35 @@
 @layer base {
   :root {
     --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-    --font-sans: 'DM Sans', system-ui, sans-serif;
+    --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-    --salu-navy: #081C41;
+    --salu-navy: #081c41;
     --salu-navy-deep: #061534;
-    --salu-orange: #F97316;
-    --salu-orange-hover: #EA580C;
-    --salu-blue: #1D6FE5;
-    --salu-blue-hover: #1558B8;
+    --salu-orange: #f97316;
+    --salu-orange-hover: #ea580c;
+    --salu-blue: #1d6fe5;
+    --salu-blue-hover: #1558b8;
 
-    --salu-bg: #F8FAFC;
-    --salu-surface: #FFFFFF;
-    --salu-surface-muted: #F1F5F9;
-    --salu-border: #E2E8F0;
-    --salu-border-accent: #1D6FE5;
-    --salu-border-highlight: #F97316;
-    --salu-text: #0F172A;
+    --salu-bg: #f8fafc;
+    --salu-surface: #ffffff;
+    --salu-surface-muted: #f1f5f9;
+    --salu-border: #e2e8f0;
+    --salu-border-accent: #1d6fe5;
+    --salu-border-highlight: #f97316;
+    --salu-text: #0f172a;
     --salu-text-muted: #475569;
   }
 
   .dark {
-    --salu-bg: #060E20;
-    --salu-surface: #0C1833;
+    --salu-bg: #060e20;
+    --salu-surface: #0c1833;
     --salu-surface-muted: #132347;
-    --salu-border: #1E325C;
-    --salu-border-accent: #60A5FA;
-    --salu-border-highlight: #FB923C;
-    --salu-text: #F8FAFC;
-    --salu-text-muted: #94A3B8;
+    --salu-border: #1e325c;
+    --salu-border-accent: #60a5fa;
+    --salu-border-highlight: #fb923c;
+    --salu-text: #f8fafc;
+    --salu-text-muted: #94a3b8;
   }
 
   *,
@@ -47,16 +47,60 @@
     line-height: 1.55;
     background-color: var(--salu-bg);
     color: var(--salu-text);
+    min-width: 320px;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Respeita sempre o movimento reduzido, mesmo em componentes com motion. */
+  @media (prefers-reduced-motion: reduce) {
+    [class*='animate-'] {
+      animation: none !important;
+    }
+    * {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 
   ::selection {
     background-color: rgba(249, 115, 22, 0.28);
-    color: #081C41;
+    color: #081c41;
   }
 
   .dark ::selection {
     background-color: rgba(249, 115, 22, 0.35);
-    color: #F8FAFC;
+    color: #f8fafc;
   }
 
   h1,
@@ -86,7 +130,9 @@
   select,
   textarea {
     border-color: var(--salu-border);
-    transition: border-color 150ms ease, box-shadow 150ms ease;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
   }
 
   input:focus,
@@ -107,7 +153,10 @@
     background-color: var(--salu-orange);
     color: #ffffff;
     border: 1px solid transparent;
-    transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+    transition:
+      background-color 150ms ease,
+      box-shadow 150ms ease,
+      transform 150ms ease;
   }
 
   .salu-btn-primary:hover {
@@ -118,7 +167,10 @@
     background-color: var(--salu-blue);
     color: #ffffff;
     border: 1px solid transparent;
-    transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+    transition:
+      background-color 150ms ease,
+      box-shadow 150ms ease,
+      transform 150ms ease;
   }
 
   .salu-btn-customer:hover {
@@ -129,13 +181,17 @@
     background-color: var(--salu-navy);
     color: #ffffff;
     border: 1px solid transparent;
-    transition: background-color 150ms ease, box-shadow 150ms ease;
+    transition:
+      background-color 150ms ease,
+      box-shadow 150ms ease;
   }
 
   .salu-card {
     background-color: var(--salu-surface);
     border: 1px solid var(--salu-border);
-    transition: border-color 150ms ease, box-shadow 150ms ease;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
   }
 
   .salu-card:hover {
@@ -175,7 +231,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

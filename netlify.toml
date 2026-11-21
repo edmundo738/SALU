@@ -1,5 +1,6 @@
-# Netlify — aplicação de página única com rotas do lado do cliente.
-# Sem esta reescrita, abrir /pedidos/abc directamente dá 404.
+# SALU — frontend estático no Netlify, API persistente fora do Netlify.
+# Define VITE_API_URL no painel do Netlify (ex.: https://api.salu.ao/api).
+# O SQLite local NUNCA é usado como base de produção serverless.
 
 [build]
   command = "npm run build"
@@ -8,7 +9,30 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Sem VITE_API_URL, /api não pode devolver index.html em silêncio.
+[[redirects]]
+  from = "/api/*"
+  to = "/api-unavailable.json"
+  status = 503
+  force = true
+
+# Um asset em falta devolve 404, não o index.html.
+[[redirects]]
+  from = "/assets/*"
+  to = "/404.html"
+  status = 404
+
+# Rotas profundas do React Router.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

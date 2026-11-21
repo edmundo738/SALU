@@ -2,20 +2,27 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
-import { prepararArmazenamentoLocal } from './data/criarRepositorio';
+import { I18nProvider } from './i18n';
+import { ThemeProvider } from './app/ThemeProvider';
+import { ToastProvider } from './app/ToastProvider';
+import { AuthProvider } from './app/AuthProvider';
 import './index.css';
 
-prepararArmazenamentoLocal();
+const root = document.getElementById('root');
+if (!root) throw new Error('Elemento #root não encontrado em index.html');
 
-const raiz = document.getElementById('root');
-if (!raiz) {
-  throw new Error('Elemento #root não encontrado em index.html');
-}
-
-ReactDOM.createRoot(raiz).render(
+ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <I18nProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </I18nProvider>
   </React.StrictMode>,
 );

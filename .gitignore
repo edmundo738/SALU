@@ -155,3 +155,11 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+
+
+# SALU runtime data (never commit databases, WAL files or uploads)
+data/
+public/uploads/
+.env
+.env.*
+!.env.example
