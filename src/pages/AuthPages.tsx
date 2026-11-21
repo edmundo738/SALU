@@ -90,7 +90,9 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const next = params.get('next') || '/inicio';
+  const requestedNext = params.get('next') || '/inicio';
+  // Só aceita caminho interno; nunca `//evil` nem URL absoluto.
+  const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/inicio';
 
   if (!loading && user) return <Navigate to={next} replace />;
 
@@ -98,7 +100,7 @@ export function LoginPage() {
     event.preventDefault();
     setError(null);
     if (!contact.trim() || !password) {
-      setError(lang === 'pt' ? 'Preenche o contacto e a palavra-passe.' : 'Enter your contact and password.');
+      setError(t('auth.fillBoth'));
       return;
     }
     setBusy(true);
@@ -218,8 +220,8 @@ export function RegisterPage() {
     event.preventDefault();
     setError(null);
     const nextFields: Record<string, string> = {};
-    if (form.name.trim().length < 2) nextFields.name = lang === 'pt' ? 'Indica o teu nome.' : 'Enter your name.';
-    if (!form.contact.trim()) nextFields.contact = lang === 'pt' ? 'Indica um contacto.' : 'Enter a contact.';
+    if (form.name.trim().length < 2) nextFields.name = t('auth.fillName');
+    if (!form.contact.trim()) nextFields.contact = t('auth.fillContact');
     if (form.password.length < 8 || !/[A-Za-z]/.test(form.password) || !/\d/.test(form.password))
       nextFields.password = t('validation.passwordMin');
     if (form.password !== form.passwordConfirm) nextFields.passwordConfirm = t('validation.passwordMatch');
@@ -270,7 +272,7 @@ export function RegisterPage() {
               value={form.name}
               onChange={(e) => update('name', e.target.value)}
               className="pl-9"
-              placeholder="Ex.: Ana Manuel"
+              placeholder={t('auth.namePlaceholder')}
             />
           </div>
         </Field>

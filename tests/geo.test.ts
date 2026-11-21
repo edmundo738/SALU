@@ -26,6 +26,11 @@ describe('divisão administrativa de Angola (2024)', () => {
     expect(getMunicipality('AO-ICB', 'AO-ICB-SEQUELE')?.communes.map((c) => c.name)).toContain('Sequele');
   });
 
+  it('coloca Benfica em Talatona, não em Belas', () => {
+    expect(getMunicipality('AO-LUA', 'AO-LUA-TALATONA')?.communes.map((c) => c.name)).toContain('Benfica');
+    expect(getMunicipality('AO-LUA', 'AO-LUA-BELAS')?.communes.map((c) => c.name)).not.toContain('Benfica');
+  });
+
   it('não coloca Zango dentro de Luanda', () => {
     const luanda = getProvince('AO-LUA');
     const names = luanda?.municipalities.flatMap((m) => [m.name, ...m.communes.map((c) => c.name)]) ?? [];

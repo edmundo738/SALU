@@ -92,6 +92,21 @@ const english: Record<string, string> = {
   'Usa JPG, PNG, WebP ou PDF.': 'Use JPG, PNG, WebP or PDF.',
   'Demasiados pedidos. Tenta novamente daqui a pouco.': 'Too many requests. Try again shortly.',
   'Erro interno. Tenta novamente.': 'Internal error. Try again.',
+  'Só podes recorrer depois de a denúncia ser resolvida.': 'You can only appeal after the report is resolved.',
+  'Explica porque queres recorrer (mínimo 20 caracteres).': 'Explain why you want to appeal (at least 20 characters).',
+  'Já tens um recurso em análise.': 'You already have an appeal under review.',
+  'Denúncia não encontrada.': 'Report not found.',
+  'Recurso não encontrado.': 'Appeal not found.',
+  'Este recurso já foi revisto.': 'This appeal has already been reviewed.',
+  'Estado inválido.': 'Invalid state.',
+  'Imagem inválida ou demasiado grande. Usa JPG, PNG ou WebP.': 'Invalid or too large image. Use JPG, PNG or WebP.',
+  'Imagem inválida.': 'Invalid image.',
+  'O ficheiro excede o limite de 6 MB.': 'The file exceeds the 6 MB limit.',
+  'Não foi possível ler o ficheiro.': 'Could not read the file.',
+  'Origem não autorizada.': 'Origin not allowed.',
+  'Rota não encontrada.': 'Route not found.',
+  'Não encontrado.': 'Not found.',
+  'Indica um alvo válido.': 'Provide a valid target.',
 };
 
 export function friendlyError(error: unknown, lang: 'pt' | 'en', t: (key: MessageKey) => string): string {
@@ -103,7 +118,7 @@ export function friendlyError(error: unknown, lang: 'pt' | 'en', t: (key: Messag
       error.status === 502
     )
       return t('common.networkError');
-    if (error.status === 401) return t('common.sessionExpired');
+    if (error.status === 401 && error.message.includes('iniciar sessão')) return t('common.sessionExpired');
     if (lang === 'en') return english[error.message] || error.message;
     return error.message;
   }

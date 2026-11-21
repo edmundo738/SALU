@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowRight, BriefcaseBusiness, Check, Search, UserRound } from 'lucide-react';
 import { useAuth } from '../app/AuthProvider';
 import { useI18n } from '../i18n';
 import { api } from '../lib/api';
 import { friendlyError } from '../lib/errors';
-import { Alert, Button, Card } from '../components/ui/Base';
+import { Alert, Button, Card, Spinner } from '../components/ui/Base';
 import { LocationPicker, type LocationValue } from '../components/LocationPicker';
 import { SaluLogo } from '../components/SaluLogo';
 import { useToast } from '../app/ToastProvider';
@@ -24,10 +24,29 @@ export function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!loading && !user) {
-    navigate('/entrar?next=/bem-vindo', { replace: true });
-    return null;
+  useEffect(() => {
+    if (!user) return;
+    setMode(user.activeMode);
+    setLocation((current) =>
+      current.provinceId
+        ? current
+        : {
+            provinceId: user.provinceId || '',
+            municipalityId: user.municipalityId || '',
+            communeId: user.communeId || '',
+          },
+    );
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-[#060E20]">
+        <Spinner />
+      </div>
+    );
   }
+
+  if (!user) return <Navigate to="/entrar?next=/bem-vindo" replace />;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

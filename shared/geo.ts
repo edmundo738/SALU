@@ -52,7 +52,6 @@ export const PROVINCES: Province[] = [
         ['barra-do-cuanza', 'Barra do Cuanza'],
         ['cabolombo', 'Cabolombo'],
         ['ramiros', 'Ramiros'],
-        ['benfica', 'Benfica'],
       ]),
       m('AO-LUA', 'cacuaco', 'Cacuaco', [
         ['cacuaco', 'Cacuaco'],
@@ -63,7 +62,10 @@ export const PROVINCES: Province[] = [
         ['kima-kieza', 'Kima Kieza'],
       ]),
       m('AO-LUA', 'viana', 'Viana', sede('AO-LUA', 'viana', 'Viana')),
-      m('AO-LUA', 'talatona', 'Talatona', [['talatona', 'Talatona']]),
+      m('AO-LUA', 'talatona', 'Talatona', [
+        ['talatona', 'Talatona'],
+        ['benfica', 'Benfica'],
+      ]),
       m('AO-LUA', 'mussulo', 'Mussulo', sede('AO-LUA', 'mussulo', 'Mussulo')),
       m('AO-LUA', 'sambizanga', 'Sambizanga', sede('AO-LUA', 'sambizanga', 'Sambizanga')),
       m('AO-LUA', 'rangel', 'Rangel', sede('AO-LUA', 'rangel', 'Rangel')),

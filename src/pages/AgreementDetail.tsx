@@ -212,7 +212,7 @@ export function AgreementDetailPage() {
               <li className="flex gap-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#1D6FE5] mt-1.5 shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold">{t('agreement.awaitingProvider')}</p>
+                  <p className="font-semibold">{t('agreement.created')}</p>
                   <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{formatDate(agreement.createdAt, lang)}</p>
                 </div>
               </li>
@@ -249,6 +249,14 @@ export function AgreementDetailPage() {
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" aria-hidden="true" />
                   <div>
                     <p className="font-semibold">{t('agreement.complete')}</p>
+                  </div>
+                </li>
+              )}
+              {agreement.status === 'CANCELLED' && (
+                <li className="flex gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-500 mt-1.5 shrink-0" aria-hidden="true" />
+                  <div>
+                    <p className="font-semibold">{t('agreement.cancelled')}</p>
                   </div>
                 </li>
               )}

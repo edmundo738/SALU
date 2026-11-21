@@ -3,7 +3,7 @@
 ## Comandos
 
 ```bash
-npm test                 # 3 ficheiros, 15 testes
+npm test                 # 3 ficheiros, 16 testes
 npm run build            # tsc --noEmit + vite build
 npm audit                # dependências
 npm run server           # API em :3001

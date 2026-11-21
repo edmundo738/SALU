@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       setUser(null);
       setStats(null);
-      if (error instanceof ApiError && error.status === 0) setApiReachable(false);
-      else setApiReachable(true);
+      if (error instanceof ApiError && error.status === 401) setApiReachable(true);
+      else setApiReachable(false);
     } finally {
       setLoading(false);
     }

@@ -51,14 +51,14 @@ Sem `VITE_API_URL`, o frontend usa `/api`; no Netlify essa rota devolve **503** 
 
 ```bash
 npm run build      # tsc --noEmit + vite build
-npm test           # 15 testes: fluxo real, segurança, geo, render
+npm test           # 16 testes: fluxo real, segurança, geo, render
 npm audit          # 0 vulnerabilidades conhecidas
 ```
 
 Resultados medidos nesta sessão (2026-11-21):
 
-- `npm run build`: passa. Chunk inicial `303.41 kB` / `92.16 kB` gzip; 35 chunks.
-- `npm test`: 3 ficheiros, **15 testes passam**.
+- `npm run build`: passa. Chunk inicial `303.85 kB` / `92.29 kB` gzip; 35 chunks.
+- `npm test`: 3 ficheiros, **16 testes passam**.
 - `npm audit`: **0 vulnerabilidades**.
 - Fluxo HTTP real com duas contas (Ana cliente, Bruno prestador, Carlos estranho): registo, onboarding, perfil publicado, pedido com foto, proposta, conversa com anexo privado, acordo bilateral, conclusão com prova, confirmação, avaliação recíproca, bloqueio de acessos cruzados e persistência após reinício do servidor — **tudo observado**.
 

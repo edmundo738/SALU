@@ -17,7 +17,12 @@ export function parseCookies(header: string | undefined): Record<string, string>
     if (index < 0) continue;
     const key = part.slice(0, index).trim();
     const value = part.slice(index + 1).trim();
-    if (key) out[key] = decodeURIComponent(value);
+    if (!key) continue;
+    try {
+      out[key] = decodeURIComponent(value);
+    } catch {
+      out[key] = value;
+    }
   }
   return out;
 }
@@ -98,7 +103,14 @@ export function currentUserId(req: Request): string {
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   const token = req.headers['x-admin-token'];
   const expected = process.env.SALU_ADMIN_TOKEN;
-  if (!expected || typeof token !== 'string' || token !== expected) {
+  const supplied = typeof token === 'string' ? Buffer.from(token) : null;
+  const expectedBuffer = expected ? Buffer.from(expected) : null;
+  const match =
+    supplied != null &&
+    expectedBuffer != null &&
+    supplied.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(supplied, expectedBuffer);
+  if (!match) {
     res.status(404).json({ error: 'Não encontrado.' });
     return;
   }
