@@ -270,11 +270,11 @@ export function ProviderEditorPage() {
               </Button>
             )}
             <Button variant="secondary" loading={busy} onClick={() => void save(false)} disabled={!locationReady}>
-              {t('provider.saveDraft')}
+              {profile?.published ? t('common.save') : t('provider.saveDraft')}
             </Button>
             <Button loading={busy} onClick={() => void save(true)} disabled={!locationReady}>
               <Eye className="w-4 h-4" aria-hidden="true" />
-              {t('provider.publish')}
+              {profile?.published ? t('provider.updatePublication') : t('provider.publish')}
             </Button>
           </div>
         </Card>
