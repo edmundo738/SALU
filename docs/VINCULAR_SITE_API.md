@@ -117,3 +117,60 @@ Envia uma captura com:
 3. o erro que aparece ao criar conta.
 
 Com esses três, consigo dizer exactamente qual dos lados está errado.
+
+---
+
+# Automatizar: GitHub → Netlify
+
+O site actual foi publicado por **Netlify Drop**. Para cada alteração no GitHub aparecer sozinha no site, liga o projeto actual ao repositório. **Não precisas de criar um site novo** — o endereço `salu-ao.netlify.app` mantém-se.
+
+## Antes de ligar
+
+Confirma em **Project configuration → Environment variables** que existe:
+
+```text
+VITE_API_URL=https://edmundo.alwaysdata.net/api
+```
+
+## Ligar o repositório
+
+1. No Netlify, abre o projeto **salu-ao**.
+2. **Project configuration**.
+3. **Developer settings**.
+4. **Continuous deployment → Repository**.
+5. Clica em **Link repository**.
+6. Escolhe **GitHub**.
+7. Autoriza a app do Netlify no GitHub, se pedir.
+8. Escolhe o repositório `edmundo738/SALU`.
+9. Branch de produção: `main`.
+10. Confirma.
+
+O `netlify.toml` já diz ao Netlify o que fazer:
+
+```text
+Build command: npm run build
+Publish directory: dist
+Node: 22
+```
+
+Não precisas de preencher esses campos à mão; o ficheiro já está no repositório.
+
+## O que passa a acontecer
+
+- Cada **push/merge para `main`** faz build e publica automaticamente.
+- Cada **pull request** ganha um preview próprio.
+- Já não precisas de arrastar ZIPs.
+- Se o build falhar, o site actual continua online e o Netlify mostra o erro em **Deploys**.
+
+## Primeiro deploy
+
+1. Depois de ligar, abre **Deploys**.
+2. Se não começar sozinho, clica em **Trigger deploy → Deploy site**.
+3. Espera por **Published**.
+4. Testa `https://salu-ao.netlify.app/criar-conta`.
+
+Se o build falhar por causa de `VITE_API_URL`, confirma que a variável existe e repete **Trigger deploy → Clear cache and deploy site**.
+
+## Coisa importante
+
+O Netlify só publica o que está na branch **`main`**. Alterações em branches abertas (como a `arena/a3cf2ae7-salu`) não aparecem no site até serem merged.
