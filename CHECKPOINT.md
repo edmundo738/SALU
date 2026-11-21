@@ -10,7 +10,7 @@ Branch `arena/06f5de50-salu`, base `602538e`; commit de implementação `9c9220a
 
 - reescrita integral do cliente e do servidor;
 - remoção da aplicação morta, bots, escrow, OAuth mock e DB no Git;
-- 16 testes verdes (integração real, geo, render);
+- 20 testes verdes (integração real, geo, render e erros);
 - build com code splitting (92 kB gzip inicial);
 - `npm audit` sem vulnerabilidades;
 - documentação de estado criada.
@@ -26,8 +26,8 @@ Cada transição de acordo é decidida no servidor. Identidade vem da sessão. N
 
 ## LATEST_EVIDENCE
 
-- `npm test`: 16/16.
-- `npm run build`: OK; `304.58 kB` / `92.56 kB` gzip.
+- `npm test`: 20/20.
+- `npm run build`: OK; `304.97 kB` / `92.67 kB` gzip.
 - `npm audit`: 0.
 - Fluxo HTTP com Ana (cliente), Bruno (prestador) e Carlos (terceiro): todos os passos essenciais observados; acessos cruzados 403/404/409 conforme o caso.
 - Reinício do servidor: pedido concluído continua presente.

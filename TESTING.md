@@ -3,7 +3,7 @@
 ## Comandos
 
 ```bash
-npm test                 # 3 ficheiros, 16 testes
+npm test                 # 4 ficheiros, 20 testes
 npm run build            # tsc --noEmit + vite build
 npm audit                # dependências
 npm run server           # API em :3001
@@ -39,6 +39,10 @@ Fluxo observado:
 ### `tests/geo.test.ts`
 
 16 municípios de Luanda; Camama próprio; Talatona ≠ Camama; Icolo e Bengo com 7 municípios; Zango fora de Luanda; etiqueta sem repetir o município.
+
+### `tests/errors.test.ts`
+
+Garante que `HTTP_404` sem corpo JSON é apresentado como falha de API, que credenciais erradas não são confundidas com sessão expirada e que erros de rede continuam traduzidos.
 
 ### `tests/ui.render.test.tsx`
 

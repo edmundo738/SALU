@@ -44,6 +44,9 @@ const pt = {
   'common.noResults': 'Ainda não há nada aqui.',
   'common.somethingWrong': 'Algo correu mal.',
   'common.networkError': 'Não conseguimos falar com o servidor. Verifica a ligação e tenta novamente.',
+  'common.apiUnavailable':
+    'A API do SALU não está disponível neste deploy. Nenhuma conta foi criada. Tenta novamente mais tarde.',
+  'common.apiUnavailableTitle': 'Serviço temporariamente indisponível',
   'common.sessionExpired': 'A tua sessão terminou. Entra novamente.',
   'common.optionalField': 'Opcional',
   'common.requiredField': 'Obrigatório',
@@ -559,6 +562,8 @@ const en: Record<keyof typeof pt, string> = {
   'common.noResults': 'There is nothing here yet.',
   'common.somethingWrong': 'Something went wrong.',
   'common.networkError': 'We could not reach the server. Check your connection and try again.',
+  'common.apiUnavailable': 'The SALU API is not available in this deployment. No account was created. Try again later.',
+  'common.apiUnavailableTitle': 'Service temporarily unavailable',
   'common.sessionExpired': 'Your session ended. Please log in again.',
   'common.optionalField': 'Optional',
   'common.requiredField': 'Required',

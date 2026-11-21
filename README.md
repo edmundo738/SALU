@@ -11,14 +11,14 @@ Plataforma de serviços em Angola: uma pessoa publica um pedido, prestadores env
 
 ## Stack
 
-| Camada    | Tecnologia                                                                              |
-| --------- | --------------------------------------------------------------------------------------- |
-| Interface | React 18 + TypeScript + Vite 6 + Tailwind + lucide-react                                |
-| Rotas     | react-router-dom 7 (BrowserRouter, rotas dinâmicas, 404)                                |
-| API       | Node 22 + Express 5 + `node:sqlite`                                                     |
-| Sessões   | Cookie `HttpOnly`, `SameSite=Lax`, token aleatório guardado em hash, validade de 7 dias |
-| Ficheiros | multer + validação real de assinatura + `sharp` (redimensionamento e WebP)              |
-| Testes    | Vitest 5 + integração HTTP real com SQLite temporário                                   |
+| Camada    | Tecnologia                                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------------- |
+| Interface | React 18 + TypeScript + Vite 6 + Tailwind + lucide-react                                                 |
+| Rotas     | react-router-dom 7 (BrowserRouter, rotas dinâmicas, 404)                                                 |
+| API       | Node 22 + Express 5 + `node:sqlite`                                                                      |
+| Sessões   | Cookie `HttpOnly`; `SameSite=Lax` em dev e `None; Secure` em produção; token em hash, validade de 7 dias |
+| Ficheiros | multer + validação real de assinatura + `sharp` (redimensionamento e WebP)                               |
+| Testes    | Vitest 5 + integração HTTP real com SQLite temporário                                                    |
 
 ## Arrancar localmente
 
@@ -46,20 +46,20 @@ Para apontar o frontend directamente para uma API externa:
 VITE_API_URL=http://localhost:3001/api npm run build
 ```
 
-Sem `VITE_API_URL`, o frontend usa `/api`; no Netlify essa rota devolve **503** com `api-unavailable.json`, nunca o `index.html` em silêncio.
+Sem `VITE_API_URL`, o frontend usa `/api`; no Netlify essa rota devolve **503** com `api-unavailable.json`, nunca o `index.html` em silêncio. O site público `salu-ao.netlify.app` está neste estado até a API ser publicada — ver `docs/DEPLOY.md`.
 
 ## Verificar
 
 ```bash
 npm run build      # tsc --noEmit + vite build
-npm test           # 16 testes: fluxo real, segurança, geo, render
+npm test           # 20 testes: fluxo real, segurança, geo, render e erros
 npm audit          # 0 vulnerabilidades conhecidas
 ```
 
 Resultados medidos nesta sessão (2026-11-21):
 
-- `npm run build`: passa. Chunk inicial `304.58 kB` / `92.56 kB` gzip; 35 chunks.
-- `npm test`: 3 ficheiros, **16 testes passam**.
+- `npm run build`: passa. Chunk inicial `304.97 kB` / `92.67 kB` gzip; 35 chunks.
+- `npm test`: 4 ficheiros, **20 testes passam**.
 - `npm audit`: **0 vulnerabilidades**.
 - Fluxo HTTP real com duas contas (Ana cliente, Bruno prestador, Carlos estranho): registo, onboarding, perfil publicado, pedido com foto, proposta, conversa com anexo privado, acordo bilateral, conclusão com prova, confirmação, avaliação recíproca, bloqueio de acessos cruzados e persistência após reinício do servidor — **tudo observado**.
 

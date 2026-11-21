@@ -80,7 +80,7 @@ export function createApp() {
     }),
   );
 
-  // Defesa CSRF adicional: cookies SameSite=Lax + verificação de Origin em mutações.
+  // Defesa CSRF adicional: cookies HttpOnly + verificação de Origin em mutações.
   app.use((req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     const origin = req.headers.origin;
