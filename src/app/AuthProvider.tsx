@@ -43,10 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       applySession(session);
       setApiReachable(true);
     } catch (error) {
-      setUser(null);
-      setStats(null);
-      if (error instanceof ApiError && error.status === 401) setApiReachable(true);
-      else setApiReachable(false);
+      if (error instanceof ApiError && error.status === 401) {
+        setUser(null);
+        setStats(null);
+        setApiReachable(true);
+      } else {
+        // Falha do servidor: não expulsar uma sessão que ainda pode ser válida.
+        setApiReachable(false);
+      }
     } finally {
       setLoading(false);
     }
