@@ -27,14 +27,19 @@ export function parseCookies(header: string | undefined): Record<string, string>
   return out;
 }
 
+function cookieSecurity(): string {
+  // Em produção o frontend (Netlify) e a API podem estar em domínios
+  // diferentes. SameSite=Lax não envia o cookie nesse caso; None+Secure
+  // é obrigatório. A protecção CSRF continua a ser feita por Origin.
+  return process.env.NODE_ENV === 'production' ? '; SameSite=None; Secure' : '; SameSite=Lax';
+}
+
 export function sessionCookie(token: string, maxAgeSeconds = SESSION_DAYS * 86400): string {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure}`;
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=${maxAgeSeconds}${cookieSecurity()}`;
 }
 
 export function clearSessionCookie(): string {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${SESSION_COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure}`;
+  return `${SESSION_COOKIE}=; HttpOnly; Path=/; Max-Age=0${cookieSecurity()}`;
 }
 
 export function createSession(userId: string, res: Response): string {

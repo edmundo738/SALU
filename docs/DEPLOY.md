@@ -1,6 +1,6 @@
 # DEPLOY
 
-> **Estado:** configuração pronta; **nenhum deploy foi executado neste ambiente**. `P0-12` continua parcial.
+> **Estado (2026-11-21):** o frontend está publicado em `https://salu-ao.netlify.app`, mas a **API persistente ainda não está publicada**. O registo falha com erro de configuração; `P0-12` continua **parcial**. Não declares produção pronta antes de completar o passo 1.
 
 ## Arquitectura de produção
 
@@ -17,6 +17,20 @@ O SQLite **não** pode viver no Netlify: o filesystem serverless é efémero. Pa
 ## 1. API
 
 Requisitos: Node 22, volume persistente, HTTPS.
+
+### Caminho rápido: Render Blueprint
+
+O repositório inclui `render.yaml` e `Dockerfile`. O disco persistente do Render exige um plano pago; num plano sem disco o SQLite perde dados a cada deploy.
+
+1. Abrir `https://render.com/deploy?repo=https://github.com/edmundo738/SALU` (ou **New → Blueprint** e escolher o repositório).
+2. Confirmar o serviço `salu-api`, o disco `/data` e as variáveis geradas. `SALU_ADMIN_TOKEN` é gerado pelo Render.
+3. Esperar por `GET https://<serviço>.onrender.com/api/health` → `{"status":"ok"}`.
+4. Copiar o URL e usá-lo como `VITE_API_URL=https://<serviço>.onrender.com/api` no Netlify.
+5. Fazer **Clear cache and deploy site** no Netlify.
+
+O `Dockerfile` não foi construído neste ambiente (não há Docker); o servidor foi validado com Node 22 e `npm ci --omit=dev` no host de desenvolvimento. Confirmar o healthcheck antes de anunciar produção.
+
+### Processo manual
 
 ```bash
 npm ci --omit=dev
@@ -53,7 +67,22 @@ Ou localmente:
 VITE_API_URL=https://api.salu.ao/api npm run build
 ```
 
-Sem `VITE_API_URL`, o cliente usa `/api`; o Netlify devolve **503 + `api-unavailable.json`**, nunca HTML disfarçado de API.
+Sem `VITE_API_URL`, o cliente usa `/api`; o Netlify devolve **503 + `api-unavailable.json`** (incluindo POST, via `netlify/edge-functions/api-unavailable.ts`), nunca HTML disfarçado de API.
+
+### Erro `HTTP_404` ao criar conta
+
+Sintoma observado em `https://salu-ao.netlify.app/criar-conta`: o formulário mostra `HTTP_404`.
+
+Causa: o build público foi feito **sem `VITE_API_URL`**. O browser fez `POST /api/auth/register` para o próprio Netlify; um POST não é servido por uma redirect estática e caiu num 404 sem JSON. **Não é um problema de palavra-passe nem de conta.**
+
+Correcção:
+
+1. Publicar a API num host persistente (passo 1) e confirmar `GET https://<host>/api/health`.
+2. No Netlify, definir `VITE_API_URL=https://<host>/api` e fazer **Clear cache and deploy site**.
+3. Abrir a consola do browser e confirmar que `/api/auth/me` já não devolve 404.
+4. Repetir os dois registos e o ciclo completo do passo 4.
+
+Se a API ainda não existir, a UI agora mostra **“Serviço temporariamente indisponível”** e desactiva o botão, em vez de expor `HTTP_404`.
 
 ## 3. CORS
 
@@ -88,7 +117,8 @@ Só depois actualizar `P0-12` para **Corrigido** e registar a evidência em `PRO
 
 ## 5. Segurança
 
-- Cookies `Secure` em `NODE_ENV=production`.
+- Cookies `Secure; SameSite=None` em `NODE_ENV=production` (frontend e API em domínios diferentes); `SameSite=Lax` em desenvolvimento.
+- CORS com `Access-Control-Allow-Credentials`; o cookie só é aceite nas origens de `APP_ORIGIN`/previews.
 - HSTS no servidor e no host; CSP no Netlify.
 - Backups do volume e teste de restauro.
 - Nunca commitar `.env`, `data/` ou `public/uploads/`.
@@ -96,7 +126,7 @@ Só depois actualizar `P0-12` para **Corrigido** e registar a evidência em `PRO
 
 ## 6. Limitações
 
-- Sem deploy automático neste repositório (sem CI).
+- Sem deploy automático da API neste repositório; o frontend Netlify é publicado fora do Git. CI cobre build/testes, não deploy.
 - Sem migração para Postgres.
 - Sem e-mail/SMS.
 - Sem CDN para uploads; servidos pela API com `Cache-Control` público/privado.

@@ -62,6 +62,26 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ApiUnavailableNotice() {
+  const { apiReachable, refresh } = useAuth();
+  const { t } = useI18n();
+  if (apiReachable !== false) return null;
+  return (
+    <div className="mt-4">
+      <Alert tone="warning" title={t('common.apiUnavailableTitle')}>
+        <p>{t('common.apiUnavailable')}</p>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          className="mt-2 min-h-11 rounded-lg font-bold text-[#1558B8] underline underline-offset-4 dark:text-[#93C5FD]"
+        >
+          {t('common.retry')}
+        </button>
+      </Alert>
+    </div>
+  );
+}
+
 function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
@@ -127,11 +147,7 @@ export function LoginPage() {
       </h1>
       <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8]">{t('auth.login.subtitle')}</p>
 
-      {apiReachable === false && (
-        <div className="mt-4">
-          <Alert tone="danger">{t('common.networkError')}</Alert>
-        </div>
-      )}
+      <ApiUnavailableNotice />
       {error && (
         <div className="mt-4">
           <Alert tone="danger">{error}</Alert>
@@ -166,7 +182,7 @@ export function LoginPage() {
             />
           </div>
         </Field>
-        <Button type="submit" className="w-full" loading={busy}>
+        <Button type="submit" className="w-full" loading={busy} disabled={apiReachable === false}>
           {t('auth.loginAction')}
         </Button>
       </form>
@@ -200,7 +216,7 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, loading, register } = useAuth();
+  const { user, loading, register, apiReachable } = useAuth();
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const toast = useToast();
@@ -254,6 +270,8 @@ export function RegisterPage() {
         {t('auth.register.title')}
       </h1>
       <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8]">{t('auth.register.subtitle')}</p>
+
+      <ApiUnavailableNotice />
 
       {error && (
         <div className="mt-4">
@@ -332,7 +350,7 @@ export function RegisterPage() {
             {t('footer.privacy')}
           </Link>
         </p>
-        <Button type="submit" className="w-full" loading={busy}>
+        <Button type="submit" className="w-full" loading={busy} disabled={apiReachable === false}>
           {t('auth.registerAction')}
         </Button>
       </form>

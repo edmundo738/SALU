@@ -119,6 +119,9 @@ export function friendlyError(error: unknown, lang: 'pt' | 'en', t: (key: Messag
     )
       return t('common.networkError');
     if (error.status === 401 && error.message.includes('iniciar sessão')) return t('common.sessionExpired');
+    // Netlify/estático sem API devolve 404/405, por vezes sem corpo JSON.
+    // Não mostrar "HTTP_404" ao utilizador: é configuração de deploy, não erro dele.
+    if (/^HTTP_(404|405|5\d\d)$/.test(error.message)) return t('common.apiUnavailable');
     if (lang === 'en') return english[error.message] || error.message;
     return error.message;
   }

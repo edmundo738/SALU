@@ -1,0 +1,22 @@
+# Blueprint do Render para a API persistente do SALU.
+# O disco exige um plano pago; sem disco, o SQLite não sobrevive a um deploy.
+services:
+  - type: web
+    name: salu-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ORIGIN
+        value: https://salu-ao.netlify.app
+      - key: SALU_DATA_DIR
+        value: /data
+      - key: SALU_ADMIN_TOKEN
+        generateValue: true
+    disk:
+      name: salu-data
+      mountPath: /data
+      sizeGB: 1

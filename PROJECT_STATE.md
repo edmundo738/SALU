@@ -8,7 +8,7 @@ Autor: Arena Agent (execução da auditoria)
 
 ## 1. Estado em uma frase
 
-A antiga aplicação de demonstração foi substituída por **um único sistema** com sessões reais, API persistente, fluxo bilateral completo, ficheiros reais, geografia de 2024 e 16 testes verdes; **o deploy de produção não foi executado neste ambiente**.
+A antiga aplicação de demonstração foi substituída por **um único sistema** com sessões reais, API persistente, fluxo bilateral completo, ficheiros reais, geografia de 2024 e 20 testes verdes; **o deploy completo de produção não foi concluído: o frontend está no Netlify, a API persistente ainda não**.
 
 ## 2. O que está implementado e verificado
 
@@ -54,13 +54,14 @@ A antiga aplicação de demonstração foi substituída por **um único sistema*
 
 ```
 npm run build   → OK
-                  dist/assets/index-*.js  304.58 kB │ gzip: 92.56 kB
+                  dist/assets/index-*.js  304.97 kB │ gzip: 92.67 kB
                   35 chunks; imagem do logo 16.35 kB
 
-npm test        → 3 ficheiros, 16 testes, 16 pass
+npm test        → 4 ficheiros, 20 testes, 20 pass
                   api.integration.test.ts (5)
                   ui.render.test.tsx (5)
                   geo.test.ts (6)
+                  errors.test.ts (4)
 
 npm audit       → found 0 vulnerabilities
 ```
