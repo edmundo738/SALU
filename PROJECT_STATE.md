@@ -3,6 +3,7 @@
 Última actualização: **2026-11-21**
 Branch: `arena/06f5de50-salu`
 Base: `602538e` (`versão de 11/21/2026 6:48`)
+Commit de implementação: `9c9220a`
 Autor: Arena Agent (execução da auditoria)
 
 ## 1. Estado em uma frase

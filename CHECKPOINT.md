@@ -2,7 +2,7 @@
 
 ## PROJECT_STATE
 
-Branch `arena/06f5de50-salu`, base `602538e`. Um único sistema React Router + Express/SQLite. Auditoria executada; 23/24 P0 corrigidos; `P0-12` parcial por falta de deploy real.
+Branch `arena/06f5de50-salu`, base `602538e`; commit de implementação `9c9220a`. Um único sistema React Router + Express/SQLite. Auditoria executada; 23/24 P0 corrigidos; `P0-12` parcial por falta de deploy real.
 
 ## LAST_CHECKPOINT
 
