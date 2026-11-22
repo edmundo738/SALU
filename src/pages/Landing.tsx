@@ -228,20 +228,12 @@ export function LandingPage() {
                   {t('landing.ctaPrimary')}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </ButtonLink>
-                <Link to="/explorar" className="cine-ghost w-full sm:w-auto">
-                  {t('landing.ctaBrowse')}
+                <Link to="/entrar" className="cine-ghost w-full sm:w-auto">
+                  {t('common.login')}
                 </Link>
               </div>
             </div>
           </div>
-          <p className="mt-6 text-center text-xs text-[#94A3B8]">
-            <Link
-              to="/explorar"
-              className="font-semibold underline decoration-[#F97316] decoration-2 underline-offset-4"
-            >
-              {t('landing.ctaBrowse')}
-            </Link>
-          </p>
         </section>
       </div>
     </PublicLayout>

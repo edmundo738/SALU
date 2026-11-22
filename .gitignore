@@ -163,3 +163,6 @@ public/uploads/
 .env
 .env.*
 !.env.example
+
+# harness local de pré-visualização (nunca é publicado)
+.arena/
