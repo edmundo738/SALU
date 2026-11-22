@@ -337,87 +337,34 @@
 
 .cine-story {
   position: relative;
-  height: 320vh;
-  background: #060e20;
-}
-
-/* Luz que atravessa a secção conforme o progresso do scroll (--p). */
-.cine-story-sticky::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(58% 62% at calc(12% + var(--p, 0) * 72%) 42%, rgba(29, 111, 229, 0.24), transparent 70%);
-}
-
-.cine-story-sticky {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  display: flex;
-  align-items: center;
   overflow: hidden;
+  background-color: #060e20;
+  background-image: radial-gradient(58% 62% at 10% 24%, rgba(29, 111, 229, 0.22), transparent 70%);
 }
 
-.cine-act {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  opacity: 0;
-  transform: translate3d(0, 48px, 0) scale(0.985);
-  transition:
-    opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
+.cine-step {
+  position: relative;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.cine-act[data-active='true'] {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-
-.cine-act-number {
+.cine-step-number {
+  display: block;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(4rem, 12vw, 9rem);
-  line-height: 0.8;
-  letter-spacing: -0.05em;
+  font-size: clamp(2.75rem, 4.5vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(147, 197, 253, 0.35);
+  -webkit-text-stroke: 1px rgba(147, 197, 253, 0.45);
 }
 
 .cine-act-title {
   font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1;
-  font-size: clamp(1.9rem, 4.4vw, 3.4rem);
-}
-
-.cine-progress {
-  position: absolute;
-  right: clamp(1rem, 4vw, 3rem);
-  top: 50%;
-  translate: 0 -50%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.cine-progress span {
-  display: block;
-  width: 2px;
-  height: 34px;
-  border-radius: 2px;
-  background: rgba(147, 197, 253, 0.22);
-  transition: background 400ms ease;
-}
-
-.cine-progress span[data-on='true'] {
-  background: linear-gradient(180deg, #fdb813, #f97316);
-  box-shadow: 0 0 14px rgba(249, 115, 22, 0.6);
+  line-height: 1.05;
+  font-size: clamp(1.4rem, 2.1vw, 1.75rem);
 }
 
 /* ---------- cartões com holofote ---------- */
@@ -627,28 +574,8 @@
   .cine-grid {
     background-size: 46px 46px;
   }
-  .cine-story {
-    height: auto;
-    padding-block: 3.5rem;
-  }
-  .cine-story-sticky {
-    position: static;
-    height: auto;
-    overflow: visible;
-  }
-  .cine-act {
-    position: static;
-    inset: auto;
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-    padding-block: 1.75rem;
-  }
-  .cine-act + .cine-act {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-  .cine-progress {
-    display: none;
+  .cine-step-number {
+    font-size: 2.5rem;
   }
 }
 
@@ -671,7 +598,6 @@
   .cine-cursor {
     transform: none !important;
   }
-  .cine-act,
   [data-reveal] {
     opacity: 1 !important;
     transform: none !important;

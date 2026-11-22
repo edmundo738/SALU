@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## 2026-11-22 — Página inicial: três passos legíveis, convite final sem ruído
+
+### Corrigido
+
+- A secção "Três passos. Sem atalhos." tinha 320vh de altura, `position: sticky` e os
+  três passos empilhados em `absolute` com transições de 700–900ms. Em ecrãs baixos,
+  ao rolar depressa e em capturas de página inteira, os três textos apareciam ao
+  mesmo tempo, sobrepostos e desalinhados. Passa a ser uma grelha estática de três
+  colunas (empilhada no telemóvel): lê-se sempre, em qualquer ecrã e em qualquer captura.
+- Removido o `usePinnedStory` (deixou de ter uso) e as regras CSS da secção pinada.
+- No convite "Começa pelo que precisas." havia um segundo "Ver prestadores" solto por
+  baixo do cartão, a repetir o botão de dentro. Removido. O cartão fica com
+  **Criar conta** e **Entrar**, nada mais.
+- No cabeçalho público, a conta com sessão iniciada via o botão "Início" (que não levava
+  a lado nenhum na página de boas-vindas). Passa a "Entrar", como pedido, e continua a
+  abrir o painel.
+
+### Verificado
+
+- `tsc` limpo, `npm test` 22/22 (dois testes novos: os três passos presentes no HTML e
+  ausência de "Ver prestadores" na página inicial), build verde (311,60 kB / 95,03 kB gzip).
+
 ## 2026-11-22 — Segunda causa das fotos: ordem das regras e avatar do prestador
 
 ### Corrigido

@@ -94,54 +94,6 @@ export function useCamera<T extends HTMLElement>(ref: React.RefObject<T>, enable
   }, [ref, enabled]);
 }
 
-/**
- * Progresso de uma secção "pinada": 0 quando o topo encosta no topo do ecrã,
- * 1 quando o fim da secção chega ao fim do ecrã. Devolve o índice do acto activo.
- */
-export function usePinnedStory<T extends HTMLElement>(ref: React.RefObject<T>, acts: number): number {
-  const [active, setActive] = useState(0);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    let frame = 0;
-    let visible = true;
-
-    const write = () => {
-      frame = 0;
-      if (!visible) return;
-      const rect = element.getBoundingClientRect();
-      const travel = Math.max(rect.height - window.innerHeight, 1);
-      const progress = Math.min(1, Math.max(0, -rect.top / travel));
-      element.style.setProperty('--p', progress.toFixed(4));
-      const index = Math.min(acts - 1, Math.floor(progress * acts * 0.999));
-      setActive((current) => (current === index ? current : index));
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(write);
-    };
-
-    const observer =
-      typeof IntersectionObserver === 'function'
-        ? new IntersectionObserver((entries) => {
-            visible = entries.some((entry) => entry.isIntersecting);
-            if (visible) schedule();
-          })
-        : null;
-    observer?.observe(element);
-
-    write();
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      observer?.disconnect();
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-    };
-  }, [ref, acts]);
-  return active;
-}
-
 /** Marca o elemento com `data-inview` na primeira vez que entra no ecrã. */
 export function useReveal<T extends HTMLElement>(ref: React.RefObject<T>): void {
   useEffect(() => {

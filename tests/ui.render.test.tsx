@@ -71,6 +71,24 @@ describe('interface renderiza sem erros', () => {
     expect(html).toContain('Começa pelo que precisas');
   });
 
+  it('landing: os três passos aparecem todos e legíveis', async () => {
+    const html = await render('/');
+    // Regressão: a antiga secção pinada empilhava os actos em `absolute` e,
+    // num ecrã baixo ou numa captura de página inteira, os três textos
+    // sobrepunham-se. Agora são três blocos estáticos: todos presentes no HTML.
+    for (const titulo of ['Diz o que precisas', 'Recebe propostas', 'Fecha com acordo']) {
+      expect(html).toContain(titulo);
+    }
+    expect(html).not.toContain('cine-story-sticky');
+    expect(html).not.toContain('cine-progress');
+  });
+
+  it('landing: o convite final não repete "Ver prestadores"', async () => {
+    const html = await render('/');
+    expect(html).not.toContain('Ver prestadores');
+    expect(html).toContain('Começa pelo que precisas');
+  });
+
   it('mostra entrar e criar conta', async () => {
     expect(await render('/entrar')).toContain('Entrar');
     expect(await render('/criar-conta')).toContain('Criar conta');
