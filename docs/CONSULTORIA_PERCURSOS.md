@@ -9,7 +9,7 @@ Revisão do código e ensaios locais dos percursos pedidos pelo dono: entrar, us
 ### Logótipo e sessão
 
 - **Antes:** o logótipo apontava sempre para `/`, mesmo com sessão. A página pública continuava a oferecer registo e entrada.
-- **Agora:** com sessão, o logótipo leva a `/inicio`; uma conta sem localização vai para a configuração inicial; sem sessão mantém a página pública. Se alguém com sessão abrir a página pública directamente, os botões oferecem início e, consoante o modo, oportunidades ou publicação de pedido. O título do botão do cabeçalho também corresponde ao destino.
+- **Agora:** com sessão, o logótipo leva a `/inicio`; uma conta sem localização vai para a configuração inicial; sem sessão mantém a página pública. Ao abrir o endereço inicial com sessão confirmada e configuração completa, a conta é encaminhada directamente para o início. Sem sessão, a página pública oferece «Entrar»; se o servidor estiver indisponível, apresenta opção de tentar novamente. O título do botão do cabeçalho também corresponde ao destino.
 - **Prova:** teste de interface local para conta com e sem localização; falta confirmação em browser e no site publicado.
 
 ### Perfil próprio e perfil profissional

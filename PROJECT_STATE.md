@@ -1,5 +1,7 @@
 # PROJECT_STATE — SALU
 
+> **Actualização mais recente:** a alteração da branch anterior foi integrada em `main` (`61f9c88`); a API no alwaysdata continua por verificar e actualizar separadamente. Na branch actual `arena/c1b8efa1-salu`, a abertura de `/` aguarda a sessão e encaminha contas com configuração completa para `/inicio`; ainda é necessário publicar e verificar esta correcção.
+
 > **Estado mais recente — trabalho em curso na branch `arena/4d8373c8-salu`:** a API de produção existe, mas a versão e o restauro das cópias do alwaysdata não foram verificados. O site e a API são publicados separadamente. As secções antigas abaixo são registos históricos e podem estar desactualizadas; em particular não é correcto considerar opcional actualizar a API quando a correcção precisa do servidor.
 
 ## Percursos de utilizador — trabalho na mesma branch
