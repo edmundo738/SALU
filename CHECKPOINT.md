@@ -17,7 +17,7 @@ Branch `arena/bfd0471f-salu`, base `aa7b621`; API de produção em `edmundo.alwa
 
 ## CURRENT_TASK
 
-Fotografias: causa raiz encontrada e corrigida (ordem das regras de redirect no Netlify + avatar do prestador). À espera de deploy de `main` para confirmar `GET /media/<id>` a devolver imagem em produção.
+Fotografias: **fechado**. Causa raiz encontrada (ordem das regras de redirect no Netlify + avatar do prestador) e confirmada em produção pelo utilizador em 2026-11-22, após deploy de `4b01e1e`.
 
 ## ANTERIOR
 

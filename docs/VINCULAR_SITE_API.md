@@ -238,6 +238,12 @@ git pull
 Depois, no painel: **Web → Sites → ⚙ → Restart**. Não é obrigatório para as fotos
 aparecerem no site; é uma melhoria de robustez.
 
+## Estado
+
+Confirmado em produção a 2026-11-22: a fotografia aparece no site depois do deploy
+de `main`. Se voltar a falhar, começar pelo teste de 10 segundos de `/media/teste`
+descrito abaixo.
+
 ## Como confirmar
 
 1. Abre uma foto qualquer no site e clica nela (abre em separador novo).

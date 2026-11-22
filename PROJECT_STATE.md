@@ -111,3 +111,5 @@ Observado em produção, não inferido:
 - `GET /api/providers` em produção devolvia `"avatar": null` depois de o utilizador carregar a fotografia: `providerProfileFor` lia a coluna errada (`provider_profiles.avatar_file_id`, que nunca é escrita).
 
 Correcções: regra `/media/*` movida para o topo de `public/_redirects` com `200!`; avatar do prestador lido de `users`; `FileImage` com três vias (`/media` → bytes autenticados → URL directo). Teste de regressão acrescentado à integração.
+
+**Confirmado em produção (2026-11-22, OBSERVED):** o utilizador confirmou que a fotografia passa a aparecer no site depois do deploy de `main` (`4b01e1e`). Fica fechado o defeito das imagens; o `git pull` no alwaysdata continua opcional.
