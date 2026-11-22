@@ -17,6 +17,10 @@ Branch `arena/bfd0471f-salu`, base `aa7b621`; API de produção em `edmundo.alwa
 
 ## CURRENT_TASK
 
+Fotografias: causa raiz encontrada e corrigida (ordem das regras de redirect no Netlify + avatar do prestador). À espera de deploy de `main` para confirmar `GET /media/<id>` a devolver imagem em produção.
+
+## ANTERIOR
+
 Imagens entre domínios corrigidas por proxy `/media` no Netlify + `FileImage`; à espera de deploy automático de `main`. A API do alwaysdata continua a correr código anterior: `git pull` + restart recomendado (deixa de ser obrigatório para as fotos aparecerem).
 
 ## ANTERIOR

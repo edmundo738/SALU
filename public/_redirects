@@ -1,3 +1,7 @@
+# Fotografias públicas servidas pelo próprio domínio (proxy para a API).
+# Este ficheiro é processado ANTES do netlify.toml: a regra tem de ficar aqui
+# e no topo, senão o /* do fim engole tudo devolvendo a aplicação.
+/media/*    https://edmundo.alwaysdata.net/api/files/:splat   200!
 # Sem VITE_API_URL, /api não pode devolver o index.html em silêncio.
 /api/*      /api-unavailable.json  503
 # Assets em falta devolvem 404, não a aplicação.

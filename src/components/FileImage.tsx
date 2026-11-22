@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FileRecord } from '../../shared/types';
 import { api } from '../lib/api';
 
 /**
- * Imagem de um ficheiro do SALU.
+ * Imagem de um ficheiro do SALU, com três vias por ordem de preferência:
  *
- * - Público (avatar, portfólio, fotos de pedido): servido pelo proxy `/media`
- *   do próprio site — mesmo domínio, sem bloqueios entre origens.
- * - Privado (anexos, provas): lido com a sessão e mostrado a partir de memória.
- * - Se o proxy falhar, tenta o URL directo antes de desistir.
+ * 1. `/media/<id>` — o próprio site serve a imagem (proxy para a API).
+ *    Mesmo domínio: sem bloqueios entre origens e com cache do CDN.
+ * 2. Leitura autenticada (`fetch` + object URL) — funciona mesmo que o proxy
+ *    não exista, porque o pedido é CORS e o servidor autoriza a origem do site.
+ * 3. URL directo da API — último recurso.
+ *
+ * Só depois de as três falharem é que desiste (o avatar cai para as iniciais).
  */
 export function FileImage({
   file,
@@ -19,46 +22,67 @@ export function FileImage({
   file: FileRecord;
   alt?: string;
   className?: string;
-  /** Chamado quando nenhuma via funcionou (ex.: avatar cai para as iniciais). */
+  /** Chamado quando nenhuma via funcionou. */
   onGiveUp?: () => void;
 }) {
   const [src, setSrc] = useState('');
-  const [usedDirect, setUsedDirect] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
+  const giveUpRef = useRef(onGiveUp);
+  giveUpRef.current = onGiveUp;
 
   useEffect(() => {
     let alive = true;
     let objectUrl = '';
-    setSrc('');
     setFailed(false);
-    setUsedDirect(false);
+    setSrc('');
 
-    if (file.visibility === 'public') {
+    const isPublic = file.visibility === 'public';
+    const maxAttempts = 2;
+
+    // 1.ª tentativa dos públicos: proxy do próprio site.
+    if (isPublic && attempt === 0) {
       setSrc(api.fileUrl(file));
       return () => {
         alive = false;
       };
     }
 
-    api
-      .fetchFileObjectUrl(file)
-      .then((url) => {
-        if (alive) {
-          objectUrl = url;
-          setSrc(url);
-        } else {
-          URL.revokeObjectURL(url);
-        }
-      })
-      .catch(() => {
-        if (alive) setSrc(api.fileUrlDirect(file));
-      });
+    if (attempt >= maxAttempts) {
+      setFailed(true);
+      giveUpRef.current?.();
+      return () => {
+        alive = false;
+      };
+    }
 
+    // 2.ª via: bytes com a sessão (CORS), mostrados a partir de memória.
+    if (attempt === (isPublic ? 1 : 0)) {
+      api
+        .fetchFileObjectUrl(file)
+        .then((url) => {
+          if (alive) {
+            objectUrl = url;
+            setSrc(url);
+          } else {
+            URL.revokeObjectURL(url);
+          }
+        })
+        .catch(() => {
+          if (alive) setAttempt((current) => current + 1);
+        });
+      return () => {
+        alive = false;
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+      };
+    }
+
+    // 3.ª via: URL directo da API.
+    setSrc(api.fileUrlDirect(file));
     return () => {
       alive = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [file.id, file.visibility]);
+  }, [file.id, file.visibility, attempt]);
 
   if (failed || !src) return null;
 
@@ -69,15 +93,7 @@ export function FileImage({
       className={className}
       loading="lazy"
       decoding="async"
-      onError={() => {
-        if (!usedDirect && file.visibility === 'public') {
-          setUsedDirect(true);
-          setSrc(api.fileUrlDirect(file));
-          return;
-        }
-        setFailed(true);
-        onGiveUp?.();
-      }}
+      onError={() => setAttempt((current) => current + 1)}
     />
   );
 }

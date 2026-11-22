@@ -102,3 +102,12 @@ Corrigido o defeito observado em produção: upload devolvia "Fotografia actuali
 - Solução sem depender do servidor: `/media/*` reescrito para a API no `netlify.toml` (mesmo domínio na página) e `FileImage` para todos os ficheiros; privados por `fetch` com sessão e object URL.
 - Verificado localmente com a API real: upload → `GET /media/<id>` → `200 image/webp` (MEASURED, proxy equivalente ao do Netlify).
 - `npm test` 20/20, `tsc` limpo, build verde (MEASURED).
+
+## 10. Actualização 2026-11-22 (diagnóstico das fotos concluído)
+
+Observado em produção, não inferido:
+
+- `GET /media/teste` no site publicado devolvia a aplicação (404 do router), prova de que a regra de proxy não estava a ser aplicada: o Netlify lê `_redirects` antes do `netlify.toml` e o `/*  /index.html 200` do fim ganhava.
+- `GET /api/providers` em produção devolvia `"avatar": null` depois de o utilizador carregar a fotografia: `providerProfileFor` lia a coluna errada (`provider_profiles.avatar_file_id`, que nunca é escrita).
+
+Correcções: regra `/media/*` movida para o topo de `public/_redirects` com `200!`; avatar do prestador lido de `users`; `FileImage` com três vias (`/media` → bytes autenticados → URL directo). Teste de regressão acrescentado à integração.
