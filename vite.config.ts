@@ -14,6 +14,12 @@ export default defineConfig(({ mode }) => {
           target: process.env.SALU_API_URL || env.SALU_API_URL || 'http://127.0.0.1:3001',
           changeOrigin: true,
         },
+        // Mesma regra do netlify.toml, para as imagens funcionarem em desenvolvimento.
+        '/media': {
+          target: process.env.SALU_API_URL || env.SALU_API_URL || 'http://127.0.0.1:3001',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/media/, '/api/files'),
+        },
       },
     },
     preview: {

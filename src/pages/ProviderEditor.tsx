@@ -22,6 +22,7 @@ import {
   Textarea,
 } from '../components/ui/Base';
 import { useToast } from '../app/ToastProvider';
+import { FileImage } from '../components/FileImage';
 
 export function ProviderEditorPage() {
   const { user, refresh } = useAuth();
@@ -306,9 +307,8 @@ export function ProviderEditorPage() {
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {profile.portfolio.map((file) => (
                   <div key={file.id} className="relative">
-                    <img
-                      src={api.fileUrl(file)}
-                      alt={file.name}
+                    <FileImage
+                      file={file}
                       className="w-full h-28 object-cover rounded-lg border border-[#E2E8F0] dark:border-[#1E325C]"
                     />
                     <button

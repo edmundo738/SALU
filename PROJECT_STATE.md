@@ -93,3 +93,12 @@ Página inicial (nova cena):
 - Hero em camadas com parallax de scroll e de ponteiro; secção pinada de três actos (320vh, sticky, cai para lista no telemóvel); faixa tipográfica; cartões com holofote; CTA final.
 - Sem bibliotecas novas: 0 dependências adicionadas; peso do bundle inicial +7,2 kB (312,16 kB, 95,02 kB gzip) e CSS +14 kB (61,79 kB, 12,07 kB gzip) (MEASURED).
 - `npm test` 20/20, `tsc --noEmit` limpo, `npm run build` verde (MEASURED).
+
+## 9. Actualização 2026-11-22 (imagens entre domínios)
+
+Corrigido o defeito observado em produção: upload devolvia "Fotografia actualizada" mas a imagem não aparecia (avatar com iniciais, portfólio quebrado).
+
+- Causa: `<img>` apontava para `https://edmundo.alwaysdata.net/api/files/<id>` a partir da página do Netlify. Duas barreiras — `Content-Security-Policy` do site e `Cross-Origin-Resource-Policy` da API.
+- Solução sem depender do servidor: `/media/*` reescrito para a API no `netlify.toml` (mesmo domínio na página) e `FileImage` para todos os ficheiros; privados por `fetch` com sessão e object URL.
+- Verificado localmente com a API real: upload → `GET /media/<id>` → `200 image/webp` (MEASURED, proxy equivalente ao do Netlify).
+- `npm test` 20/20, `tsc` limpo, build verde (MEASURED).

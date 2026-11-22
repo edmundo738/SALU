@@ -24,6 +24,7 @@ import { ReportButton } from '../components/ReportButton';
 import { categoryLabel } from '../../shared/categories';
 import { useToast } from '../app/ToastProvider';
 import type { Proposal } from '../../shared/types';
+import { FileImage } from '../components/FileImage';
 
 export function RequestDetailPage() {
   const { id = '' } = useParams();
@@ -133,9 +134,8 @@ export function RequestDetailPage() {
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {request.photos.map((file) => (
                   <a key={file.id} href={api.fileUrl(file)} target="_blank" rel="noreferrer" className="block">
-                    <img
-                      src={api.fileUrl(file)}
-                      alt={file.name}
+                    <FileImage
+                      file={file}
                       className="w-full h-32 object-cover rounded-xl border border-[#E2E8F0] dark:border-[#1E325C]"
                     />
                   </a>

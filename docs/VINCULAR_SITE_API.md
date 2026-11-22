@@ -180,29 +180,56 @@ O Netlify só publica o que está na branch **`main`**. Alterações em branches
 Sintoma: escolhes uma foto, o upload termina com sucesso ("feito"), mas a imagem
 nunca aparece — fica o espaço vazio ou as iniciais.
 
-Causa: a foto fica guardada no servidor da API (`edmundo.alwaysdata.net`) e é
+Causa: a foto fica guardada no servidor da API (`edmundo.alwaysdata.net`) e era
 mostrada dentro da página do Netlify (`salu-ao.netlify.app`). São dois domínios
-diferentes, e por defeito o browser recusa mostrar imagens vindas de outro
-domínio. O upload está certo; o que falha é a permissão de exibição.
+diferentes e o browser recusa carregar imagens vindas de outro domínio sem
+permissão explícita. O upload sempre esteve certo; faltava a permissão de leitura.
 
-Há dois sítios onde essa permissão é dada:
+## Como está resolvido agora
 
-1. **Netlify** — `netlify.toml`, cabeçalho `Content-Security-Policy`, campo
-   `img-src`. Tem de incluir `https:`.
-2. **API** — `server/api.ts`, rota `GET /files/:id`, cabeçalho
-   `Cross-Origin-Resource-Policy: cross-origin`.
+O site não pede mais a imagem ao outro domínio. Pede ao **seu próprio domínio**,
+e o Netlify vai buscá-la:
 
-O primeiro aplica-se num redeploy normal no Netlify. O segundo obriga a
-actualizar o código que corre no alwaysdata:
+```text
+Página:  https://salu-ao.netlify.app/pedidos/req_123
+Imagem:  https://salu-ao.netlify.app/media/file_abc123     ← mesmo domínio
+Netlify: reescreve para https://edmundo.alwaysdata.net/api/files/file_abc123
+```
+
+A regra está em `netlify.toml`:
+
+```toml
+[[redirects]]
+  from = "/media/*"
+  to = "https://edmundo.alwaysdata.net/api/files/:splat"
+  status = 200
+  force = true
+```
+
+`status = 200` significa reescrita (proxy), não redireccionamento: o endereço na
+barra do browser não muda e o ficheiro chega ao browser como se fosse do site.
+
+Ficheiros privados (anexos de conversa, provas de conclusão) não podem ser
+públicos. Esses são lidos pelo cliente com a sessão e mostrados a partir de
+memória (`src/components/FileImage.tsx`), por isso também funcionam.
+
+## O que ainda vale a pena fazer no servidor
+
+O `server/api.ts` já responde `Cross-Origin-Resource-Policy: cross-origin` em
+`GET /files/:id`. Isso permite abrir um ficheiro directamente no separador novo,
+sem passar pelo proxy. Para o servidor do alwaysdata correr esse código:
 
 ```bash
 cd ~/salu
 git pull
 ```
 
-Depois, no painel do alwaysdata, **Web → Sites → ⚙ → Restart** (ou reiniciar o
-site). Não é preciso `npm ci` porque não entraram dependências novas.
+Depois, no painel: **Web → Sites → ⚙ → Restart**. Não é obrigatório para as fotos
+aparecerem no site; é uma melhoria de robustez.
 
-Para confirmar que ficou bem, abre a consola do browser (F12 → Console) e
-recarrega a página com a foto: não deve aparecer nenhum erro a mencionar
-`Content Security Policy` ou `Cross-Origin-Resource-Policy`.
+## Como confirmar
+
+1. Abre uma foto qualquer no site e clica nela (abre em separador novo).
+2. O endereço deve começar por `https://salu-ao.netlify.app/media/`.
+3. Se a imagem abrir, está tudo certo. Se der 404, o proxy não chegou a publicar:
+   confirma em **Deploys** que o build passou e volta a publicar.

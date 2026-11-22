@@ -4,6 +4,7 @@ import type { FileRecord } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { useToast } from '../app/ToastProvider';
 import { useI18n } from '../i18n';
+import { FileImage } from './FileImage';
 
 const IMAGES = 'image/jpeg,image/png,image/webp';
 const ACCEPT = `${IMAGES},application/pdf`;
@@ -103,7 +104,7 @@ export function FilePreview({ file, onRemove }: { file: FileRecord; onRemove?: (
   return (
     <div className="relative rounded-xl overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] dark:border-[#1E325C] dark:bg-[#132347]">
       {isImage ? (
-        <img src={api.fileUrl(file)} alt={file.name} className="w-full h-32 object-cover" />
+        <FileImage file={file} className="w-full h-32 object-cover" />
       ) : (
         <div className="h-32 flex flex-col items-center justify-center gap-2 p-3 text-center">
           <Paperclip className="w-6 h-6 text-[#64748B]" aria-hidden="true" />
