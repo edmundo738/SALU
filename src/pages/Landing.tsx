@@ -12,6 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { useAuth } from '../app/AuthProvider';
 import { PublicLayout } from '../components/Layouts';
 import { ButtonLink } from '../components/ui/Base';
 import { CinematicHero } from '../components/landing/Hero';
@@ -115,6 +116,7 @@ function TwoModes() {
 
 export function LandingPage() {
   const { t } = useI18n();
+  const { user, loading } = useAuth();
 
   const capabilities = [
     { index: '01', icon: FileText, title: t('landing.caps.1.title'), body: t('landing.caps.1.body') },
@@ -224,13 +226,28 @@ export function LandingPage() {
                 <p className="mt-4 text-sm text-white/70 sm:text-base">{t('landing.final.body')}</p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-                <ButtonLink to="/criar-conta" size="lg" className="w-full sm:w-auto">
-                  {t('landing.ctaPrimary')}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </ButtonLink>
-                <Link to="/entrar" className="cine-ghost w-full sm:w-auto">
-                  {t('common.login')}
-                </Link>
+                {loading ? null : user ? (
+                  <>
+                    <ButtonLink to="/inicio" size="lg" className="w-full sm:w-auto">
+                      {t('nav.dashboard')} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </ButtonLink>
+                    <Link
+                      to={user.activeMode === 'provider' ? '/oportunidades' : '/publicar-pedido'}
+                      className="cine-ghost w-full sm:w-auto"
+                    >
+                      {user.activeMode === 'provider' ? t('dashboard.findWork') : t('request.publish')}
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <ButtonLink to="/criar-conta" size="lg" className="w-full sm:w-auto">
+                      {t('landing.ctaPrimary')} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </ButtonLink>
+                    <Link to="/entrar" className="cine-ghost w-full sm:w-auto">
+                      {t('common.login')}
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

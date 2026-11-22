@@ -22,7 +22,8 @@ import { friendlyError } from '../lib/errors';
 export function DashboardPage() {
   const { user, stats, refresh, apiReachable } = useAuth();
   const { t, lang } = useI18n();
-  const requests = useApiData(() => api.requests({ scope: 'mine' }), []);
+  const provider = user?.activeMode === 'provider';
+  const requests = useApiData(() => api.requests({ scope: provider ? 'proposed' : 'customer' }), [provider, user?.id]);
   const conversations = useApiData(() => api.conversations(), []);
 
   useEffect(() => {
@@ -31,9 +32,13 @@ export function DashboardPage() {
   }, []);
 
   if (!user) return null;
-  const provider = user.activeMode === 'provider';
   const isProviderProfilePublished = Boolean(user.providerProfile?.published);
   const name = user.name.split(' ')[0] || user.name;
+  // Compatível com o servidor anterior, que devolve ambos os tipos de pedido.
+  const relevantRequests =
+    requests.data?.requests.filter((request) =>
+      provider ? request.customerId !== user.id && Boolean(request.myProposal) : request.customerId === user.id,
+    ) || [];
 
   return (
     <div className="space-y-6">
@@ -49,9 +54,8 @@ export function DashboardPage() {
                   <BriefcaseBusiness className="w-4 h-4" aria-hidden="true" />
                   {t('dashboard.findWork')}
                 </ButtonLink>
-                <ButtonLink to="/perfil-profissional" variant="secondary">
-                  <UserRound className="w-4 h-4" aria-hidden="true" />
-                  {t('dashboard.editProfile')}
+                <ButtonLink to="/meu-perfil" variant="secondary">
+                  <UserRound className="w-4 h-4" aria-hidden="true" /> {t('nav.myProfile')}
                 </ButtonLink>
               </>
             ) : (
@@ -105,9 +109,9 @@ export function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {provider ? (
           <>
-            <Stat label={t('dashboard.stats.proposals')} value={stats?.proposalsAsProvider ?? 0} />
-            <Stat label={t('dashboard.stats.active')} value={stats?.activeAgreements ?? 0} />
-            <Stat label={t('dashboard.stats.completed')} value={stats?.completedAsProvider ?? 0} />
+            <Stat label={t('dashboard.stats.proposals')} value={stats?.proposalsAsProvider ?? '—'} />
+            <Stat label={t('dashboard.stats.active')} value={stats?.activeAgreements ?? '—'} />
+            <Stat label={t('dashboard.stats.completed')} value={stats?.completedAsProvider ?? '—'} />
             <Stat
               label={t('dashboard.stats.rating')}
               value={stats?.rating != null ? `${stats.rating.toFixed(1)} / 5` : '—'}
@@ -120,10 +124,10 @@ export function DashboardPage() {
           </>
         ) : (
           <>
-            <Stat label={t('dashboard.stats.requests')} value={stats?.requestsAsCustomer ?? 0} />
-            <Stat label={t('dashboard.stats.open')} value={stats?.openRequests ?? 0} />
-            <Stat label={t('dashboard.stats.active')} value={stats?.activeAgreements ?? 0} />
-            <Stat label={t('dashboard.stats.completed')} value={stats?.completedAgreements ?? 0} />
+            <Stat label={t('dashboard.stats.requests')} value={stats?.requestsAsCustomer ?? '—'} />
+            <Stat label={t('dashboard.stats.open')} value={stats?.openRequests ?? '—'} />
+            <Stat label={t('dashboard.stats.active')} value={stats?.activeAgreements ?? '—'} />
+            <Stat label={t('dashboard.stats.completed')} value={stats?.completedAgreements ?? '—'} />
           </>
         )}
       </div>
@@ -132,10 +136,10 @@ export function DashboardPage() {
         <section aria-labelledby="recent-requests">
           <div className="flex items-center justify-between gap-2 mb-3">
             <h2 id="recent-requests" className="text-lg font-bold text-[#0F172A] dark:text-white">
-              {t('dashboard.recentRequests')}
+              {provider ? t('proposals.title') : t('dashboard.recentRequests')}
             </h2>
             <Link
-              to={provider ? '/oportunidades' : '/pedidos'}
+              to={provider ? '/propostas' : '/pedidos'}
               className="text-xs font-bold text-[#1558B8] hover:underline dark:text-[#93C5FD]"
             >
               {t('common.view')}
@@ -153,18 +157,12 @@ export function DashboardPage() {
               onRetry={requests.reload}
               retryLabel={t('common.retry')}
             />
-          ) : !requests.data?.requests.length ? (
+          ) : !relevantRequests.length ? (
             <Card>
               <EmptyState
                 icon={FilePlus2}
-                title={provider ? t('opportunities.empty') : t('dashboard.emptyRequests')}
-                body={
-                  provider
-                    ? t('opportunities.emptyBody')
-                    : provider
-                      ? t('opportunities.emptyBody')
-                      : t('request.emptyBody')
-                }
+                title={provider ? t('proposals.empty') : t('dashboard.emptyRequests')}
+                body={provider ? t('proposals.emptyBody') : t('request.emptyBody')}
                 action={
                   <ButtonLink to={provider ? '/oportunidades' : '/publicar-pedido'}>
                     {provider ? t('dashboard.findWork') : t('dashboard.newRequest')}
@@ -174,8 +172,8 @@ export function DashboardPage() {
             </Card>
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
-              {requests.data.requests.slice(0, 4).map((request) => (
-                <RequestCard key={request.id} request={request} />
+              {relevantRequests.slice(0, 4).map((request) => (
+                <RequestCard key={request.id} request={request} showProposal={provider} />
               ))}
             </div>
           )}
@@ -195,6 +193,12 @@ export function DashboardPage() {
               <div className="p-4">
                 <Skeleton className="h-12" />
               </div>
+            ) : conversations.error ? (
+              <ErrorState
+                message={friendlyError(new Error(conversations.error), lang, t)}
+                onRetry={conversations.reload}
+                retryLabel={t('common.retry')}
+              />
             ) : !conversations.data?.conversations.length ? (
               <EmptyState icon={MessageSquare} title={t('messages.empty')} body={t('dashboard.emptyMessages')} />
             ) : (

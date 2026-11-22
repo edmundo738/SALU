@@ -6,6 +6,7 @@ import { useI18n } from './i18n';
 import { LandingPage } from './pages/Landing';
 import { Spinner } from './components/ui/Base';
 import { ErrorBoundary } from './app/ErrorBoundary';
+import { UpdateNotice } from './app/UpdateNotice';
 
 const LoginPage = lazy(() => import('./pages/AuthPages').then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('./pages/AuthPages').then((m) => ({ default: m.RegisterPage })));
@@ -15,6 +16,7 @@ const ExplorePage = lazy(() => import('./pages/Explore').then((m) => ({ default:
 const ProviderProfilePage = lazy(() =>
   import('./pages/ProviderProfile').then((m) => ({ default: m.ProviderProfilePage })),
 );
+const MyProposalsPage = lazy(() => import('./pages/MyProposals').then((m) => ({ default: m.MyProposalsPage })));
 const RequestsPage = lazy(() => import('./pages/Requests').then((m) => ({ default: m.RequestsPage })));
 const RequestDetailPage = lazy(() => import('./pages/RequestDetail').then((m) => ({ default: m.RequestDetailPage })));
 const CreateRequestPage = lazy(() => import('./pages/CreateRequest').then((m) => ({ default: m.CreateRequestPage })));
@@ -24,6 +26,7 @@ const AgreementDetailPage = lazy(() =>
   import('./pages/AgreementDetail').then((m) => ({ default: m.AgreementDetailPage })),
 );
 const NotificationsPage = lazy(() => import('./pages/Notifications').then((m) => ({ default: m.NotificationsPage })));
+const MyProfilePage = lazy(() => import('./pages/MyProfile').then((m) => ({ default: m.MyProfilePage })));
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
 const ProviderEditorPage = lazy(() =>
   import('./pages/ProviderEditor').then((m) => ({ default: m.ProviderEditorPage })),
@@ -47,6 +50,7 @@ function RouteEffects() {
       [/^\/inicio$/, t('nav.dashboard')],
       [/^\/explorar$/, t('nav.explore')],
       [/^\/pedidos$/, t('nav.requests')],
+      [/^\/propostas$/, t('nav.proposals')],
       [/^\/pedidos\//, t('request.title')],
       [/^\/publicar-pedido$/, t('request.publish')],
       [/^\/oportunidades$/, t('nav.opportunities')],
@@ -54,6 +58,7 @@ function RouteEffects() {
       [/^\/acordos\//, t('agreement.title')],
       [/^\/notificacoes$/, t('nav.notifications')],
       [/^\/definicoes$/, t('nav.settings')],
+      [/^\/meu-perfil$/, t('nav.myProfile')],
       [/^\/perfil-profissional$/, t('nav.providerProfile')],
       [/^\/prestadores\//, t('provider.formTitle')],
       [/^\/ajuda$/, t('nav.help')],
@@ -89,6 +94,7 @@ function PublicInfo({ children }: { children: React.ReactNode }) {
 export function App() {
   return (
     <ErrorBoundary>
+      <UpdateNotice />
       <RouteEffects />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -102,6 +108,7 @@ export function App() {
             <Route path="/explorar" element={<ExplorePage />} />
             <Route path="/prestadores/:id" element={<ProviderProfilePage />} />
             <Route path="/pedidos" element={<RequestsPage />} />
+            <Route path="/propostas" element={<MyProposalsPage />} />
             <Route path="/pedidos/:id" element={<RequestDetailPage />} />
             <Route path="/publicar-pedido" element={<CreateRequestPage />} />
             <Route path="/oportunidades" element={<OpportunitiesPage />} />
@@ -110,6 +117,7 @@ export function App() {
             <Route path="/acordos/:id" element={<AgreementDetailPage />} />
             <Route path="/notificacoes" element={<NotificationsPage />} />
             <Route path="/definicoes" element={<SettingsPage />} />
+            <Route path="/meu-perfil" element={<MyProfilePage />} />
             <Route path="/perfil-profissional" element={<ProviderEditorPage />} />
           </Route>
 

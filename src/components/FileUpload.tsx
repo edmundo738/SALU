@@ -26,12 +26,14 @@ export function FileUpload({
   onUploaded,
   accept,
   compact = false,
+  onBusyChange,
 }: {
   purpose: 'avatar' | 'portfolio' | 'request' | 'message' | 'completion' | 'report';
   label: string;
   onUploaded: (file: FileRecord) => void;
   accept?: string;
   compact?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const { t } = useI18n();
   const toast = useToast();
@@ -44,10 +46,12 @@ export function FileUpload({
     const problem = validate(file, t, purpose);
     if (problem) {
       setError(problem);
+      if (inputRef.current) inputRef.current.value = '';
       return;
     }
     setError(null);
     setBusy(true);
+    onBusyChange?.(true);
     try {
       const result = await api.upload(file, purpose);
       onUploaded(result.file);
@@ -58,6 +62,7 @@ export function FileUpload({
       toast.error(message);
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   }
@@ -104,7 +109,11 @@ export function FilePreview({ file, onRemove }: { file: FileRecord; onRemove?: (
   return (
     <div className="relative rounded-xl overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] dark:border-[#1E325C] dark:bg-[#132347]">
       {isImage ? (
-        <FileImage file={file} className="w-full h-32 object-cover" />
+        <FileImage
+          file={file}
+          className="w-full h-32 object-cover"
+          fallback={<p className="p-3 text-sm text-[#64748B]">{t('common.imageUnavailable')}</p>}
+        />
       ) : (
         <div className="h-32 flex flex-col items-center justify-center gap-2 p-3 text-center">
           <Paperclip className="w-6 h-6 text-[#64748B]" aria-hidden="true" />
@@ -131,12 +140,14 @@ export function MultiFileUpload({
   onChange,
   max = 6,
   label,
+  onBusyChange,
 }: {
   purpose: 'request' | 'completion';
   files: FileRecord[];
   onChange: (files: FileRecord[]) => void;
   max?: number;
   label: string;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -151,6 +162,7 @@ export function MultiFileUpload({
         <FileUpload
           purpose={purpose}
           label={label}
+          onBusyChange={onBusyChange}
           onUploaded={(file) => onChange([...files, file])}
           accept="image/jpeg,image/png,image/webp"
         />

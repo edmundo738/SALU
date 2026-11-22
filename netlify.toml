@@ -42,3 +42,9 @@
     # As fotografias vivem no servidor da API (outro domínio), por isso
     # img-src tem de permitir https: — sem isto a foto sobe bem mas não aparece.
     Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+# A versão é consultada sem cache para detectar uma nova publicação.
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"

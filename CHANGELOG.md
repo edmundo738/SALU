@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## Trabalho em curso — percursos de utilizador
+
+- Logótipo encaminha para o início de quem já tem sessão e preserva o onboarding incompleto; página pública oferece acções adequadas a quem já entrou.
+- Página “O meu perfil” para conta cliente ou prestador, fotografia e atalhos separados para ver e editar o perfil profissional no modo prestador.
+- Fotografias nas publicações, resumo do pedido com pré-visualização, espera pelo envio, informação de imagem pública e erro de carregamento. Corrigida reposição involuntária de campos ao actualizar fotografia e endereço de conversa com espaço extra.
+- Avaliação funcional e riscos por verificar: `docs/CONSULTORIA_PERCURSOS.md`. Não há confirmação em browser real nem publicação em produção.
+
+## Trabalho em curso — segurança, perfil e experiência
+
+- Restringidas origens autorizadas em produção; bloqueado acesso público aos ficheiros de contas eliminadas e reduzidos dados do perfil. Necessária actualização separada da API; dados retidos e caches anteriores continuam sujeitos a revisão.
+- Avatar da própria conta usa os dados de sessão se o perfil não os devolver; `FileImage` tenta também URL directo e reinicia ao mudar de imagem. Ajustado alinhamento do cabeçalho do perfil.
+- Listas paginadas; botão do perfil indica publicação de pedido em vez de prometer conversa directa. Falha de ligação deixou de redireccionar automaticamente para login; logout só limpa a sessão local após confirmação.
+- Aplicações web instaladas que já tiverem carregado esta versão podem avisar de uma nova versão, sem interromper o trabalho nem forçar recarga.
+- Testes novos de origens em ambiente de produção isolado, exclusão e foto, paginação, aviso de actualização e alternativas de imagens; não substituem teste em navegador ou produção.
+
+
 ## 2026-11-22 — Página inicial: três passos legíveis, convite final sem ruído
 
 ### Corrigido
@@ -113,3 +129,9 @@
 
 - Deploy real e teste em produção (`P0-12` parcial).
 - Recuperação de senha, N1, Postgres, browser E2E, UI de administração.
+
+### Percursos cliente e prestador (local)
+
+- Removidos os atalhos de pedidos próprios do modo prestador; adicionada lista de propostas com acesso a conversas e acordos aceites.
+- Proposta também disponível no detalhe do pedido; oportunidades não incluem pedidos próprios. Listagens cliente e prestador separadas na API, mantendo o âmbito anterior para compatibilidade.
+- Testes locais dos dois modos e do ciclo com contas distintas; sem deploy nem validação visual.

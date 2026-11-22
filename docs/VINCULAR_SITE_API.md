@@ -1,5 +1,7 @@
 # Como ligar o site à API (sem código)
 
+> **Actualização importante:** as instruções antigas abaixo sobre o `git pull` ser opcional e sobre as alternativas de fotos nunca falharem estão desactualizadas. O site Netlify e a API alwaysdata são actualizados separadamente. Antes de qualquer actualização da API, confirmar a pasta e versão efectivamente usadas, preservar a base e os uploads e testar o restauro. Não editar ficheiros à mão nem executar comandos que apaguem dados. A API instalada e o resultado em produção precisam de verificação.
+
 ## A ideia em 30 segundos
 
 Imagina:
@@ -222,7 +224,7 @@ memória (`src/components/FileImage.tsx`), por isso também funcionam.
 Mesmo que a regra do proxy desapareça (por exemplo, um build sem `public/_redirects`),
 as imagens continuam a aparecer: o componente `FileImage` lê os bytes com a sessão
 por `fetch` (pedido CORS, que não sofre das restrições de imagem entre domínios) e
-mostra-os a partir de memória. O proxy é a via rápida; esta é a que nunca falha.
+mostra-os a partir de memória. Esta alternativa depende da rede e da configuração de origens e também pode falhar.
 
 ## O que ainda vale a pena fazer no servidor
 
@@ -235,8 +237,7 @@ cd ~/salu
 git pull
 ```
 
-Depois, no painel: **Web → Sites → ⚙ → Restart**. Não é obrigatório para as fotos
-aparecerem no site; é uma melhoria de robustez.
+Depois, no painel: **Web → Sites → ⚙ → Restart**. Pode ser necessário para que correcções da API entrem em funcionamento; confirmar primeiro a pasta e a versão efectivas.
 
 ## Estado
 

@@ -5,6 +5,7 @@ import type {
   Message,
   Notification,
   ProviderProfile,
+  Proposal,
   RequestDetail,
   Review,
   ReviewList,
@@ -102,10 +103,10 @@ export const api = {
   geo: () => request<{ provinces: Province[] }>('/geo'),
 
   // providers
-  providers: (params: { category?: string; municipality?: string; q?: string } = {}) => {
+  providers: (params: { category?: string; municipality?: string; q?: string; page?: string } = {}) => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
-    return request<{ providers: ProviderProfile[] }>(`/providers?${query.toString()}`);
+    return request<{ providers: ProviderProfile[]; hasMore?: boolean }>(`/providers?${query.toString()}`);
   },
   provider: (id: string) =>
     request<{ provider: ProviderProfile; reviews: Review[]; reviewSummary: ReviewList; isFavorite: boolean }>(
@@ -121,11 +122,18 @@ export const api = {
 
   // requests
   requests: (
-    params: { scope?: 'mine' | 'open'; category?: string; municipality?: string; status?: string; q?: string } = {},
+    params: {
+      scope?: 'mine' | 'open' | 'customer' | 'proposed';
+      category?: string;
+      municipality?: string;
+      status?: string;
+      q?: string;
+      page?: string;
+    } = {},
   ) => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
-    return request<{ requests: RequestDetail[] }>(`/requests?${query.toString()}`);
+    return request<{ requests: RequestDetail[]; hasMore?: boolean }>(`/requests?${query.toString()}`);
   },
   request: (id: string) => request<{ request: RequestDetail }>(`/requests/${encodeURIComponent(id)}`),
   createRequest: (data: Record<string, unknown>) =>
@@ -136,7 +144,7 @@ export const api = {
 
   // proposals
   propose: (requestId: string, data: { amount: number; estimatedDays: number; message: string }) =>
-    request<{ proposal: unknown; request: RequestDetail }>(`/requests/${requestId}/proposals`, {
+    request<{ proposal: Proposal; request: RequestDetail }>(`/requests/${requestId}/proposals`, {
       method: 'POST',
       body: body(data),
     }),

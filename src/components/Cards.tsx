@@ -4,7 +4,8 @@ import type { Conversation, ProviderProfile, RequestDetail } from '../../shared/
 import { categoryLabel } from '../../shared/categories';
 import { formatKz, relativeTime, useI18n } from '../i18n';
 import { Avatar, Badge, Card } from './ui/Base';
-import { RequestStatusBadge } from './StatusBadge';
+import { ProposalStatusBadge, RequestStatusBadge } from './StatusBadge';
+import { FileImage } from './FileImage';
 
 export function ProviderCard({ provider }: { provider: ProviderProfile }) {
   const { t, lang } = useI18n();
@@ -53,7 +54,15 @@ export function ProviderCard({ provider }: { provider: ProviderProfile }) {
   );
 }
 
-export function RequestCard({ request }: { request: RequestDetail }) {
+export function RequestCard({
+  request,
+  canOpen = true,
+  showProposal = false,
+}: {
+  request: RequestDetail;
+  canOpen?: boolean;
+  showProposal?: boolean;
+}) {
   const { t, lang } = useI18n();
   return (
     <Card className="p-4 h-full flex flex-col">
@@ -67,6 +76,21 @@ export function RequestCard({ request }: { request: RequestDetail }) {
         <RequestStatusBadge status={request.status} />
       </div>
       <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8] line-clamp-2">{request.description}</p>
+      {request.photos?.length > 0 && (
+        <div className="relative mt-3 overflow-hidden rounded-xl bg-[#F1F5F9] dark:bg-[#132347]">
+          <FileImage
+            file={request.photos[0]}
+            alt={t('request.photos')}
+            className="h-40 w-full object-cover"
+            fallback={<p className="p-4 text-sm text-[#64748B] dark:text-[#CBD5E1]">{t('common.imageUnavailable')}</p>}
+          />
+          {request.photos.length > 1 && (
+            <span className="absolute bottom-2 right-2 rounded-lg bg-[#081C41]/90 px-2 py-1 text-xs font-bold text-white">
+              +{request.photos.length - 1}
+            </span>
+          )}
+        </div>
+      )}
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#64748B] dark:text-[#94A3B8]">
         <span className="inline-flex items-center gap-1">
           <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {request.locationLabel}
@@ -74,15 +98,37 @@ export function RequestCard({ request }: { request: RequestDetail }) {
         <span>{t('request.proposals', { count: request.proposalCount })}</span>
         <span>{relativeTime(request.createdAt, lang)}</span>
       </div>
+      {showProposal && request.myProposal && (
+        <div className="mt-3 border-t border-[#E2E8F0] pt-3 dark:border-[#1E325C]">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+            <span>{t('proposals.myStatus')}:</span> <ProposalStatusBadge status={request.myProposal.status} />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
+            {request.myProposal.conversationId && (
+              <Link
+                className="text-[#1558B8] underline dark:text-[#93C5FD]"
+                to={`/mensagens/${request.myProposal.conversationId}`}
+              >
+                {t('request.contactProvider')}
+              </Link>
+            )}
+            {request.myProposal.status === 'ACCEPTED' && request.agreementId && (
+              <Link className="text-[#1558B8] underline dark:text-[#93C5FD]" to={`/acordos/${request.agreementId}`}>
+                {t('agreement.title')}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
       <div className="mt-auto pt-3 flex items-center justify-between gap-2">
         <span className="text-sm font-bold text-[#0F172A] dark:text-white">
           {request.budgetType === 'FIXED' ? formatKz(request.budgetAmount) : t('request.inspection')}
         </span>
         <Link
-          to={`/pedidos/${request.id}`}
+          to={canOpen ? `/pedidos/${request.id}` : '/perfil-profissional'}
           className="text-xs font-bold text-[#1558B8] hover:underline dark:text-[#93C5FD]"
         >
-          {t('common.open')}
+          {canOpen ? t('common.open') : t('profile.completeForRequest')}
         </Link>
       </div>
     </Card>

@@ -2,6 +2,7 @@ import React, { Fragment, useRef } from 'react';
 import { ArrowRight, MoveDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../i18n';
+import { useAuth } from '../../app/AuthProvider';
 import { ButtonLink } from '../ui/Base';
 import { useCamera, useFinePointer, useReducedMotion } from './motion';
 
@@ -27,6 +28,7 @@ function SplitTitle({ text, accentLast = false }: { text: string; accentLast?: b
 
 export function CinematicHero() {
   const { t } = useI18n();
+  const { user, loading } = useAuth();
   const ref = useRef<HTMLElement>(null);
   const fine = useFinePointer();
   const reduced = useReducedMotion();
@@ -65,13 +67,28 @@ export function CinematicHero() {
         <p className="cine-lede mt-7">{t('landing.subtitle')}</p>
 
         <div className="cine-rise mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <ButtonLink to="/criar-conta" size="lg" className="w-full sm:w-auto">
-            {t('landing.ctaPrimary')}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </ButtonLink>
-          <Link to="/entrar" className="cine-ghost w-full sm:w-auto">
-            {t('landing.ctaSecondary')}
-          </Link>
+          {loading ? null : user ? (
+            <>
+              <ButtonLink to="/inicio" size="lg" className="w-full sm:w-auto">
+                {t('nav.dashboard')} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </ButtonLink>
+              <Link
+                to={user.activeMode === 'provider' ? '/oportunidades' : '/publicar-pedido'}
+                className="cine-ghost w-full sm:w-auto"
+              >
+                {user.activeMode === 'provider' ? t('dashboard.findWork') : t('request.publish')}
+              </Link>
+            </>
+          ) : (
+            <>
+              <ButtonLink to="/criar-conta" size="lg" className="w-full sm:w-auto">
+                {t('landing.ctaPrimary')} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </ButtonLink>
+              <Link to="/entrar" className="cine-ghost w-full sm:w-auto">
+                {t('landing.ctaSecondary')}
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="cine-rail cine-rise mt-16 grid gap-5 sm:grid-cols-3 sm:gap-8">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { FileRecord } from '../../shared/types';
 import { api } from '../lib/api';
 
@@ -18,12 +18,39 @@ export function FileImage({
   alt,
   className = '',
   onGiveUp,
+  fallback,
 }: {
   file: FileRecord;
   alt?: string;
   className?: string;
   /** Chamado quando nenhuma via funcionou. */
   onGiveUp?: () => void;
+  fallback?: ReactNode;
+}) {
+  return (
+    <FileImageInstance
+      key={`${file.id}:${file.visibility}`}
+      file={file}
+      alt={alt}
+      className={className}
+      onGiveUp={onGiveUp}
+      fallback={fallback}
+    />
+  );
+}
+
+function FileImageInstance({
+  file,
+  alt,
+  className = '',
+  onGiveUp,
+  fallback,
+}: {
+  file: FileRecord;
+  alt?: string;
+  className?: string;
+  onGiveUp?: () => void;
+  fallback?: ReactNode;
 }) {
   const [src, setSrc] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -38,7 +65,7 @@ export function FileImage({
     setSrc('');
 
     const isPublic = file.visibility === 'public';
-    const maxAttempts = 2;
+    const maxAttempts = isPublic ? 3 : 2;
 
     // 1.ª tentativa dos públicos: proxy do próprio site.
     if (isPublic && attempt === 0) {
@@ -84,7 +111,8 @@ export function FileImage({
     };
   }, [file.id, file.visibility, attempt]);
 
-  if (failed || !src) return null;
+  if (failed) return <>{fallback ?? null}</>;
+  if (!src) return null;
 
   return (
     <img
