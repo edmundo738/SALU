@@ -270,6 +270,17 @@ describe('SALU — ciclo de serviço real com duas contas', () => {
     expect(publicProvider.body.provider.rating).toBe(4.7);
     expect(publicProvider.body.provider.reviewCount).toBe(1);
 
+    // Regressão: o avatar carregado tem de aparecer no perfil público e ser legível.
+    const avatarForm = new FormData();
+    avatarForm.append('file', new Blob([PNG], { type: 'image/png' }), 'avatar.png');
+    const avatarUpload = await call('/me/avatar', { method: 'POST', cookie: bruno.jar, form: avatarForm });
+    expect(avatarUpload.status, JSON.stringify(avatarUpload.body)).toBe(200);
+    const avatarId = avatarUpload.body.user.avatar.id as string;
+    expect(avatarUpload.body.user.avatar.visibility).toBe('public');
+    const profileWithAvatar = await call(`/providers/${bruno.user.id}`);
+    expect(profileWithAvatar.body.provider.avatar?.id).toBe(avatarId);
+    expect((await call(`/files/${avatarId}`)).status).toBe(200);
+
     const report = await call('/reports', {
       method: 'POST',
       cookie: ana.jar,

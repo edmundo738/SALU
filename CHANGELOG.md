@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026-11-22 — Segunda causa das fotos: ordem das regras e avatar do prestador
+
+### Corrigido
+
+- A regra `/media/*` estava só no `netlify.toml`, mas o Netlify processa `_redirects` **antes** do ficheiro de configuração: o `/*` do fim devolvia a aplicação e a imagem nunca era pedida à API. A regra passou para o topo de `public/_redirects` com `200!`.
+- `providerProfileFor` lia `provider_profiles.avatar_file_id`, que nunca é preenchido (o avatar vive em `users`). Resultado: perfil público sempre sem fotografia, mesmo depois do upload. Passa a usar o avatar do utilizador.
+- `FileImage` ganhou uma terceira via: se o proxy falhar, lê os bytes com a sessão (`fetch` CORS) e mostra a partir de memória. Só desiste depois de esgotar as três.
+
+### Verificado
+
+- Teste de regressão novo na integração: `POST /me/avatar` → 200 com `visibility: public`; `GET /providers/:id` devolve o mesmo `avatar.id`; `GET /files/:id` responde 200 sem sessão.
+- `npm test` 20/20, build verde (313,10 kB / 95,43 kB gzip).
+
 ## 2026-11-22 — Fotografias servidas pelo próprio site
 
 ### Corrigido

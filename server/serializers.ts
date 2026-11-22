@@ -104,6 +104,8 @@ export function userStats(userId: string): UserStats {
 export function providerProfileFor(userId: string) {
   const row = db.prepare('SELECT * FROM provider_profiles WHERE user_id = ?').get(userId) as Row | undefined;
   if (!row) return null;
+  // O avatar é do utilizador; provider_profiles.avatar_file_id pode estar vazio.
+  const owner = db.prepare('SELECT avatar_file_id FROM users WHERE id = ?').get(userId) as Row | undefined;
   const portfolio = db
     .prepare('SELECT file_id FROM provider_portfolio WHERE user_id = ? ORDER BY position ASC')
     .all(userId) as Array<{ file_id: string }>;
@@ -120,7 +122,7 @@ export function providerProfileFor(userId: string) {
     yearsExperience: row.years_experience,
     whatsapp: row.whatsapp || null,
     published: Boolean(row.published),
-    avatar: fileRecord(row.avatar_file_id),
+    avatar: fileRecord(row.avatar_file_id || owner?.avatar_file_id),
     provinceId: row.province_id,
     municipalityId: row.municipality_id,
     communeId: row.commune_id,

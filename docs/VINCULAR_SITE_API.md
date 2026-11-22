@@ -196,15 +196,19 @@ Imagem:  https://salu-ao.netlify.app/media/file_abc123     ← mesmo domínio
 Netlify: reescreve para https://edmundo.alwaysdata.net/api/files/file_abc123
 ```
 
-A regra está em `netlify.toml`:
+A regra está no **topo** de `public/_redirects`:
 
-```toml
-[[redirects]]
-  from = "/media/*"
-  to = "https://edmundo.alwaysdata.net/api/files/:splat"
-  status = 200
-  force = true
+```text
+/media/*    https://edmundo.alwaysdata.net/api/files/:splat   200!
 ```
+
+Este ficheiro é processado **antes** do `netlify.toml`. Se a regra ficar no
+`netlify.toml`, o `/*  /index.html  200` do fim do `_redirects` ganha primeiro e
+a imagem nunca chega a ser pedida — foi exactamente o que aconteceu na primeira
+tentativa. O `!` no fim significa "força", mesmo que exista um ficheiro no caminho.
+
+Como o caminho tem um `#` (o `#` é comentário), a regra tem de estar numa linha
+própria, antes de qualquer regra genérica.
 
 `status = 200` significa reescrita (proxy), não redireccionamento: o endereço na
 barra do browser não muda e o ficheiro chega ao browser como se fosse do site.
@@ -212,6 +216,13 @@ barra do browser não muda e o ficheiro chega ao browser como se fosse do site.
 Ficheiros privados (anexos de conversa, provas de conclusão) não podem ser
 públicos. Esses são lidos pelo cliente com a sessão e mostrados a partir de
 memória (`src/components/FileImage.tsx`), por isso também funcionam.
+
+## Segunda rede de segurança
+
+Mesmo que a regra do proxy desapareça (por exemplo, um build sem `public/_redirects`),
+as imagens continuam a aparecer: o componente `FileImage` lê os bytes com a sessão
+por `fetch` (pedido CORS, que não sofre das restrições de imagem entre domínios) e
+mostra-os a partir de memória. O proxy é a via rápida; esta é a que nunca falha.
 
 ## O que ainda vale a pena fazer no servidor
 

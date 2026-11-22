@@ -9,14 +9,9 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Fotografias públicas servidas pelo próprio domínio (proxy para a API).
-# Sem isto, a imagem vem de outro domínio e o browser pode recusá-la (CORP/CSP):
-# o upload funciona, mas a foto nunca aparece. Status 200 = reescrita, não redirect.
-[[redirects]]
-  from = "/media/*"
-  to = "https://edmundo.alwaysdata.net/api/files/:splat"
-  status = 200
-  force = true
+# O proxy das fotografias (/media/* -> API) vive em public/_redirects.
+# Não repetir aqui: as regras de _redirects são processadas primeiro e um /* no
+# fim deste ficheiro nunca chegaria a ser lido.
 
 # Sem VITE_API_URL, /api não pode devolver index.html em silêncio.
 [[redirects]]
