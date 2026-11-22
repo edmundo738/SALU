@@ -1,9 +1,9 @@
 # PROJECT_STATE — SALU
 
 Última actualização: **2026-11-21**
-Branch: `arena/06f5de50-salu`
-Base: `602538e` (`versão de 11/21/2026 6:48`)
-Commit de implementação: `9c9220a`
+Branch: `arena/bfd0471f-salu`
+Base: `aa7b621` (`main`)
+Último trabalho: página inicial cinematográfica + correcção de exibição de fotos
 Autor: Arena Agent (execução da auditoria)
 
 ## 1. Estado em uma frase
@@ -77,3 +77,19 @@ Ver `KNOWN_ISSUES.md`. Resumo: deploy real, recuperação de senha, verificaçã
 1. Publicar a API num host persistente; para 0 € e sem cartão, seguir `docs/DEPLOY_GRATIS.md`.
 2. Executar o runbook de `docs/DEPLOY.md` e repetir o teste de duas contas em produção.
 3. Só depois declarar P0-12 corrigido.
+
+## 8. Actualização 2026-11-21 (deploy 0 € e cena da página inicial)
+
+Executado e observado:
+
+- API em produção num host gratuito: `https://edmundo.alwaysdata.net/api/health` → `{"status":"ok","storage":"sqlite"}` (OBSERVED).
+- Frontend no Netlify (`salu-ao.netlify.app`) ligado ao repositório GitHub; cada push para `main` publica automaticamente (OBSERVED no painel de deploys).
+- `VITE_API_URL` definida no Netlify; build de produção gerou `dist/assets/index-*.js` com o endereço da API embutido (MEASURED).
+- Fotografias deixaram de ficar invisíveis: `img-src` do Netlify passou a permitir `https:` e a rota `GET /files/:id` responde `Cross-Origin-Resource-Policy: cross-origin` (FACT no código; falta tocar no servidor do alwaysdata para que a segunda parte entre).
+
+Página inicial (nova cena):
+
+- `src/pages/Landing.tsx` + `src/components/landing/{Hero,Story,motion}.ts` + `src/styles/landing.css`.
+- Hero em camadas com parallax de scroll e de ponteiro; secção pinada de três actos (320vh, sticky, cai para lista no telemóvel); faixa tipográfica; cartões com holofote; CTA final.
+- Sem bibliotecas novas: 0 dependências adicionadas; peso do bundle inicial +7,2 kB (312,16 kB, 95,02 kB gzip) e CSS +14 kB (61,79 kB, 12,07 kB gzip) (MEASURED).
+- `npm test` 20/20, `tsc --noEmit` limpo, `npm run build` verde (MEASURED).

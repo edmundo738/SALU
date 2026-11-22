@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { SaluLogo } from './SaluLogo';
+import { useScrolled } from './landing/motion';
 import { useAuth } from '../app/AuthProvider';
 import { useI18n } from '../i18n';
 import { Avatar, Button, Spinner } from './ui/Base';
@@ -39,13 +40,45 @@ const publicLinks = [
   { to: '/seguranca', labelKey: 'nav.safety' as const },
 ];
 
-export function PublicLayout({ children }: { children: React.ReactNode }) {
+export function PublicLayout({
+  children,
+  overlay = false,
+}: {
+  children: React.ReactNode;
+  /** Cabeçalho transparente por cima de uma cena escura; solidifica ao rolar. */
+  overlay?: boolean;
+}) {
   const { user, loading } = useAuth();
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const scrolled = useScrolled(32);
+  const onDark = overlay && !scrolled;
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
+
+  const headerClass = overlay
+    ? `fixed inset-x-0 top-0 z-40 transition-colors duration-500 ${
+        onDark
+          ? 'border-b border-transparent bg-transparent'
+          : 'border-b border-[#E2E8F0] bg-white/90 backdrop-blur dark:border-[#1E325C] dark:bg-[#060E20]/90'
+      }`
+    : 'sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/90 backdrop-blur dark:border-[#1E325C] dark:bg-[#060E20]/90';
+
+  const navLinkClass = (isActive: boolean) =>
+    `px-3 py-2 rounded-lg text-sm font-semibold ${
+      onDark
+        ? isActive
+          ? 'bg-white/10 text-white'
+          : 'text-white/75 hover:bg-white/10 hover:text-white'
+        : isActive
+          ? 'text-[#C2410C] dark:text-[#FDBA74]'
+          : 'text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]'
+    }`;
+
+  const quietLinkClass = onDark
+    ? 'text-white/80 hover:bg-white/10 hover:text-white'
+    : 'text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#0F172A] dark:bg-[#060E20] dark:text-[#F8FAFC]">
@@ -56,29 +89,29 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         {t('common.skip')}
       </a>
       <ServerBanner />
-      <header className="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/90 backdrop-blur dark:border-[#1E325C] dark:bg-[#060E20]/90">
+      <header className={headerClass}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <SaluLogo compact />
+          <SaluLogo compact tone={onDark ? 'light' : 'auto'} />
           <nav className="hidden md:flex items-center gap-1" aria-label={t('nav.main')}>
             {publicLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-lg text-sm font-semibold ${isActive ? 'text-[#C2410C] dark:text-[#FDBA74]' : 'text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]'}`
-                }
-              >
+              <NavLink key={link.to} to={link.to} className={({ isActive }) => navLinkClass(isActive)}>
                 {t(link.labelKey)}
               </NavLink>
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-2">
             {loading ? (
-              <div className="w-32 h-10 rounded-xl bg-slate-100 dark:bg-[#132347] animate-pulse" />
+              <div
+                className={`w-32 h-10 rounded-xl animate-pulse ${
+                  onDark ? 'bg-white/10' : 'bg-slate-100 dark:bg-[#132347]'
+                }`}
+              />
             ) : user ? (
               <Link
                 to="/inicio"
-                className="inline-flex min-h-11 items-center rounded-xl bg-[#081C41] px-4 text-sm font-semibold text-white dark:bg-[#1D6FE5]"
+                className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold ${
+                  onDark ? 'bg-white text-[#081C41]' : 'bg-[#081C41] text-white dark:bg-[#1D6FE5]'
+                }`}
               >
                 {t('nav.dashboard')}
               </Link>
@@ -86,7 +119,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <>
                 <Link
                   to="/entrar"
-                  className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]"
+                  className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold ${quietLinkClass}`}
                 >
                   {t('common.login')}
                 </Link>
@@ -102,7 +135,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="md:hidden min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]"
+            className={`md:hidden min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg ${quietLinkClass}`}
             aria-expanded={menuOpen}
             aria-controls="menu-publico"
             aria-label={menuOpen ? t('nav.closeMenu') : t('nav.menu')}
@@ -112,14 +145,22 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         </div>
         <div
           id="menu-publico"
-          className={`md:hidden overflow-hidden transition-all ${menuOpen ? 'max-h-96 border-t border-[#E2E8F0] dark:border-[#1E325C]' : 'max-h-0'}`}
+          className={`md:hidden overflow-hidden transition-all ${menuOpen ? 'max-h-96 border-t' : 'max-h-0'} ${
+            onDark
+              ? 'bg-[#081C41]/95 backdrop-blur-xl border-white/10'
+              : 'bg-white dark:bg-[#060E20] border-[#E2E8F0] dark:border-[#1E325C]'
+          }`}
         >
           <nav className="px-4 py-3 space-y-1" aria-label={t('nav.main')}>
             {publicLinks.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
-                className="block min-h-11 px-3 py-2.5 rounded-lg text-sm font-semibold text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]"
+                className={`block min-h-11 px-3 py-2.5 rounded-lg text-sm font-semibold ${
+                  onDark
+                    ? 'text-white/85 hover:bg-white/10'
+                    : 'text-[#334155] hover:bg-[#F1F5F9] dark:text-[#CBD5E1] dark:hover:bg-[#132347]'
+                }`}
               >
                 {t(link.labelKey)}
               </NavLink>
@@ -136,7 +177,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <>
                   <Link
                     to="/entrar"
-                    className="flex-1 text-center rounded-xl border border-[#CBD5E1] px-4 py-3 text-sm font-semibold dark:border-[#1E325C]"
+                    className={`flex-1 text-center rounded-xl border px-4 py-3 text-sm font-semibold ${
+                      onDark ? 'border-white/25 text-white' : 'border-[#CBD5E1] dark:border-[#1E325C]'
+                    }`}
                   >
                     {t('common.login')}
                   </Link>
