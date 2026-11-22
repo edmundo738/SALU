@@ -1,5 +1,9 @@
 # CHECKPOINT
 
+## Abertura directa da conta — trabalho actual
+
+A página inicial aguarda a confirmação da sessão: conta configurada abre `/inicio`, conta incompleta continua para `/bem-vindo`, e sem sessão vê a página pública com «Entrar». Se não for possível confirmar a sessão, oferece tentativa novamente. Links directos não são alterados. Alteração local por publicar; API do alwaysdata continua por verificar.
+
 ## Percursos de conta, perfil e pedidos
 
 Foi acrescentada a página do próprio perfil, separados os atalhos de cliente e prestador, feitas correcções no logo, na página de boas-vindas, na apresentação de fotos e nos formulários. Ver `docs/CONSULTORIA_PERCURSOS.md`. Pré-visualização usa uma base de teste isolada. `npm test` passou 41 testes; build e formatação passaram. Falta inspecção em browser real e publicação coordenada do servidor.

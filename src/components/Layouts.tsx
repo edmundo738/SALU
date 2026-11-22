@@ -113,7 +113,7 @@ export function PublicLayout({
                   onDark ? 'bg-white text-[#081C41]' : 'bg-[#081C41] text-white dark:bg-[#1D6FE5]'
                 }`}
               >
-                {t('nav.dashboard')}
+                {t('common.login')}
               </Link>
             ) : (
               <>
@@ -172,7 +172,7 @@ export function PublicLayout({
                   to="/inicio"
                   className="flex-1 text-center rounded-xl bg-[#081C41] px-4 py-3 text-sm font-semibold text-white dark:bg-[#1D6FE5]"
                 >
-                  {t('nav.dashboard')}
+                  {t('common.login')}
                 </Link>
               ) : (
                 <>

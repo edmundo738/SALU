@@ -4,12 +4,13 @@ import { renderToPipeableStream } from 'react-dom/server';
 import { Writable } from 'node:stream';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from '../src/App';
+import { LandingPage } from '../src/pages/Landing';
 import { I18nProvider } from '../src/i18n';
 import { ThemeProvider } from '../src/app/ThemeProvider';
 import { ToastProvider } from '../src/app/ToastProvider';
 import { AuthProvider } from '../src/app/AuthProvider';
 
-function render(path: string): Promise<string> {
+function render(path: string, landingOnly = false): Promise<string> {
   return new Promise((resolve, reject) => {
     let html = '';
     const output = new Writable({
@@ -23,9 +24,7 @@ function render(path: string): Promise<string> {
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
-              <MemoryRouter initialEntries={[path]}>
-                <App />
-              </MemoryRouter>
+              <MemoryRouter initialEntries={[path]}>{landingOnly ? <LandingPage /> : <App />}</MemoryRouter>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
@@ -66,13 +65,13 @@ beforeAll(() => {
 
 describe('interface renderiza sem erros', () => {
   it('mostra a landing page pública', async () => {
-    const html = await render('/');
+    const html = await render('/', true);
     expect(html).toContain('SALU');
     expect(html).toContain('Começa pelo que precisas');
   });
 
   it('landing: os três passos aparecem todos e legíveis', async () => {
-    const html = await render('/');
+    const html = await render('/', true);
     // Regressão: a antiga secção pinada empilhava os actos em `absolute` e,
     // num ecrã baixo ou numa captura de página inteira, os três textos
     // sobrepunham-se. Agora são três blocos estáticos: todos presentes no HTML.
@@ -84,7 +83,7 @@ describe('interface renderiza sem erros', () => {
   });
 
   it('landing: o convite final não repete "Ver prestadores"', async () => {
-    const html = await render('/');
+    const html = await render('/', true);
     expect(html).not.toContain('Ver prestadores');
     expect(html).toContain('Começa pelo que precisas');
   });

@@ -3,7 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AppLayout, PublicLayout } from './components/Layouts';
 import { useI18n } from './i18n';
-import { LandingPage } from './pages/Landing';
+import { HomePage } from './pages/Home';
 import { Spinner } from './components/ui/Base';
 import { ErrorBoundary } from './app/ErrorBoundary';
 import { UpdateNotice } from './app/UpdateNotice';
@@ -98,7 +98,7 @@ export function App() {
       <RouteEffects />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/entrar" element={<LoginPage />} />
           <Route path="/criar-conta" element={<RegisterPage />} />
           <Route path="/bem-vindo" element={<OnboardingPage />} />

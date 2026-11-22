@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Abertura directa da conta — trabalho local
+
+- Contas com sessão activa e configuração completa entram directamente no painel ao abrir a página inicial; a página pública mantém «Entrar» para visitantes. A configuração inicial continua disponível para contas incompletas.
+- A sessão é verificada antes de decidir; erro de ligação oferece nova tentativa, sem afirmar que a sessão terminou.
+
 ## Trabalho em curso — percursos de utilizador
 
 - Logótipo encaminha para o início de quem já tem sessão e preserva o onboarding incompleto; página pública oferece acções adequadas a quem já entrou.
