@@ -15,6 +15,7 @@ import {
   Button,
   Card,
   Field,
+  ErrorState,
   Input,
   PageHeader,
   Select,
@@ -25,7 +26,7 @@ import { useToast } from '../app/ToastProvider';
 import { FileImage } from '../components/FileImage';
 
 export function ProviderEditorPage() {
-  const { user, refresh } = useAuth();
+  const { user, refresh, updateLocalUser } = useAuth();
   const { t, lang } = useI18n();
   const toast = useToast();
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export function ProviderEditorPage() {
     } else if (user) {
       setForm((current) => ({ ...current, displayName: current.displayName || user.name }));
     }
-  }, [data.data, user]);
+  }, [data.data, user?.id]);
 
   if (!user) return null;
   if (data.loading)
@@ -68,6 +69,15 @@ export function ProviderEditorPage() {
         <Skeleton className="h-32" />
         <Skeleton className="h-96" />
       </div>
+    );
+
+  if (data.error)
+    return (
+      <ErrorState
+        message={friendlyError(new Error(data.error), lang, t)}
+        onRetry={data.reload}
+        retryLabel={t('common.retry')}
+      />
     );
 
   const locationReady = Boolean(user.provinceId && user.municipalityId && user.communeId);
@@ -113,8 +123,8 @@ export function ProviderEditorPage() {
     if (!file) return;
     setUploading(true);
     try {
-      await api.uploadAvatar(file);
-      await refresh();
+      const result = await api.uploadAvatar(file);
+      updateLocalUser(result.user);
       toast.success(t('settings.photoUpdated'));
     } catch (err) {
       toast.error(friendlyError(err, lang, t));
@@ -188,7 +198,7 @@ export function ProviderEditorPage() {
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5">
         <Card className="p-5 space-y-4">
           <div className="flex items-center gap-4">
-            <Avatar file={profile?.avatar || user.avatar} name={form.displayName || user.name} size="xl" />
+            <Avatar file={user.avatar || profile?.avatar} name={form.displayName || user.name} size="xl" />
             <div>
               <input
                 ref={avatarInput}
@@ -284,6 +294,9 @@ export function ProviderEditorPage() {
           <Card className="p-5">
             <h2 className="text-base font-bold text-[#0F172A] dark:text-white">{t('provider.portfolio')}</h2>
             <p className="mt-1 text-xs text-[#64748B] dark:text-[#94A3B8]">{t('provider.maxPortfolio')}</p>
+            {!profile && (
+              <p className="mt-2 text-sm text-[#475569] dark:text-[#CBD5E1]">{t('profile.saveBeforePortfolio')}</p>
+            )}
             <input
               ref={portfolioInput}
               type="file"
@@ -298,7 +311,7 @@ export function ProviderEditorPage() {
               className="mt-3"
               loading={uploading}
               onClick={() => portfolioInput.current?.click()}
-              disabled={(profile?.portfolio.length || 0) >= 8}
+              disabled={!profile || profile.portfolio.length >= 8}
             >
               <ImagePlus className="w-4 h-4" aria-hidden="true" />
               {t('provider.portfolioUpload')}

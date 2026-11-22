@@ -1,5 +1,23 @@
 # PROJECT_STATE — SALU
 
+> **Estado mais recente — trabalho em curso na branch `arena/4d8373c8-salu`:** a API de produção existe, mas a versão e o restauro das cópias do alwaysdata não foram verificados. O site e a API são publicados separadamente. As secções antigas abaixo são registos históricos e podem estar desactualizadas; em particular não é correcto considerar opcional actualizar a API quando a correcção precisa do servidor.
+
+## Percursos de utilizador — trabalho na mesma branch
+
+- Logótipo respeita sessão/configuração inicial; perfil próprio em `/meu-perfil`, acesso a ver e editar perfil profissional no modo prestador; publicação de pedidos no modo cliente.
+- Cartões de pedidos mostram fotografia junto da descrição; resumo de publicação mostra imagens e aguarda conclusão de uploads. O editor conserva campos em edição ao alterar foto, e o cartão próprio usa a foto da sessão.
+- Consulta detalhada e limitações: `docs/CONSULTORIA_PERCURSOS.md`. API de produção para visitantes, política de acesso às oportunidades, backup, recuperação de conta e testes em browser/dispositivos continuam por verificar. Nada publicado nesta branch até confirmação.
+
+## Correcções na branch actual (ainda não comprovadas em produção)
+
+- Origem exacta para pedidos com credenciais em produção; testes locais com site correcto e origens de terceiros. Configurar quaisquer outros domínios legítimos por `APP_ORIGIN`, sem usar credenciais no repositório.
+- Revogação na API de ficheiros públicos de contas eliminadas, dados do perfil profissional minimizados e aviso de retenção mais preciso. Não é eliminação completa: mensagens e outros registos permanecem; caches anteriores, cópias e prazos continuam por rever.
+- Foto própria do prestador usa o avatar da sessão caso a API antiga não o devolva; a resposta para outras pessoas continua dependente da API actualizada no alwaysdata. Corrigida a terceira tentativa de `FileImage`.
+- Pesquisa e listas com páginas na API e na interface; texto do perfil distingue publicar um pedido de uma conversa directa.
+- Sessão não é considerada terminada após erro de comunicação; aviso de actualização opcional no site instalado, após a versão com esta funcionalidade ter sido aberta.
+- Continuidade de operação, recuperação de palavra-passe, testes em browsers reais e publicação/versão do alwaysdata continuam por verificar ou implementar. Não declarar segurança ou privacidade de produção corrigidas antes da actualização e testes.
+
+
 Última actualização: **2026-11-21**
 Branch: `arena/bfd0471f-salu`
 Base: `aa7b621` (`main`)
@@ -112,4 +130,11 @@ Observado em produção, não inferido:
 
 Correcções: regra `/media/*` movida para o topo de `public/_redirects` com `200!`; avatar do prestador lido de `users`; `FileImage` com três vias (`/media` → bytes autenticados → URL directo). Teste de regressão acrescentado à integração.
 
-**Confirmado em produção (2026-11-22, OBSERVED):** o utilizador confirmou que a fotografia passa a aparecer no site depois do deploy de `main` (`4b01e1e`). Fica fechado o defeito das imagens; o `git pull` no alwaysdata continua opcional.
+**Confirmado em produção (2026-11-22, OBSERVED):** o utilizador confirmou que a fotografia passa a aparecer no site depois do deploy de `main` (`4b01e1e`). Esta observação não comprova o funcionamento do perfil público para outras contas; a versão do servidor e a necessidade de actualização continuam por verificar.
+
+## Percursos separados (alterações locais, não publicadas)
+
+- O modo cliente foca-se em publicar e acompanhar pedidos; o modo prestador em oportunidades, propostas, conversas e acordos. A selecção de modo continua manual e os dados são preservados.
+- Listagens `scope=customer` e `scope=proposed` na API permitem paginação separada; o cliente anterior continua suportado. A UI filtra respostas antigas, mas paginação correcta exige actualizar o servidor.
+- Proposta disponível na lista e no detalhe, com ligação à conversa após resposta bem-sucedida. O pedido próprio é excluído das oportunidades.
+- Testes de interface simulada e integração HTTP local cobrem os dois modos; não substituem testes visuais nem de produção.

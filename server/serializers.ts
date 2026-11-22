@@ -122,7 +122,7 @@ export function providerProfileFor(userId: string) {
     yearsExperience: row.years_experience,
     whatsapp: row.whatsapp || null,
     published: Boolean(row.published),
-    avatar: fileRecord(row.avatar_file_id || owner?.avatar_file_id),
+    avatar: fileRecord(owner?.avatar_file_id || row.avatar_file_id),
     provinceId: row.province_id,
     municipalityId: row.municipality_id,
     communeId: row.commune_id,

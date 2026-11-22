@@ -97,10 +97,14 @@ export function ProviderProfilePage() {
     <div className="space-y-5">
       <Card className="overflow-hidden">
         <div className="h-32 bg-gradient-to-r from-[#081C41] via-[#1558B8] to-[#F97316]" aria-hidden="true" />
-        <div className="p-5 sm:p-6 -mt-12">
+        <div className="p-5 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className="rounded-2xl ring-4 ring-white dark:ring-[#0C1833] w-fit">
-              <Avatar file={provider.avatar} name={provider.displayName} size="xl" />
+            <div className="-mt-16 rounded-2xl ring-4 ring-white dark:ring-[#0C1833] w-fit shrink-0">
+              <Avatar
+                file={isOwn ? user?.avatar || provider.avatar : provider.avatar}
+                name={provider.displayName}
+                size="xl"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -121,10 +125,12 @@ export function ProviderProfilePage() {
                 </ButtonLink>
               ) : (
                 <>
-                  <ButtonLink to="/publicar-pedido">
-                    <MessageSquare className="w-4 h-4" aria-hidden="true" />
-                    {t('provider.startConversation')}
-                  </ButtonLink>
+                  {user?.activeMode === 'customer' && (
+                    <ButtonLink to="/publicar-pedido">
+                      <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                      {lang === 'pt' ? 'Publicar um pedido' : 'Post a request'}
+                    </ButtonLink>
+                  )}
                   <Button variant="secondary" onClick={toggleFavorite} aria-pressed={isFavorite}>
                     <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} aria-hidden="true" />
                     {isFavorite ? (lang === 'pt' ? 'Guardado' : 'Saved') : lang === 'pt' ? 'Guardar' : 'Save'}
@@ -195,6 +201,7 @@ export function ProviderProfilePage() {
                   <FileImage
                     key={file.id}
                     file={file}
+                    fallback={<p className="p-3 text-sm text-[#64748B]">{t('common.imageUnavailable')}</p>}
                     className="w-full h-36 object-cover rounded-xl border border-[#E2E8F0] dark:border-[#1E325C]"
                   />
                 ))}

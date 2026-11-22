@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { FilePlus2, Search } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { api } from '../lib/api';
@@ -17,6 +16,7 @@ import {
   Skeleton,
 } from '../components/ui/Base';
 import { RequestCard } from '../components/Cards';
+import { Pagination } from '../components/Pagination';
 import { useAuth } from '../app/AuthProvider';
 
 const STATUSES = ['OPEN', 'ASSIGNED', 'COMPLETED', 'CANCELLED', 'DISPUTED'];
@@ -27,7 +27,13 @@ export function RequestsPage() {
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [submitted, setSubmitted] = useState({ status: '', q: '' });
-  const data = useApiData(() => api.requests({ scope: 'mine', ...submitted }), [submitted.status, submitted.q]);
+  const [page, setPage] = useState(1);
+  const data = useApiData(
+    () => api.requests({ scope: 'customer', ...submitted, page: String(page) }),
+    [submitted.status, submitted.q, page],
+  );
+
+  const requests = data.data?.requests.filter((request) => request.customerId === user?.id) || [];
 
   return (
     <div>
@@ -47,6 +53,7 @@ export function RequestsPage() {
         <form
           onSubmit={(event) => {
             event.preventDefault();
+            setPage(1);
             setSubmitted({ status, q: q.trim() });
           }}
           className="grid gap-3 sm:grid-cols-[1fr_auto_auto]"
@@ -85,7 +92,7 @@ export function RequestsPage() {
           onRetry={data.reload}
           retryLabel={t('common.retry')}
         />
-      ) : !data.data?.requests.length ? (
+      ) : !requests.length ? (
         <Card>
           <EmptyState
             icon={FilePlus2}
@@ -96,23 +103,14 @@ export function RequestsPage() {
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
-          {data.data.requests.map((request) => (
+          {requests.map((request) => (
             <RequestCard key={request.id} request={request} />
           ))}
         </div>
       )}
 
-      {user?.activeMode === 'provider' && (
-        <div className="mt-6 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] p-4 text-sm dark:border-[#1D6FE5]/40 dark:bg-[#132347]">
-          <p className="font-semibold text-[#0F172A] dark:text-white">{t('opportunities.title')}</p>
-          <p className="mt-1 text-[#475569] dark:text-[#CBD5E1]">{t('opportunities.subtitle')}</p>
-          <Link
-            to="/oportunidades"
-            className="mt-2 inline-block text-xs font-bold text-[#1558B8] underline underline-offset-4 dark:text-[#93C5FD]"
-          >
-            {t('dashboard.findWork')}
-          </Link>
-        </div>
+      {!data.loading && !data.error && (
+        <Pagination page={page} hasMore={Boolean(data.data?.hasMore)} onPage={setPage} />
       )}
     </div>
   );

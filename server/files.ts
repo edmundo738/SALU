@@ -91,11 +91,23 @@ export async function saveUploadedFile(params: {
 }
 
 export function canAccessFile(fileId: string, viewerId: string | null): boolean {
-  const file = db.prepare('SELECT * FROM files WHERE id = ?').get(fileId) as
-    | { id: string; owner_id: string; visibility: string; purpose: string; stored_name: string; mime: string }
+  const file = db
+    .prepare(
+      'SELECT files.*, users.deleted_at AS owner_deleted_at FROM files JOIN users ON users.id = files.owner_id WHERE files.id = ?',
+    )
+    .get(fileId) as
+    | {
+        id: string;
+        owner_id: string;
+        visibility: string;
+        purpose: string;
+        stored_name: string;
+        mime: string;
+        owner_deleted_at: string | null;
+      }
     | undefined;
   if (!file) return false;
-  if (file.visibility === 'public') return true;
+  if (file.visibility === 'public') return !file.owner_deleted_at;
   if (!viewerId) return false;
   if (file.owner_id === viewerId) return true;
 

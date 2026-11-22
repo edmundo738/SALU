@@ -20,7 +20,7 @@ const levelLabels: Record<number, string> = {
 };
 
 export function SettingsPage() {
-  const { user, stats, logout, applySession } = useAuth();
+  const { user, stats, logout, clearSession, applySession } = useAuth();
   const { t, lang, setLang } = useI18n();
   const { theme, setTheme } = useTheme();
   const toast = useToast();
@@ -196,7 +196,7 @@ export function SettingsPage() {
     try {
       await api.deleteAccount(deletePassword);
       toast.success(t('settings.deleted'));
-      await logout();
+      clearSession();
       navigate('/', { replace: true });
     } catch (err) {
       setError(friendlyError(err, lang, t));

@@ -113,7 +113,7 @@ export function PublicLayout({
                   onDark ? 'bg-white text-[#081C41]' : 'bg-[#081C41] text-white dark:bg-[#1D6FE5]'
                 }`}
               >
-                {t('common.login')}
+                {t('nav.dashboard')}
               </Link>
             ) : (
               <>
@@ -145,6 +145,7 @@ export function PublicLayout({
         </div>
         <div
           id="menu-publico"
+          hidden={!menuOpen}
           className={`md:hidden overflow-hidden transition-all ${menuOpen ? 'max-h-96 border-t' : 'max-h-0'} ${
             onDark
               ? 'bg-[#081C41]/95 backdrop-blur-xl border-white/10'
@@ -171,7 +172,7 @@ export function PublicLayout({
                   to="/inicio"
                   className="flex-1 text-center rounded-xl bg-[#081C41] px-4 py-3 text-sm font-semibold text-white dark:bg-[#1D6FE5]"
                 >
-                  {t('common.login')}
+                  {t('nav.dashboard')}
                 </Link>
               ) : (
                 <>
@@ -230,7 +231,7 @@ export function PublicLayout({
 }
 
 export function AppLayout() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, apiReachable, refresh } = useAuth();
   const { t } = useI18n();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -265,6 +266,19 @@ export function AppLayout() {
     );
   }
 
+  if (!user && apiReachable === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-[#060E20] p-6">
+        <div className="max-w-md text-center" role="alert">
+          <p className="text-[#334155] dark:text-white">{t('common.networkError')}</p>
+          <Button className="mt-4" onClick={() => void refresh()}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/entrar?next=${next}`} replace />;
@@ -275,7 +289,7 @@ export function AppLayout() {
     ? [
         { to: '/inicio', label: t('nav.dashboard'), icon: Home },
         { to: '/oportunidades', label: t('nav.opportunities'), icon: BriefcaseBusiness },
-        { to: '/explorar', label: t('nav.explore'), icon: Compass },
+        { to: '/propostas', label: t('nav.proposals'), icon: FilePlus2 },
         { to: '/mensagens', label: t('nav.messages'), icon: MessageSquare },
         { to: '/notificacoes', label: t('nav.notifications'), icon: Bell },
       ]
@@ -288,6 +302,7 @@ export function AppLayout() {
       ];
 
   const secondary = [
+    { to: '/meu-perfil', label: t('nav.myProfile'), icon: UserRound },
     { to: '/definicoes', label: t('nav.settings'), icon: Settings },
     { to: '/seguranca', label: t('nav.safety'), icon: ShieldCheck },
     { to: '/ajuda', label: t('nav.help'), icon: CircleHelp },
@@ -362,6 +377,7 @@ export function AppLayout() {
               </button>
               <div
                 id="menu-perfil"
+                hidden={!profileOpen}
                 className={`absolute right-0 mt-2 w-64 origin-top-right rounded-2xl border border-[#E2E8F0] bg-white shadow-xl transition-all duration-150 dark:border-[#1E325C] dark:bg-[#0C1833] ${
                   profileOpen
                     ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'

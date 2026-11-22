@@ -19,10 +19,10 @@ function envOrigins(): string[] {
 
 function originAllowed(origin: string | undefined): boolean {
   if (!origin) return true; // curl, testes e pedidos same-origin sem Origin
-  if (DEV_ORIGINS.includes(origin) || envOrigins().includes(origin)) return true;
-  // Preview do Arena e deploys de pré-visualização Netlify.
-  if (/^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.e2b\.app$/i.test(origin)) return true;
-  if (/^https:\/\/[a-z0-9-]+(--[a-z0-9-]+)?\.netlify\.app$/i.test(origin)) return true;
+  // Produção: apenas o domínio do SALU e origens explicitamente configuradas.
+  // Nunca confiar em todos os sites de um fornecedor de alojamento.
+  if (origin === 'https://salu-ao.netlify.app' || envOrigins().includes(origin)) return true;
+  if (process.env.NODE_ENV !== 'production' && DEV_ORIGINS.includes(origin)) return true;
   return false;
 }
 

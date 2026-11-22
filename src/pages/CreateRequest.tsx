@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import type { FileRecord } from '../../shared/types';
 import { CATEGORIES, categoryLabel } from '../../shared/categories';
+import { locationLabel } from '../../shared/geo';
 import { useAuth } from '../app/AuthProvider';
 import { useI18n } from '../i18n';
 import { api } from '../lib/api';
 import { friendlyError } from '../lib/errors';
 import { Alert, Button, Card, Field, Input, PageHeader, Select, Steps, Textarea } from '../components/ui/Base';
 import { LocationPicker, type LocationValue } from '../components/LocationPicker';
-import { MultiFileUpload } from '../components/FileUpload';
+import { FilePreview, MultiFileUpload } from '../components/FileUpload';
 import { useToast } from '../app/ToastProvider';
 
 export function CreateRequestPage() {
@@ -33,6 +34,7 @@ export function CreateRequestPage() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const steps = [t('request.step1'), t('request.step2'), t('request.step3'), t('request.step4')];
 
@@ -61,7 +63,19 @@ export function CreateRequestPage() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!validateStep(0) || !validateStep(2)) return;
+    if (uploadingPhotos) return;
+    if (step < steps.length - 1) {
+      next();
+      return;
+    }
+    if (!validateStep(0)) {
+      setStep(0);
+      return;
+    }
+    if (!validateStep(2)) {
+      setStep(2);
+      return;
+    }
     setBusy(true);
     try {
       const result = await api.createRequest({
@@ -153,11 +167,12 @@ export function CreateRequestPage() {
                 onChange={setPhotos}
                 max={6}
                 label={t('request.photos')}
+                onBusyChange={setUploadingPhotos}
               />
               <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                 {lang === 'pt'
-                  ? 'As fotografias são guardadas no SALU e visíveis para prestadores que possam responder ao pedido.'
-                  : 'Photos are stored in SALU and visible to providers who may answer the request.'}
+                  ? 'As fotografias são públicas: qualquer pessoa com o endereço da imagem pode vê-las. Não incluas dados privados.'
+                  : 'Photos are public: anyone with the image address can view them. Do not include private information.'}
               </p>
             </div>
           )}
@@ -238,7 +253,7 @@ export function CreateRequestPage() {
                     {t('request.location')}
                   </dt>
                   <dd className="mt-0.5 text-[#0F172A] dark:text-white">
-                    {location.communeId.split('-').pop()} · {location.municipalityId.split('-').pop()}
+                    {locationLabel(location.provinceId, location.municipalityId, location.communeId)}
                   </dd>
                 </div>
                 <div>
@@ -258,6 +273,13 @@ export function CreateRequestPage() {
                   <dd className="mt-0.5 text-[#0F172A] dark:text-white">{photos.length}</dd>
                 </div>
               </dl>
+              {photos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {photos.map((file) => (
+                    <FilePreview key={file.id} file={file} />
+                  ))}
+                </div>
+              )}
               <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{t('request.photosHint')}</p>
             </div>
           )}
@@ -266,16 +288,17 @@ export function CreateRequestPage() {
             <Button
               type="button"
               variant="secondary"
+              disabled={uploadingPhotos}
               onClick={() => (step === 0 ? navigate(-1) : setStep((s) => s - 1))}
             >
               <ArrowLeft className="w-4 h-4" aria-hidden="true" /> {t('common.back')}
             </Button>
             {step < steps.length - 1 ? (
-              <Button type="button" onClick={next}>
+              <Button type="button" onClick={next} disabled={uploadingPhotos}>
                 {t('common.next')} <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Button>
             ) : (
-              <Button type="submit" loading={busy}>
+              <Button type="submit" loading={busy} disabled={uploadingPhotos}>
                 <Check className="w-4 h-4" aria-hidden="true" /> {busy ? t('request.publishing') : t('request.publish')}
               </Button>
             )}

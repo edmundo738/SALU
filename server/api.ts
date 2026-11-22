@@ -344,7 +344,10 @@ apiRouter.delete('/me', requireAuth, (req, res) => {
       `UPDATE users SET name = 'Conta eliminada', contact = ?, password_hash = ?, bio = '', avatar_file_id = NULL,
        deleted_at = ?, updated_at = ? WHERE id = ?`,
     ).run(`deleted-${id}@invalid.local`, hashPassword(newId('gone')), now, now, id);
-    db.prepare('UPDATE provider_profiles SET published = 0, updated_at = ? WHERE user_id = ?').run(now, id);
+    db.prepare(
+      `UPDATE provider_profiles SET published = 0, display_name = 'Conta eliminada', headline = '', bio = '',
+       whatsapp = NULL, avatar_file_id = NULL, updated_at = ? WHERE user_id = ?`,
+    ).run(now, id);
     db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
     audit(id, 'account.delete', 'user', id);
   });
@@ -383,7 +386,8 @@ apiRouter.get('/files/:id', optionalAuth, (req, res) => {
   // mostrar a imagem já carregada: o upload corre bem, mas a foto "não aparece".
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
-  res.setHeader('Cache-Control', file.visibility === 'public' ? 'public, max-age=3600' : 'private, no-store');
+  // Ficheiros revogáveis não devem ficar acessíveis em caches depois da eliminação.
+  res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`);
   return res.sendFile(file.path);
 });
@@ -429,11 +433,20 @@ apiRouter.get('/providers', (req, res) => {
     const term = `%${q.slice(0, 80)}%`;
     params.push(term, term, term);
   }
-  sql += ' ORDER BY p.updated_at DESC LIMIT 60';
-  const ids = db.prepare(sql).all(...params) as Array<{ id: string }>;
-  const providers = ids.map((row) => providerProfileFor(row.id)).filter(Boolean);
-  providers.sort((a: any, b: any) => b.completedJobs - a.completedJobs || (b.rating || 0) - (a.rating || 0));
-  return res.json({ providers });
+  const limit = int(req.query.limit ?? 60, 1, 60) ?? 60;
+  const page = int(req.query.page ?? 1, 1, 10000) ?? 1;
+  sql += ` ORDER BY
+    (SELECT COUNT(*) FROM agreements a WHERE a.provider_id = u.id AND a.status = 'COMPLETED') DESC,
+    COALESCE((SELECT AVG((r.communication + r.reliability + r.deadlines) / 3.0)
+      FROM reviews r WHERE r.target_id = u.id AND r.author_role = 'customer'), 0) DESC,
+    p.updated_at DESC, u.id ASC LIMIT ? OFFSET ?`;
+  const ids = db.prepare(sql).all(...params, limit + 1, (page - 1) * limit) as Array<{ id: string }>;
+  const hasMore = ids.length > limit;
+  const providers = ids
+    .slice(0, limit)
+    .map((row) => providerProfileFor(row.id))
+    .filter(Boolean);
+  return res.json({ providers, hasMore });
 });
 
 apiRouter.get('/providers/:id', optionalAuth, (req, res) => {
@@ -605,7 +618,14 @@ apiRouter.get('/requests', requireAuth, (req, res) => {
   if (scope === 'open') {
     sql = `SELECT DISTINCT r.id FROM requests r WHERE r.status = 'OPEN' AND r.customer_id != ?`;
     params.push(id);
+  } else if (scope === 'proposed') {
+    sql = `SELECT r.id FROM requests r JOIN proposals p ON p.request_id = r.id WHERE p.provider_id = ?`;
+    params.push(id);
+  } else if (scope === 'customer') {
+    sql = `SELECT r.id FROM requests r WHERE r.customer_id = ?`;
+    params.push(id);
   } else {
+    // Compatibilidade com clientes anteriores: pedidos próprios ou com proposta.
     sql = `SELECT DISTINCT r.id FROM requests r
            LEFT JOIN proposals p ON p.request_id = r.id
            WHERE r.customer_id = ? OR p.provider_id = ?`;
@@ -628,10 +648,16 @@ apiRouter.get('/requests', requireAuth, (req, res) => {
     const term = `%${q.slice(0, 80)}%`;
     params.push(term, term);
   }
-  sql += ' ORDER BY r.created_at DESC LIMIT 80';
-  const rows = db.prepare(sql).all(...params) as Array<{ id: string }>;
-  const requests = rows.map((row) => serializeRequest(row.id, id)).filter((r): r is RequestDetail => Boolean(r));
-  return res.json({ requests });
+  const limit = int(req.query.limit ?? 80, 1, 80) ?? 80;
+  const page = int(req.query.page ?? 1, 1, 10000) ?? 1;
+  sql += ' ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?';
+  const rows = db.prepare(sql).all(...params, limit + 1, (page - 1) * limit) as Array<{ id: string }>;
+  const hasMore = rows.length > limit;
+  const requests = rows
+    .slice(0, limit)
+    .map((row) => serializeRequest(row.id, id))
+    .filter((r): r is RequestDetail => Boolean(r));
+  return res.json({ requests, hasMore });
 });
 
 apiRouter.post('/requests', requireAuth, (req, res) => {

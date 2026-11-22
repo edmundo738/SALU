@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../app/AuthProvider';
 
 /**
  * Marca SALU — vector, sem imagens raster.
@@ -47,9 +48,12 @@ export function SaluLogo({
   tone?: 'auto' | 'light';
   className?: string;
 }) {
+  const { user } = useAuth();
+  // Contas novas precisam de concluir a localização antes de chegar ao painel.
+  const destination = !user ? '/' : user.provinceId && user.municipalityId && user.communeId ? '/inicio' : '/bem-vindo';
   return (
     <Link
-      to="/"
+      to={destination}
       className={`group inline-flex items-center gap-2.5 transition-opacity hover:opacity-85 ${className}`}
       aria-label="SALU — Início"
     >

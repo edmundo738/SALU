@@ -1,5 +1,8 @@
 # KNOWN_ISSUES
 
+> A tabela histórica abaixo pode conter informação ultrapassada (nomeadamente K-01, K-17 e K-15). A API de produção foi observada anteriormente e o CI da `main` passou, mas versão do alwaysdata, backup e restauro continuam por verificar. As alterações da branch actual não foram ainda verificadas em produção. Recuperação de conta, suporte real, cookies entre domínios, testes visuais e procedimentos de eliminação/retenção continuam em aberto.
+
+
 Legenda: **P0** bloqueia o ciclo real; **P1** importante; **P2** melhoria.
 
 ## Aberto
@@ -37,3 +40,9 @@ Legenda: **P0** bloqueia o ciclo real; **P1** importante; **P2** melhoria.
 - Deep links e rotas dinâmicas; `/api/*` já não devolve HTML.
 - Dados falsos (4.9, 5.0, 97/95/96, “Just now”, preços fixos) removidos do cliente.
 - `npm audit` sem vulnerabilidades conhecidas.
+
+### Percursos por modo — dependência de publicação
+
+Os filtros paginados de pedidos próprios e propostas dependem da versão actualizada da API. Em servidores anteriores a interface filtra os resultados recebidos, mas podem existir páginas incompletas. A disponibilidade em produção ainda não foi verificada.
+
+As estatísticas de acordos activos do painel somam os dois papéis da conta, mesmo quando está seleccionado apenas um modo. A apresentação por papel requer alterar e testar essas contagens.

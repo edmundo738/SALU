@@ -1,5 +1,14 @@
 # CHECKPOINT
 
+## Percursos de conta, perfil e pedidos
+
+Foi acrescentada a página do próprio perfil, separados os atalhos de cliente e prestador, feitas correcções no logo, na página de boas-vindas, na apresentação de fotos e nos formulários. Ver `docs/CONSULTORIA_PERCURSOS.md`. Pré-visualização usa uma base de teste isolada. `npm test` passou 41 testes; build e formatação passaram. Falta inspecção em browser real e publicação coordenada do servidor.
+
+## Trabalho em curso: correcções após consultoria
+
+Branch `arena/4d8373c8-salu`. As alterações desta branch foram testadas localmente, mas não se deve assumir que estão publicadas ou que o alwaysdata está actualizado. Testes finais, revisão visual, domínio autorizado, publicação separada da API e teste de produção são necessários. Backup/restauro, recuperação de palavra-passe e suporte efectivo continuam por resolver. O aviso de actualização destina-se a apps instaladas que já tenham carregado a versão com esse aviso; não pode aparecer magicamente numa versão antiga que nunca foi recarregada.
+
+
 ## PROJECT_STATE
 
 Branch `arena/bfd0471f-salu`, base `aa7b621`; API de produção em `edmundo.alwaysdata.net`, frontend em `salu-ao.netlify.app` com deploy automático a partir de `main`. Um único sistema React Router + Express/SQLite. Auditoria executada; 23/24 P0 corrigidos; `P0-12` parcial por falta de deploy real.
@@ -65,3 +74,8 @@ Cada transição de acordo é decidida no servidor. Identidade vem da sessão. N
 1. Publicar API num host persistente (volume) e frontend no Netlify com `VITE_API_URL`.
 2. Testar em produção o runbook de duas contas.
 3. Actualizar `P0-12` para corrigido apenas com evidência de produção.
+
+## Actualização mais recente — percursos por modo
+
+- Alterações locais não publicadas: cliente gere pedidos; prestador procura oportunidades e acompanha propostas, conversas e acordos. Mudar de modo permanece voluntário.
+- Os novos filtros paginados requerem publicação separada da API; frontend e API ainda não foram actualizados em produção. Browser real, telemóvel e produção continuam por verificar.

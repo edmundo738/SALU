@@ -191,14 +191,14 @@ export function Avatar({
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }) {
-  const [failed, setFailed] = React.useState(false);
+  const [failedId, setFailedId] = React.useState<string | null>(null);
   const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-11 h-11 text-sm', lg: 'w-16 h-16 text-lg', xl: 'w-24 h-24 text-2xl' };
-  if (file && !failed) {
+  if (file && file.id !== failedId) {
     return (
       <FileImage
         file={file}
         alt={name}
-        onGiveUp={() => setFailed(true)}
+        onGiveUp={() => setFailedId(file.id)}
         className={`${sizes[size]} rounded-xl object-cover border border-[#E2E8F0] dark:border-[#1E325C] shrink-0 ${className}`}
       />
     );

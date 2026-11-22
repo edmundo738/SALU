@@ -3,6 +3,7 @@ import type { SessionUser, User, UserStats } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { useI18n } from '../i18n';
 import { useTheme } from './ThemeProvider';
+import { useToast } from './ToastProvider';
 
 interface AuthValue {
   user: User | null;
@@ -13,6 +14,7 @@ interface AuthValue {
   register: (name: string, contact: string, password: string, passwordConfirm: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  clearSession: () => void;
   applySession: (session: SessionUser) => void;
   updateLocalUser: (user: User) => void;
 }
@@ -24,7 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
-  const { setLang } = useI18n();
+  const { setLang, t } = useI18n();
+  const toast = useToast();
   const { setTheme } = useTheme();
 
   const applySession = useCallback(
@@ -78,14 +81,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [applySession],
   );
 
+  const clearSession = useCallback(() => {
+    setUser(null);
+    setStats(null);
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await api.logout();
-    } finally {
-      setUser(null);
-      setStats(null);
+      clearSession();
+    } catch {
+      setApiReachable(false);
+      toast.error(t('common.logoutFailed'));
     }
-  }, []);
+  }, [clearSession, t, toast]);
 
   const updateLocalUser = useCallback((next: User) => setUser(next), []);
 
@@ -99,10 +108,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register,
       logout,
       refresh,
+      clearSession,
       applySession,
       updateLocalUser,
     }),
-    [user, stats, loading, apiReachable, login, register, logout, refresh, applySession, updateLocalUser],
+    [user, stats, loading, apiReachable, login, register, logout, refresh, clearSession, applySession, updateLocalUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

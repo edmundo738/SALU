@@ -25,6 +25,7 @@ import { categoryLabel } from '../../shared/categories';
 import { useToast } from '../app/ToastProvider';
 import type { Proposal } from '../../shared/types';
 import { FileImage } from '../components/FileImage';
+import { ProposalDialog } from '../components/ProposalDialog';
 
 export function RequestDetailPage() {
   const { id = '' } = useParams();
@@ -37,6 +38,8 @@ export function RequestDetailPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [proposing, setProposing] = useState(false);
+  const [sentConversation, setSentConversation] = useState<string | null>(null);
 
   if (data.loading)
     return (
@@ -111,7 +114,9 @@ export function RequestDetailPage() {
   return (
     <div className="max-w-4xl">
       <Link
-        to={owner ? '/pedidos' : '/oportunidades'}
+        to={
+          owner && user?.activeMode === 'customer' ? '/pedidos' : request.myProposal ? '/propostas' : '/oportunidades'
+        }
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-[#C2410C] dark:text-[#94A3B8]"
       >
         <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> {t('common.back')}
@@ -123,6 +128,15 @@ export function RequestDetailPage() {
         action={<RequestStatusBadge status={request.status} />}
       />
 
+      {sentConversation && (
+        <div className="mb-5">
+          <Alert tone="success" title={t('request.proposalSent')}>
+            <ButtonLink to={`/mensagens/${sentConversation}`} size="sm" variant="secondary">
+              {t('request.contactProvider')}
+            </ButtonLink>
+          </Alert>
+        </div>
+      )}
       <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5">
         <div className="space-y-5">
           <Card className="p-5">
@@ -136,6 +150,7 @@ export function RequestDetailPage() {
                   <a key={file.id} href={api.fileUrl(file)} target="_blank" rel="noreferrer" className="block">
                     <FileImage
                       file={file}
+                      fallback={<p className="p-3 text-sm text-[#64748B]">{t('common.imageUnavailable')}</p>}
                       className="w-full h-32 object-cover rounded-xl border border-[#E2E8F0] dark:border-[#1E325C]"
                     />
                   </a>
@@ -183,7 +198,7 @@ export function RequestDetailPage() {
               <h2 className="text-base font-bold text-[#0F172A] dark:text-white">
                 {t('request.proposals', { count: request.proposals.length })}
               </h2>
-              {request.agreementId && (
+              {request.agreementId && (owner || request.myProposal?.status === 'ACCEPTED') && (
                 <Link
                   to={`/acordos/${request.agreementId}`}
                   className="text-xs font-bold text-[#1558B8] underline underline-offset-4 dark:text-[#93C5FD]"
@@ -225,7 +240,7 @@ export function RequestDetailPage() {
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {proposal.conversationId && (
-                            <ButtonLink to={`/mensagens/${proposal.conversationId} `} size="sm" variant="secondary">
+                            <ButtonLink to={`/mensagens/${proposal.conversationId}`} size="sm" variant="secondary">
                               <MessageSquare className="w-4 h-4" aria-hidden="true" />
                               {t('request.contactProvider')}
                             </ButtonLink>
@@ -275,6 +290,15 @@ export function RequestDetailPage() {
             </div>
           </Card>
 
+          {!owner &&
+            user?.activeMode === 'provider' &&
+            request.status === 'OPEN' &&
+            !request.myProposal &&
+            user.providerProfile?.published && (
+              <Button className="w-full" onClick={() => setProposing(true)}>
+                {t('opportunities.propose')}
+              </Button>
+            )}
           {owner && request.status === 'OPEN' && (
             <Button variant="secondary" className="w-full" onClick={() => setCancelOpen(true)}>
               {t('request.cancelRequest')}
@@ -288,6 +312,15 @@ export function RequestDetailPage() {
         </div>
       </div>
 
+      <ProposalDialog
+        request={proposing ? request : null}
+        onClose={() => setProposing(false)}
+        onSent={(proposal) => {
+          setProposing(false);
+          setSentConversation(proposal.conversationId || null);
+          data.reload();
+        }}
+      />
       <Modal open={Boolean(accepting)} onClose={() => setAccepting(null)} title={t('request.accept')}>
         {accepting && (
           <div className="space-y-4">

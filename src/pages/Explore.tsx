@@ -18,6 +18,7 @@ import {
   Skeleton,
 } from '../components/ui/Base';
 import { ProviderCard } from '../components/Cards';
+import { Pagination } from '../components/Pagination';
 import { friendlyError } from '../lib/errors';
 import { useAuth } from '../app/AuthProvider';
 
@@ -28,9 +29,10 @@ export function ExplorePage() {
   const [category, setCategory] = useState('');
   const [municipality, setMunicipality] = useState('');
   const [submitted, setSubmitted] = useState({ q: '', category: '', municipality: '' });
+  const [page, setPage] = useState(1);
   const providers = useApiData(
-    () => api.providers(submitted),
-    [submitted.q, submitted.category, submitted.municipality],
+    () => api.providers({ ...submitted, page: String(page) }),
+    [submitted.q, submitted.category, submitted.municipality, page],
   );
 
   const municipalities = useMemo(
@@ -43,6 +45,7 @@ export function ExplorePage() {
 
   function apply(event: React.FormEvent) {
     event.preventDefault();
+    setPage(1);
     setSubmitted({ q: q.trim(), category, municipality });
   }
 
@@ -130,20 +133,30 @@ export function ExplorePage() {
                 ? t('explore.emptyBody')
                 : t('explore.noProvidersBody')
             }
-            action={<ButtonLink to="/perfil-profissional">{t('provider.publish')}</ButtonLink>}
+            action={
+              user?.activeMode === 'provider' ? (
+                <ButtonLink to="/oportunidades">{t('dashboard.findWork')}</ButtonLink>
+              ) : undefined
+            }
           />
         </Card>
       ) : (
         <>
           <p className="text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] mb-3">
-            {providers.data.providers.length} {lang === 'pt' ? 'perfis publicados' : 'published profiles'}
+            {providers.data.providers.length} {lang === 'pt' ? 'perfis nesta página' : 'profiles on this page'}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {providers.data.providers.map((provider) => (
-              <ProviderCard key={provider.userId} provider={provider} />
+              <ProviderCard
+                key={provider.userId}
+                provider={provider.userId === user?.id && user.avatar ? { ...provider, avatar: user.avatar } : provider}
+              />
             ))}
           </div>
         </>
+      )}
+      {!providers.loading && !providers.error && (
+        <Pagination page={page} hasMore={Boolean(providers.data?.hasMore)} onPage={setPage} />
       )}
     </div>
   );

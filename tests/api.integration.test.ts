@@ -167,6 +167,37 @@ describe('SALU — ciclo de serviço real com duas contas', () => {
     expect(profile.status, JSON.stringify(profile.body)).toBe(200);
     expect(profile.body.provider.published).toBe(true);
 
+    const ownRequest = await call('/requests', {
+      method: 'POST',
+      cookie: bruno.jar,
+      body: {
+        title: 'Reparar porta da casa',
+        categoryId: 'electrical',
+        description: 'A porta precisa de uma reparação cuidadosa.',
+        provinceId: 'AO-LUA',
+        municipalityId: 'AO-LUA-CAMAMA',
+        communeId: 'AO-LUA-CAMAMA-CAMAMA',
+        budgetType: 'INSPECTION_NEEDED',
+        urgency: 'NORMAL',
+        photoIds: [],
+      },
+    });
+    expect(ownRequest.status).toBe(201);
+    expect(
+      (await call('/requests?scope=open', { cookie: bruno.jar })).body.requests.some(
+        (item: { id: string }) => item.id === ownRequest.body.request.id,
+      ),
+    ).toBe(false);
+    expect(
+      (
+        await call(`/requests/${ownRequest.body.request.id}/proposals`, {
+          method: 'POST',
+          cookie: bruno.jar,
+          body: { amount: 1000, estimatedDays: 1, message: 'Mensagem de proposta válida.' },
+        })
+      ).status,
+    ).toBe(400);
+
     const photo = await upload(ana.jar, 'request');
     expect(photo.status).toBe(201);
     const request = await call('/requests', {
@@ -188,6 +219,14 @@ describe('SALU — ciclo de serviço real com duas contas', () => {
     expect(request.status, JSON.stringify(request.body)).toBe(201);
     const requestId = request.body.request.id;
     expect(request.body.request.isOwner).toBe(true);
+    expect(request.body.request.photos[0].id).toBe(photo.body.file.id);
+    const ownerDetail = await call(`/requests/${requestId}`, { cookie: ana.jar });
+    expect(ownerDetail.body.request.photos[0].id).toBe(photo.body.file.id);
+    const opportunities = await call('/requests?scope=open', { cookie: bruno.jar });
+    expect(opportunities.body.requests.find((item: { id: string }) => item.id === requestId).photos[0].id).toBe(
+      photo.body.file.id,
+    );
+    expect((await call(`/files/${photo.body.file.id}`)).status).toBe(200);
 
     expect((await call(`/requests/${requestId}`, { cookie: carlos.jar })).status).toBe(403);
 
@@ -200,6 +239,21 @@ describe('SALU — ciclo de serviço real com duas contas', () => {
     const proposalId = proposal.body.proposal.id;
     const conversationId = proposal.body.proposal.conversationId;
     expect(conversationId).toBeTruthy();
+    const mineAsProvider = await call('/requests?scope=proposed', { cookie: bruno.jar });
+    expect(mineAsProvider.body.requests.map((item: { id: string }) => item.id)).toEqual([requestId]);
+    expect(mineAsProvider.body.requests[0].myProposal.conversationId).toBe(conversationId);
+    const mineAsCustomer = await call('/requests?scope=customer', { cookie: bruno.jar });
+    expect(mineAsCustomer.body.requests.map((item: { id: string }) => item.id)).toEqual([ownRequest.body.request.id]);
+    expect((await call('/requests?scope=proposed', { cookie: ana.jar })).body.requests).toHaveLength(0);
+    expect(
+      (
+        await call(`/requests/${requestId}/proposals`, {
+          method: 'POST',
+          cookie: bruno.jar,
+          body: { amount: 35000, estimatedDays: 2, message: 'Posso fazer o diagnóstico amanhã de manhã.' },
+        })
+      ).status,
+    ).toBe(409);
 
     expect((await call(`/conversations/${conversationId}/messages`, { cookie: carlos.jar })).status).toBe(403);
     expect((await call(`/proposals/${proposalId}/accept`, { method: 'POST', cookie: bruno.jar })).status).toBe(403);
@@ -209,6 +263,9 @@ describe('SALU — ciclo de serviço real com duas contas', () => {
     expect(accepted.status, JSON.stringify(accepted.body)).toBe(200);
     const agreementId = accepted.body.agreement.id;
     expect(accepted.body.agreement.status).toBe('PENDING_PROVIDER');
+    const acceptedList = await call('/requests?scope=proposed', { cookie: bruno.jar });
+    expect(acceptedList.body.requests[0].myProposal.status).toBe('ACCEPTED');
+    expect(acceptedList.body.requests[0].agreementId).toBe(agreementId);
 
     expect((await call(`/agreements/${agreementId}/accept`, { method: 'POST', cookie: ana.jar })).status).toBe(409);
     const providerAccepted = await call(`/agreements/${agreementId}/accept`, { method: 'POST', cookie: bruno.jar });
@@ -385,6 +442,107 @@ describe('SALU — ciclo de serviço real com duas contas', () => {
     expect((await call('/admin/reports')).status).toBe(404);
     expect((await call('/admin/reports', { headers: { 'X-Admin-Token': 'errado' } })).status).toBe(404);
   }, 30_000);
+
+  it('rejeita origens de terceiros e aceita apenas o site autorizado', async () => {
+    const ana = await call('/auth/login', {
+      method: 'POST',
+      body: { contact: 'ana@teste.ao', password: 'segura123' },
+    });
+    const unauthorized = await fetch(`${BASE}/auth/me`, {
+      headers: { Cookie: ana.cookie, Origin: 'https://site-terceiro.netlify.app' },
+    });
+    expect(unauthorized.status).toBe(403);
+    expect(unauthorized.headers.get('access-control-allow-origin')).toBeNull();
+    const badPreview = await call('/auth/logout', {
+      method: 'POST',
+      cookie: ana.cookie,
+      headers: { Origin: 'https://terceiro.e2b.app' },
+    });
+    expect(badPreview.status).toBe(403);
+    const allowed = await fetch(`${BASE}/auth/me`, {
+      headers: { Cookie: ana.cookie, Origin: 'https://salu-ao.netlify.app' },
+    });
+    expect(allowed.status).toBe(200);
+    expect(allowed.headers.get('access-control-allow-origin')).toBe('https://salu-ao.netlify.app');
+    expect(allowed.headers.get('access-control-allow-credentials')).toBe('true');
+  });
+
+  it('revoga fotografias públicas ao eliminar uma conta', async () => {
+    const account = await register('Conta Removida', 'eliminar@teste.ao');
+    const avatarForm = new FormData();
+    avatarForm.append('file', new Blob([PNG], { type: 'image/png' }), 'avatar.png');
+    const avatar = await call('/me/avatar', { method: 'POST', cookie: account.jar, form: avatarForm });
+    const id = avatar.body.user.avatar.id;
+    const before = await fetch(`${BASE}/files/${id}`);
+    expect(before.status).toBe(200);
+    expect(before.headers.get('cache-control')).toContain('no-store');
+    expect((await call('/me', { method: 'DELETE', cookie: account.jar, body: { password: 'segura123' } })).status).toBe(
+      200,
+    );
+    expect((await call(`/files/${id}`)).status).toBe(404);
+    expect((await call('/auth/me', { cookie: account.jar })).status).toBe(401);
+  });
+
+  it('pagina pedidos e perfis sem repetir ou ocultar resultados', async () => {
+    const ana = await call('/auth/login', {
+      method: 'POST',
+      body: { contact: 'ana@teste.ao', password: 'segura123' },
+    });
+    const pedido = {
+      title: 'Pedido de paginação para testes',
+      categoryId: 'hvac',
+      description: 'Descrição suficiente para validar páginas de resultados distintas.',
+      provinceId: 'AO-LUA',
+      municipalityId: 'AO-LUA-CAMAMA',
+      communeId: 'AO-LUA-CAMAMA-CAMAMA',
+      budgetType: 'INSPECTION_NEEDED',
+      budgetAmount: 0,
+      urgency: 'NORMAL',
+      photoIds: [],
+    };
+    expect((await call('/requests', { method: 'POST', cookie: ana.cookie, body: pedido })).status).toBe(201);
+    const first = await call('/requests?scope=mine&limit=1&page=1', { cookie: ana.cookie });
+    const second = await call('/requests?scope=mine&limit=1&page=2', { cookie: ana.cookie });
+    expect(first.body.hasMore).toBe(true);
+    expect(first.body.requests).toHaveLength(1);
+    expect(second.body.requests).toHaveLength(1);
+    expect(first.body.requests[0].id).not.toBe(second.body.requests[0].id);
+
+    const provider = await register('Outro Prestador', 'outro@teste.ao');
+    const onboarding = await call('/me/onboarding', {
+      method: 'POST',
+      cookie: provider.jar,
+      body: {
+        activeMode: 'provider',
+        provinceId: 'AO-LUA',
+        municipalityId: 'AO-LUA-CAMAMA',
+        communeId: 'AO-LUA-CAMAMA-CAMAMA',
+      },
+    });
+    expect(onboarding.status).toBe(200);
+    const profile = await call('/me/provider', {
+      method: 'PUT',
+      cookie: provider.jar,
+      body: {
+        displayName: 'Outro Prestador',
+        headline: 'Serviços eléctricos',
+        categoryId: 'electrical',
+        bio: 'Serviços eléctricos e reparações com orçamento antes do trabalho.',
+        yearsExperience: 2,
+        publish: true,
+      },
+    });
+    expect(profile.status, JSON.stringify(profile.body)).toBe(200);
+    const p1 = await call('/providers?limit=1&page=1');
+    const p2 = await call('/providers?limit=1&page=2');
+    expect(p1.status).toBe(200);
+    expect(p1.body.hasMore).toBe(true);
+    expect(p1.body.providers).toHaveLength(1);
+    expect(p2.body.providers).toHaveLength(1);
+    expect(p1.body.providers[0].userId).not.toBe(p2.body.providers[0].userId);
+    // O prestador com um serviço concluído deve ser ordenado antes de paginar.
+    expect(p1.body.providers[0].completedJobs).toBeGreaterThan(p2.body.providers[0].completedJobs);
+  });
 
   it('limita tentativas repetidas de autenticação', async () => {
     let lastStatus = 0;
