@@ -10,6 +10,7 @@ import { Avatar, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } fr
 import { ConversationRow } from '../components/Cards';
 import { FileUpload } from '../components/FileUpload';
 import { useToast } from '../app/ToastProvider';
+import { FileImage } from '../components/FileImage';
 
 export function MessagesPage() {
   const { id } = useParams();
@@ -156,11 +157,7 @@ export function MessagesPage() {
                             className={`mt-2 block rounded-lg overflow-hidden ${message.body ? '' : 'mt-0'}`}
                           >
                             {message.attachment.mime.startsWith('image/') ? (
-                              <img
-                                src={api.fileUrl(message.attachment)}
-                                alt={message.attachment.name}
-                                className="max-h-56 w-auto rounded-lg"
-                              />
+                              <FileImage file={message.attachment} className="max-h-56 w-auto rounded-lg" />
                             ) : (
                               <span className="inline-flex items-center gap-1.5 text-xs underline">
                                 <Paperclip className="w-3.5 h-3.5" aria-hidden="true" />

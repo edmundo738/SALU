@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
 import type { FileRecord } from '../../../shared/types';
 import { api } from '../../lib/api';
 import { useI18n } from '../../i18n';
+import { FileImage } from '../FileImage';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'navy';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -194,10 +195,10 @@ export function Avatar({
   const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-11 h-11 text-sm', lg: 'w-16 h-16 text-lg', xl: 'w-24 h-24 text-2xl' };
   if (file && !failed) {
     return (
-      <img
-        src={api.fileUrl(file)}
+      <FileImage
+        file={file}
         alt={name}
-        onError={() => setFailed(true)}
+        onGiveUp={() => setFailed(true)}
         className={`${sizes[size]} rounded-xl object-cover border border-[#E2E8F0] dark:border-[#1E325C] shrink-0 ${className}`}
       />
     );

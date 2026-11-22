@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 2026-11-22 — Fotografias servidas pelo próprio site
+
+### Corrigido
+
+- As fotografias (avatar, portfólio, fotos de pedido, anexos) apareciam quebradas depois de o upload dizer "feito". A causa era a leitura entre domínios: a imagem vinha de `edmundo.alwaysdata.net` dentro da página de `salu-ao.netlify.app`.
+- Ficheiros públicos passam a ser servidos em `/media/*` pelo próprio domínio, com reescrita no Netlify para a API (`status = 200`, não redirect).
+- Ficheiros privados (anexos, provas) são lidos com a sessão e mostrados a partir de memória, sem depender de permissões entre domínios.
+
+### Adicionado
+
+- `src/components/FileImage.tsx`: componente único para todas as imagens de ficheiros, com alternativa para o URL directo e desistência explícita (avatar cai para as iniciais).
+- `api.fileUrlDirect()` e `api.fetchFileObjectUrl()`.
+- Proxy `/media` no `vite.config.ts` para o desenvolvimento local.
+- Secção reescrita em `docs/VINCULAR_SITE_API.md` com o diagnóstico e a confirmação.
+
+### Alterado
+
+- `api.fileUrl()` devolve caminho do próprio site para ficheiros públicos.
+- Sete pontos de renderização de imagens deixaram de montar URLs à mão.
+
 ## 2026-11-21 — Cena cinematográfica da página inicial
 
 ### Adicionado

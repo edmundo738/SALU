@@ -23,6 +23,7 @@ import {
 } from '../components/ui/Base';
 import { categoryLabel } from '../../shared/categories';
 import { useToast } from '../app/ToastProvider';
+import { FileImage } from '../components/FileImage';
 
 export function ProviderProfilePage() {
   const { id = '' } = useParams();
@@ -191,10 +192,9 @@ export function ProviderProfilePage() {
             ) : (
               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {provider.portfolio.map((file) => (
-                  <img
+                  <FileImage
                     key={file.id}
-                    src={api.fileUrl(file)}
-                    alt={file.name}
+                    file={file}
                     className="w-full h-36 object-cover rounded-xl border border-[#E2E8F0] dark:border-[#1E325C]"
                   />
                 ))}

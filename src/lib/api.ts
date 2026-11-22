@@ -237,5 +237,19 @@ export const api = {
   removePortfolio: (fileId: string) =>
     request<{ provider: ProviderProfile }>(`/me/portfolio/${fileId}`, { method: 'DELETE' }),
 
-  fileUrl: (file: FileRecord | null | undefined) => (file ? `${BASE}/files/${file.id}` : ''),
+  /**
+   * Ficheiros públicos passam pelo proxy do próprio site (`/media/*` → API).
+   * Assim a imagem vem do mesmo domínio da página e não é bloqueada por
+   * políticas entre domínios (CORP/CSP), sem depender do servidor.
+   */
+  fileUrl: (file: FileRecord | null | undefined) =>
+    file ? (file.visibility === 'public' ? `/media/${file.id}` : `${BASE}/files/${file.id}`) : '',
+  /** URL directo da API — usado como alternativa e para ficheiros privados. */
+  fileUrlDirect: (file: FileRecord | null | undefined) => (file ? `${BASE}/files/${file.id}` : ''),
+  /** Lê um ficheiro privado com a sessão e devolve um objecto local (blob URL). */
+  fetchFileObjectUrl: async (file: FileRecord) => {
+    const response = await fetch(`${BASE}/files/${file.id}`, { credentials: 'include' });
+    if (!response.ok) throw new ApiError('Ficheiro indisponível.', response.status);
+    return URL.createObjectURL(await response.blob());
+  },
 };

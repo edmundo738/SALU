@@ -24,6 +24,7 @@ import { AgreementStatusBadge } from '../components/StatusBadge';
 import { ReportButton } from '../components/ReportButton';
 import { FileUpload, FilePreview } from '../components/FileUpload';
 import { useToast } from '../app/ToastProvider';
+import { FileImage } from '../components/FileImage';
 
 export function AgreementDetailPage() {
   const { id = '' } = useParams();
@@ -193,9 +194,8 @@ export function AgreementDetailPage() {
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {agreement.completionPhotos.map((file) => (
                       <a key={file.id} href={api.fileUrl(file)} target="_blank" rel="noreferrer">
-                        <img
-                          src={api.fileUrl(file)}
-                          alt={file.name}
+                        <FileImage
+                          file={file}
                           className="w-full h-28 object-cover rounded-lg border border-[#E2E8F0] dark:border-[#1E325C]"
                         />
                       </a>
