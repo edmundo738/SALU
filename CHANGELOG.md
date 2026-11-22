@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-11-21 — Cena cinematográfica da página inicial
+
+### Adicionado
+
+- Página inicial reconstruída como uma cena: hero escuro em camadas (aurora, grelha em perspectiva, feixes de luz, grão, horizonte), tipografia revelada palavra a palavra e carril do processo.
+- Motion próprio sem dependências (`src/components/landing/motion.ts`): câmara do hero (`--s`, `--mx`, `--my`), secção pinada de três actos (`--p`), revelação por `IntersectionObserver` e holofote de ponteiro nos cartões.
+- Faixa tipográfica em contorno e CTA final com a mesma linguagem visual.
+- Cabeçalho em modo `overlay` em `PublicLayout`: transparente sobre a cena, sólido ao rolar; `SaluLogo` com `tone="light"`.
+- Chaves novas em PT e EN: `landing.kicker`, `landing.story.*`, `landing.caps.*`, `landing.honesty.kicker`, `landing.marquee`, `landing.audience.kicker`.
+
+### Alterado
+
+- Movimento só com `transform`/`opacity`, um `requestAnimationFrame` por frame e tudo desligado em `prefers-reduced-motion`.
+- No telemóvel a secção pinada cai para lista normal; feixes de luz desactivados.
+- Cores ancoradas na identidade: `#081C41`, `#060E20`, `#1D6FE5`, `#F97316`.
+
 ## 2026-11-21 — Execução da auditoria
 
 ### Adicionado

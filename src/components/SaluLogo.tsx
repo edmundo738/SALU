@@ -37,7 +37,16 @@ export function SaluMark({ className = '' }: { className?: string }) {
   );
 }
 
-export function SaluLogo({ compact = false, className = '' }: { compact?: boolean; className?: string }) {
+export function SaluLogo({
+  compact = false,
+  tone = 'auto',
+  className = '',
+}: {
+  compact?: boolean;
+  /** 'light' força texto branco (cabeçalho sobre cena escura). */
+  tone?: 'auto' | 'light';
+  className?: string;
+}) {
   return (
     <Link
       to="/"
@@ -47,9 +56,9 @@ export function SaluLogo({ compact = false, className = '' }: { compact?: boolea
       <SaluMark className={compact ? 'h-9 w-9 shrink-0' : 'h-11 w-11 shrink-0'} />
       <span className="flex flex-col justify-center leading-none">
         <span
-          className={`font-display font-extrabold tracking-[-0.02em] text-[#081C41] dark:text-white ${
-            compact ? 'text-[19px]' : 'text-[22px]'
-          }`}
+          className={`font-display font-extrabold tracking-[-0.02em] ${
+            tone === 'light' ? 'text-white' : 'text-[#081C41] dark:text-white'
+          } ${compact ? 'text-[19px]' : 'text-[22px]'}`}
         >
           SALU
         </span>

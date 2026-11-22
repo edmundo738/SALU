@@ -2,7 +2,7 @@
 
 ## PROJECT_STATE
 
-Branch `arena/06f5de50-salu`, base `602538e`; commit de implementação `9c9220a`. Um único sistema React Router + Express/SQLite. Auditoria executada; 23/24 P0 corrigidos; `P0-12` parcial por falta de deploy real.
+Branch `arena/bfd0471f-salu`, base `aa7b621`; API de produção em `edmundo.alwaysdata.net`, frontend em `salu-ao.netlify.app` com deploy automático a partir de `main`. Um único sistema React Router + Express/SQLite. Auditoria executada; 23/24 P0 corrigidos; `P0-12` parcial por falta de deploy real.
 
 ## LAST_CHECKPOINT
 
@@ -16,6 +16,10 @@ Branch `arena/06f5de50-salu`, base `602538e`; commit de implementação `9c9220a
 - documentação de estado criada.
 
 ## CURRENT_TASK
+
+Página inicial cinematográfica em curso de revisão visual (preview local em `node /tmp/preview-server.mjs` sobre `dist`). Pendente: `git pull` + restart no alwaysdata para a política `cross-origin` das fotos entrar, e confirmação do utilizador sobre a cena.
+
+## ANTERIOR
 
 Fechar a documentação e o checkpoint; preparar o deploy real (fora deste ambiente).
 
